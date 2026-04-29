@@ -60,3 +60,9 @@ function renderState(state: GameState) {
     boardEl.appendChild(div);
   }
 }
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === "GAME_STATE_UPDATED") {
+    renderState(message.data);
+  }
+});

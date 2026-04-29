@@ -1,4 +1,5 @@
 let gameId: string | null = null;
+let playerId: string | null = null;
 let currentBoard: any = null;
 let completedSquareIds = new Set<string>();
 
@@ -36,6 +37,7 @@ async function startGame() {
 
   gameId = game.id;
   currentBoard = game.board;
+  playerId = game.players?.[0]?.id ?? null;
   completedSquareIds = new Set<string>();
 
   console.log("Game started:", game);
@@ -50,7 +52,7 @@ async function startGame() {
 }
 
 async function sendPageVisit(data: unknown) {
-  if (!gameId) return;
+  if (!gameId || !playerId) return;
 
   const res = await fetch(
     `http://localhost:4000/games/${gameId}/events/page-visit`,
@@ -58,7 +60,7 @@ async function sendPageVisit(data: unknown) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        playerId: "player_1",
+        playerId,
         ...(data as object),
       }),
     },
@@ -69,6 +71,15 @@ async function sendPageVisit(data: unknown) {
   for (const square of result.completedSquares ?? []) {
     completedSquareIds.add(square.id);
   }
+
+  chrome.runtime.sendMessage({
+    type: "GAME_STATE_UPDATED",
+    data: {
+      gameId,
+      board: currentBoard,
+      completedSquareIds: Array.from(completedSquareIds),
+    },
+  });
 
   console.log("Page visit result:", result);
 }

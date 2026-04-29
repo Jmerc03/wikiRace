@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { generateBoard, evaluateSquare } from "@bingo/game-engine";
-import type { Game } from "@bingo/shared";
-
-const games = new Map<string, Game>();
+import { prisma } from "../db/prisma.js";
+import type { BoardSquare, PageVisitEvent } from "@bingo/shared";
+import { Prisma } from "@prisma/client";
 
 const createGameSchema = z.object({
   mode: z.enum(["NORMAL", "LOCKOUT"]).default("NORMAL"),
@@ -20,23 +20,59 @@ const pageVisitSchema = z.object({
 export async function gameRoutes(app: FastifyInstance) {
   app.post("/", async (request, reply) => {
     const body = createGameSchema.parse(request.body ?? {});
+    const generatedBoard = generateBoard();
 
-    const game: Game = {
-      id: crypto.randomUUID(),
-      mode: body.mode,
-      status: "ACTIVE",
-      board: generateBoard(),
-      createdAt: new Date().toISOString(),
-    };
-
-    games.set(game.id, game);
+    const game = await prisma.game.create({
+      data: {
+        mode: body.mode,
+        status: "ACTIVE",
+        board: {
+          create: {
+            size: generatedBoard.size,
+            squares: {
+              create: generatedBoard.squares.map((square) => ({
+                position: square.position,
+                type: square.type,
+                label: square.label,
+                condition: square.condition as Prisma.InputJsonValue,
+                difficulty: square.difficulty,
+              })),
+            },
+          },
+        },
+        players: {
+          create: {
+            displayName: "Player 1",
+          },
+        },
+      },
+      include: {
+        board: {
+          include: {
+            squares: true,
+          },
+        },
+        players: true,
+      },
+    });
 
     return reply.code(201).send(game);
   });
 
   app.get("/:gameId", async (request, reply) => {
     const { gameId } = request.params as { gameId: string };
-    const game = games.get(gameId);
+
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        board: {
+          include: {
+            squares: true,
+          },
+        },
+        players: true,
+      },
+    });
 
     if (!game) {
       return reply.code(404).send({ error: "Game not found" });
@@ -47,10 +83,20 @@ export async function gameRoutes(app: FastifyInstance) {
 
   app.get("/:gameId/board", async (request, reply) => {
     const { gameId } = request.params as { gameId: string };
-    const game = games.get(gameId);
 
-    if (!game) {
-      return reply.code(404).send({ error: "Game not found" });
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        board: {
+          include: {
+            squares: true,
+          },
+        },
+      },
+    });
+
+    if (!game || !game.board) {
+      return reply.code(404).send({ error: "Board not found" });
     }
 
     return game.board;
@@ -58,22 +104,89 @@ export async function gameRoutes(app: FastifyInstance) {
 
   app.post("/:gameId/events/page-visit", async (request, reply) => {
     const { gameId } = request.params as { gameId: string };
-    const game = games.get(gameId);
+    const event = pageVisitSchema.parse(request.body);
 
-    if (!game) {
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        board: {
+          include: {
+            squares: true,
+          },
+        },
+        players: true,
+      },
+    });
+
+    if (!game || !game.board) {
       return reply.code(404).send({ error: "Game not found" });
     }
 
-    const event = pageVisitSchema.parse(request.body);
+    let player = game.players.find((p) => p.id === event.playerId);
+
+    if (!player) {
+      player = await prisma.player.create({
+        data: {
+          id: event.playerId,
+          gameId,
+          displayName: "Player 1",
+        },
+      });
+    }
+
+    const visit = await prisma.pageVisitEvent.create({
+      data: {
+        gameId,
+        playerId: player.id,
+        url: event.url,
+        title: event.title,
+        categories: event.categories,
+        links: event.links,
+      },
+    });
+
+    const pageVisitEvent: PageVisitEvent = {
+      playerId: player.id,
+      url: event.url,
+      title: event.title,
+      categories: event.categories,
+      links: event.links,
+    };
 
     const completedSquares = game.board.squares.filter((square) =>
-      evaluateSquare(square, event),
+      evaluateSquare(square as BoardSquare, pageVisitEvent),
     );
+
+    for (const square of completedSquares) {
+      await prisma.squareCompletion.upsert({
+        where: {
+          playerId_squareId: {
+            playerId: player.id,
+            squareId: square.id,
+          },
+        },
+        update: {},
+        create: {
+          gameId,
+          playerId: player.id,
+          squareId: square.id,
+          pageVisitEventId: visit.id,
+        },
+      });
+    }
+
+    const completions = await prisma.squareCompletion.findMany({
+      where: {
+        gameId,
+        playerId: player.id,
+      },
+    });
 
     return {
       gameId,
-      playerId: event.playerId,
+      playerId: player.id,
       completedSquares,
+      completedSquareIds: completions.map((completion) => completion.squareId),
     };
   });
 }
