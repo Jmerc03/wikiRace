@@ -1,4 +1,4 @@
-import type { BoardSquare, PageVisitEvent } from "./types.js";
+import type { BoardSquare, PageVisitEvent } from "@bingo/shared";
 
 export function evaluateSquare(
   square: BoardSquare,

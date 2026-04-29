@@ -1,0 +1,8 @@
+{
+  "name": "wikipedia-bingo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

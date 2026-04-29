@@ -1,6 +1,7 @@
 {
   "name": "api",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "tsx src/server.ts",
@@ -12,6 +13,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@bingo/game-engine": "^1.0.0",
+    "@bingo/shared": "^1.0.0",
     "@fastify/cors": "^11.2.0",
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",

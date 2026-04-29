@@ -1,8 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { generateBoard } from "../game/board-generator.js";
-import { evaluateSquare } from "../game/game-engine.js";
-import type { Game } from "../game/types.js";
+import { generateBoard, evaluateSquare } from "@bingo/game-engine";
+import type { Game } from "@bingo/shared";
 
 const games = new Map<string, Game>();
 

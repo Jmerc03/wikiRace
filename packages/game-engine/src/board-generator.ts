@@ -1,4 +1,4 @@
-import type { Board } from "./types.js";
+import type { Board } from "@bingo/shared";
 
 export function generateBoard(): Board {
   return {
