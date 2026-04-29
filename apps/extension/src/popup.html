@@ -1,7 +1,45 @@
 <!doctype html>
 <html>
+  <head>
+    <style>
+      body {
+        width: 360px;
+        font-family: Arial, sans-serif;
+        padding: 12px;
+      }
+
+      #board {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        margin-top: 12px;
+      }
+
+      .square {
+        min-height: 60px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 6px;
+        font-size: 11px;
+        text-align: center;
+        background: #f7f7f7;
+      }
+
+      .completed {
+        background: #b6f2c2;
+        border-color: #2f9e44;
+      }
+    </style>
+  </head>
   <body>
+    <h2>Wikipedia Bingo</h2>
+
     <button id="start">Start Game</button>
+    <button id="refresh">Refresh Board</button>
+
+    <p id="status">No game started.</p>
+
+    <div id="board"></div>
 
     <script src="popup.js"></script>
   </body>
