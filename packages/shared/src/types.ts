@@ -6,7 +6,8 @@ export type SquareType =
   | "TITLE_CONTAINS"
   | "TITLE_STARTS_WITH"
   | "CATEGORY_CONTAINS"
-  | "LINK_COUNT_GREATER_THAN";
+  | "LINK_COUNT_GREATER_THAN"
+  | "VISIT_ARTICLE";
 
 export type Difficulty = "EASY" | "MEDIUM" | "HARD";
 

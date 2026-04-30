@@ -27,6 +27,11 @@ export function evaluateSquare(
       return event.links.length > count;
     }
 
+    case "VISIT_ARTICLE": {
+      const targetTitle = String(square.condition.title).toLowerCase();
+      return event.title.toLowerCase() === targetTitle;
+    }
+
     default:
       return false;
   }

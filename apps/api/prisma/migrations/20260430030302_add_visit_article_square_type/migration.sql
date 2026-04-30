@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "SquareType" ADD VALUE 'VISIT_ARTICLE';

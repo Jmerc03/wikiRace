@@ -1,4 +1,13 @@
 import type { Board, BoardSquare } from "@bingo/shared";
+import { vitalArticles } from "./vital-articles.js";
+
+const vitalArticleTemplates: Omit<BoardSquare, "id" | "position">[] =
+  vitalArticles.map((article) => ({
+    type: "VISIT_ARTICLE",
+    label: `Visit ${article.title}`,
+    condition: { title: article.title },
+    difficulty: difficultyFromVitalLevel(article.level),
+  }));
 
 const squareTemplates: Omit<BoardSquare, "id" | "position">[] = [
   {
@@ -96,14 +105,28 @@ export function generateBoard(): Board {
 }
 
 function buildTwentyFiveSquares(): Omit<BoardSquare, "id" | "position">[] {
-  const squares: Omit<BoardSquare, "id" | "position">[] = [];
+  const expandedPool: Omit<BoardSquare, "id" | "position">[] = [];
 
-  while (squares.length < 25) {
-    for (const template of squareTemplates) {
-      if (squares.length >= 25) break;
-      squares.push(template);
-    }
+  while (expandedPool.length < 50) {
+    expandedPool.push(...squareTemplates, ...vitalArticleTemplates);
   }
 
-  return squares;
+  return shuffle(expandedPool).slice(0, 25);
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const copy = [...items];
+
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+
+  return copy;
+}
+
+function difficultyFromVitalLevel(level: 1 | 2 | 3 | 4 | 5) {
+  if (level <= 2) return "EASY";
+  if (level === 3) return "MEDIUM";
+  return "HARD";
 }

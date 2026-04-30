@@ -75,3 +75,11 @@ apps/extension/build/
 # =========================
 *.pem
 *.key
+
+# =========================
+# Data processing (raw inputs)
+# =========================
+scripts/raw-data/
+*.csv
+*.xml
+*.tsv

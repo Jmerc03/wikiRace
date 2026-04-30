@@ -23,6 +23,7 @@ enum SquareType {
   TITLE_STARTS_WITH
   CATEGORY_CONTAINS
   LINK_COUNT_GREATER_THAN
+  VISIT_ARTICLE
 }
 
 enum Difficulty {
