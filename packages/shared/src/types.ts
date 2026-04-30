@@ -26,6 +26,15 @@ export interface Board {
   squares: BoardSquare[];
 }
 
+export type BoardDifficulty = "EASY" | "MIXED" | "HARD";
+
+export interface BoardGenerationConfig {
+  difficulty: BoardDifficulty;
+  vitalArticleTileCount: number;
+  genericTileCount: number;
+  maxTilesPerTopic: number;
+}
+
 export interface Game {
   id: string;
   mode: GameMode;

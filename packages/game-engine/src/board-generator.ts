@@ -1,4 +1,9 @@
-import type { Board, BoardSquare, Difficulty } from "@bingo/shared";
+import type {
+  Board,
+  BoardSquare,
+  Difficulty,
+  BoardGenerationConfig,
+} from "@bingo/shared";
 import { vitalArticles, type VitalArticle } from "./vital-articles.js";
 
 const GENERIC_TILE_COUNT = 10;
@@ -85,8 +90,17 @@ const genericSquareTemplates: Omit<BoardSquare, "id" | "position">[] = [
   },
 ];
 
-export function generateBoard(): Board {
-  const selectedSquares = buildTwentyFiveSquares();
+const defaultBoardConfig: BoardGenerationConfig = {
+  difficulty: "MIXED",
+  vitalArticleTileCount: 15,
+  genericTileCount: 10,
+  maxTilesPerTopic: 3,
+};
+
+export function generateBoard(
+  config: BoardGenerationConfig = defaultBoardConfig,
+): Board {
+  const selectedSquares = buildTwentyFiveSquares(config);
 
   return {
     id: crypto.randomUUID(),
@@ -99,11 +113,17 @@ export function generateBoard(): Board {
   };
 }
 
-function buildTwentyFiveSquares(): Omit<BoardSquare, "id" | "position">[] {
-  const vitalSquares = buildVitalArticleSquares(VITAL_ARTICLE_TILE_COUNT);
+function buildTwentyFiveSquares(
+  config: BoardGenerationConfig,
+): Omit<BoardSquare, "id" | "position">[] {
+  const vitalSquares = buildVitalArticleSquares(
+    config.vitalArticleTileCount,
+    config,
+  );
+
   const genericSquares = shuffle(genericSquareTemplates).slice(
     0,
-    GENERIC_TILE_COUNT,
+    config.genericTileCount,
   );
 
   return [...vitalSquares, ...genericSquares];
@@ -111,8 +131,9 @@ function buildTwentyFiveSquares(): Omit<BoardSquare, "id" | "position">[] {
 
 function buildVitalArticleSquares(
   count: number,
+  config: BoardGenerationConfig,
 ): Omit<BoardSquare, "id" | "position">[] {
-  const selectedArticles = selectDiverseVitalArticles(count);
+  const selectedArticles = selectDiverseVitalArticles(count, config);
 
   return selectedArticles.map((article) => ({
     type: "VISIT_ARTICLE",
@@ -122,8 +143,16 @@ function buildVitalArticleSquares(
   }));
 }
 
-function selectDiverseVitalArticles(count: number): VitalArticle[] {
-  const shuffledArticles = shuffle(vitalArticles);
+function selectDiverseVitalArticles(
+  count: number,
+  config: BoardGenerationConfig,
+): VitalArticle[] {
+  const shuffledArticles = shuffle(
+    vitalArticles.filter((article) =>
+      articleMatchesDifficulty(article, config),
+    ),
+  );
+
   const selected: VitalArticle[] = [];
   const topicCounts = new Map<string, number>();
 
@@ -133,7 +162,7 @@ function selectDiverseVitalArticles(count: number): VitalArticle[] {
     const topic = article.topic ?? "Unknown";
     const currentTopicCount = topicCounts.get(topic) ?? 0;
 
-    if (currentTopicCount >= 3) {
+    if (currentTopicCount >= config.maxTilesPerTopic) {
       continue;
     }
 
@@ -142,6 +171,21 @@ function selectDiverseVitalArticles(count: number): VitalArticle[] {
   }
 
   return selected;
+}
+
+function articleMatchesDifficulty(
+  article: VitalArticle,
+  config: BoardGenerationConfig,
+): boolean {
+  if (config.difficulty === "EASY") {
+    return article.level <= 3;
+  }
+
+  if (config.difficulty === "HARD") {
+    return article.level >= 3;
+  }
+
+  return true;
 }
 
 function difficultyFromVitalLevel(level: 1 | 2 | 3 | 4): Difficulty {
