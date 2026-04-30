@@ -16,6 +16,7 @@ const startButton = document.getElementById("start");
 const refreshButton = document.getElementById("refresh");
 const statusEl = document.getElementById("status");
 const boardEl = document.getElementById("board");
+const endGameButton = document.getElementById("end-game");
 
 startButton?.addEventListener("click", async () => {
   const state = await chrome.runtime.sendMessage({ type: "START_GAME" });
@@ -24,6 +25,11 @@ startButton?.addEventListener("click", async () => {
 
 refreshButton?.addEventListener("click", async () => {
   const state = await chrome.runtime.sendMessage({ type: "SYNC_GAME_STATE" });
+  renderState(state);
+});
+
+endGameButton?.addEventListener("click", async () => {
+  const state = await chrome.runtime.sendMessage({ type: "CLEAR_GAME" });
   renderState(state);
 });
 

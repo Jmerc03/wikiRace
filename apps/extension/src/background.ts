@@ -148,6 +148,22 @@ async function sendPageVisit(data: unknown) {
   console.log("Page visit result:", result);
 }
 
+async function clearGame() {
+  gameId = null;
+  playerId = null;
+  currentBoard = null;
+  completedSquareIds = new Set<string>();
+
+  await chrome.storage.local.remove(["gameId", "playerId"]);
+
+  return {
+    gameId: null,
+    playerId: null,
+    board: null,
+    completedSquareIds: [],
+  };
+}
+
 async function sendCurrentTabPageVisit() {
   if (!gameId) return;
 
