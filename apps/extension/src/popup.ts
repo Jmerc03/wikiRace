@@ -17,6 +17,7 @@ const refreshButton = document.getElementById("refresh");
 const statusEl = document.getElementById("status");
 const boardEl = document.getElementById("board");
 const endGameButton = document.getElementById("end-game");
+const progressEl = document.getElementById("progress");
 
 startButton?.addEventListener("click", async () => {
   const state = await chrome.runtime.sendMessage({ type: "START_GAME" });
@@ -45,11 +46,33 @@ function renderState(state: GameState) {
 
   if (!state?.gameId || !state.board) {
     statusEl.textContent = "No game started.";
+    if (progressEl) progressEl.textContent = "";
+
+    if (startButton instanceof HTMLElement)
+      startButton.style.display = "inline-block";
+    if (endGameButton instanceof HTMLElement)
+      endGameButton.style.display = "none";
+    if (refreshButton instanceof HTMLElement)
+      refreshButton.style.display = "none";
+
     boardEl.innerHTML = "";
     return;
   }
 
   statusEl.textContent = `Game active: ${state.gameId}`;
+
+  if (startButton instanceof HTMLElement) startButton.style.display = "none";
+  if (endGameButton instanceof HTMLElement)
+    endGameButton.style.display = "inline-block";
+  if (refreshButton instanceof HTMLElement)
+    refreshButton.style.display = "inline-block";
+
+  const completedCount = state.completedSquareIds.length;
+  const totalCount = state.board.squares.length;
+
+  if (progressEl) {
+    progressEl.textContent = `Progress: ${completedCount}/${totalCount}`;
+  }
 
   const completed = new Set(state.completedSquareIds);
 
