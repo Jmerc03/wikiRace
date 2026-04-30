@@ -3,22 +3,38 @@ let playerId: string | null = null;
 let currentBoard: any = null;
 let completedSquareIds = new Set<string>();
 
+type SavedGameState = {
+  gameId?: string;
+  playerId?: string;
+};
+
+async function loadSavedGameState() {
+  const saved = (await chrome.storage.local.get([
+    "gameId",
+    "playerId",
+  ])) as SavedGameState;
+
+  gameId = saved.gameId ?? null;
+  playerId = saved.playerId ?? null;
+}
+
 chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
   if (message.type === "START_GAME") {
     void startGame().then(sendResponse);
     return true;
   }
 
-  if (message.type === "GET_GAME_STATE") {
-    sendResponse({
-      gameId,
-      board: currentBoard,
-      completedSquareIds: Array.from(completedSquareIds),
-    });
-    return false;
+  if (message.type === "SYNC_GAME_STATE") {
+    void syncGameState().then(sendResponse);
+    return true;
   }
 
-  if (message.type === "PAGE_VISIT" && gameId) {
+  if (message.type === "GET_GAME_STATE") {
+    void syncGameState().then(sendResponse);
+    return true;
+  }
+
+  if (message.type === "PAGE_VISIT") {
     void sendPageVisit(message.data);
     return false;
   }
@@ -40,6 +56,11 @@ async function startGame() {
   playerId = game.players?.[0]?.id ?? null;
   completedSquareIds = new Set<string>();
 
+  await chrome.storage.local.set({
+    gameId,
+    playerId,
+  });
+
   console.log("Game started:", game);
 
   await sendCurrentTabPageVisit();
@@ -51,7 +72,46 @@ async function startGame() {
   };
 }
 
+async function syncGameState() {
+  if (!gameId || !playerId) {
+    await loadSavedGameState();
+  }
+
+  if (!gameId || !playerId) {
+    return {
+      gameId: null,
+      playerId: null,
+      board: null,
+      completedSquareIds: [],
+    };
+  }
+
+  const res = await fetch(
+    `http://localhost:4000/games/${gameId}/state?playerId=${playerId}`,
+  );
+
+  const state = await res.json();
+
+  if (!res.ok) {
+    return {
+      gameId: null,
+      playerId: null,
+      board: null,
+      completedSquareIds: [],
+    };
+  }
+
+  currentBoard = state.board;
+  completedSquareIds = new Set<string>(state.completedSquareIds ?? []);
+
+  return state;
+}
+
 async function sendPageVisit(data: unknown) {
+  if (!gameId || !playerId) {
+    await loadSavedGameState();
+  }
+
   if (!gameId || !playerId) return;
 
   const res = await fetch(
@@ -72,14 +132,18 @@ async function sendPageVisit(data: unknown) {
     completedSquareIds.add(square.id);
   }
 
-  chrome.runtime.sendMessage({
-    type: "GAME_STATE_UPDATED",
-    data: {
-      gameId,
-      board: currentBoard,
-      completedSquareIds: Array.from(completedSquareIds),
-    },
-  });
+  try {
+    await chrome.runtime.sendMessage({
+      type: "GAME_STATE_UPDATED",
+      data: {
+        gameId,
+        board: currentBoard,
+        completedSquareIds: Array.from(completedSquareIds),
+      },
+    });
+  } catch {
+    // No popup is currently open to receive the update.
+  }
 
   console.log("Page visit result:", result);
 }

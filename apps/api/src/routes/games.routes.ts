@@ -102,6 +102,44 @@ export async function gameRoutes(app: FastifyInstance) {
     return game.board;
   });
 
+  app.get("/:gameId/state", async (request, reply) => {
+    const { gameId } = request.params as { gameId: string };
+    const playerId = (request.query as { playerId?: string }).playerId;
+
+    if (!playerId) {
+      return reply.code(400).send({ error: "playerId is required" });
+    }
+
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        board: {
+          include: {
+            squares: true,
+          },
+        },
+      },
+    });
+
+    if (!game || !game.board) {
+      return reply.code(404).send({ error: "Game not found" });
+    }
+
+    const completions = await prisma.squareCompletion.findMany({
+      where: {
+        gameId,
+        playerId,
+      },
+    });
+
+    return {
+      gameId,
+      playerId,
+      board: game.board,
+      completedSquareIds: completions.map((completion) => completion.squareId),
+    };
+  });
+
   app.post("/:gameId/events/page-visit", async (request, reply) => {
     const { gameId } = request.params as { gameId: string };
     const event = pageVisitSchema.parse(request.body);

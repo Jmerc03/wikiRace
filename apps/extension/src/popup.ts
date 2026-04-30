@@ -23,14 +23,14 @@ startButton?.addEventListener("click", async () => {
 });
 
 refreshButton?.addEventListener("click", async () => {
-  const state = await chrome.runtime.sendMessage({ type: "GET_GAME_STATE" });
+  const state = await chrome.runtime.sendMessage({ type: "SYNC_GAME_STATE" });
   renderState(state);
 });
 
 void loadExistingState();
 
 async function loadExistingState() {
-  const state = await chrome.runtime.sendMessage({ type: "GET_GAME_STATE" });
+  const state = await chrome.runtime.sendMessage({ type: "SYNC_GAME_STATE" });
   renderState(state);
 }
 
