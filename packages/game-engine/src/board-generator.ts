@@ -1,15 +1,10 @@
-import type { Board, BoardSquare } from "@bingo/shared";
-import { vitalArticles } from "./vital-articles.js";
+import type { Board, BoardSquare, Difficulty } from "@bingo/shared";
+import { vitalArticles, type VitalArticle } from "./vital-articles.js";
 
-const vitalArticleTemplates: Omit<BoardSquare, "id" | "position">[] =
-  vitalArticles.map((article) => ({
-    type: "VISIT_ARTICLE",
-    label: `Visit ${article.title}`,
-    condition: { title: article.title },
-    difficulty: difficultyFromVitalLevel(article.level),
-  }));
+const GENERIC_TILE_COUNT = 10;
+const VITAL_ARTICLE_TILE_COUNT = 15;
 
-const squareTemplates: Omit<BoardSquare, "id" | "position">[] = [
+const genericSquareTemplates: Omit<BoardSquare, "id" | "position">[] = [
   {
     type: "TITLE_CONTAINS",
     label: "Visit a page with 'science' in the title",
@@ -96,7 +91,7 @@ export function generateBoard(): Board {
   return {
     id: crypto.randomUUID(),
     size: 5,
-    squares: selectedSquares.map((square, index) => ({
+    squares: shuffle(selectedSquares).map((square, index) => ({
       id: crypto.randomUUID(),
       position: index,
       ...square,
@@ -105,13 +100,54 @@ export function generateBoard(): Board {
 }
 
 function buildTwentyFiveSquares(): Omit<BoardSquare, "id" | "position">[] {
-  const expandedPool: Omit<BoardSquare, "id" | "position">[] = [];
+  const vitalSquares = buildVitalArticleSquares(VITAL_ARTICLE_TILE_COUNT);
+  const genericSquares = shuffle(genericSquareTemplates).slice(
+    0,
+    GENERIC_TILE_COUNT,
+  );
 
-  while (expandedPool.length < 50) {
-    expandedPool.push(...squareTemplates, ...vitalArticleTemplates);
+  return [...vitalSquares, ...genericSquares];
+}
+
+function buildVitalArticleSquares(
+  count: number,
+): Omit<BoardSquare, "id" | "position">[] {
+  const selectedArticles = selectDiverseVitalArticles(count);
+
+  return selectedArticles.map((article) => ({
+    type: "VISIT_ARTICLE",
+    label: `Visit ${article.title}`,
+    condition: { title: article.title },
+    difficulty: difficultyFromVitalLevel(article.level),
+  }));
+}
+
+function selectDiverseVitalArticles(count: number): VitalArticle[] {
+  const shuffledArticles = shuffle(vitalArticles);
+  const selected: VitalArticle[] = [];
+  const topicCounts = new Map<string, number>();
+
+  for (const article of shuffledArticles) {
+    if (selected.length >= count) break;
+
+    const topic = article.topic ?? "Unknown";
+    const currentTopicCount = topicCounts.get(topic) ?? 0;
+
+    if (currentTopicCount >= 3) {
+      continue;
+    }
+
+    selected.push(article);
+    topicCounts.set(topic, currentTopicCount + 1);
   }
 
-  return shuffle(expandedPool).slice(0, 25);
+  return selected;
+}
+
+function difficultyFromVitalLevel(level: 1 | 2 | 3 | 4): Difficulty {
+  if (level <= 2) return "EASY";
+  if (level === 3) return "MEDIUM";
+  return "HARD";
 }
 
 function shuffle<T>(items: T[]): T[] {
@@ -123,10 +159,4 @@ function shuffle<T>(items: T[]): T[] {
   }
 
   return copy;
-}
-
-function difficultyFromVitalLevel(level: 1 | 2 | 3 | 4 | 5) {
-  if (level <= 2) return "EASY";
-  if (level === 3) return "MEDIUM";
-  return "HARD";
 }
