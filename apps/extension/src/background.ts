@@ -2,6 +2,7 @@ let gameId: string | null = null;
 let playerId: string | null = null;
 let currentBoard: any = null;
 let completedSquareIds = new Set<string>();
+let ws: WebSocket | null = null;
 
 type SavedGameState = {
   gameId?: string;
@@ -64,6 +65,10 @@ async function startGame(mode = "NORMAL", boardConfig?: unknown) {
     playerId,
   });
 
+  if (gameId) {
+    connectWebSocket(gameId);
+  }
+
   console.log("Game started:", game);
 
   await sendCurrentTabPageVisit();
@@ -106,6 +111,10 @@ async function syncGameState() {
 
   currentBoard = state.board;
   completedSquareIds = new Set<string>(state.completedSquareIds ?? []);
+
+  if (gameId) {
+    connectWebSocket(gameId);
+  }
 
   return state;
 }
@@ -192,4 +201,47 @@ async function sendCurrentTabPageVisit() {
       err,
     );
   }
+}
+
+function connectWebSocket(activeGameId: string) {
+  if (ws) {
+    ws.close();
+  }
+
+  ws = new WebSocket(`ws://localhost:4000/ws/${activeGameId}`);
+
+  ws.onopen = () => {
+    console.log("WebSocket connected");
+  };
+
+  ws.onmessage = async (event) => {
+    const message = JSON.parse(event.data);
+
+    if (message.type !== "GAME_STATE_UPDATED") {
+      return;
+    }
+
+    completedSquareIds = new Set<string>(message.data.completedSquareIds ?? []);
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: "GAME_STATE_UPDATED",
+        data: {
+          gameId: activeGameId,
+          board: currentBoard,
+          completedSquareIds: Array.from(completedSquareIds),
+        },
+      });
+    } catch {
+      // Popup is closed.
+    }
+  };
+
+  ws.onclose = () => {
+    console.log("WebSocket disconnected");
+  };
+
+  ws.onerror = (err) => {
+    console.error("WebSocket error:", err);
+  };
 }

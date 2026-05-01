@@ -4,6 +4,7 @@ import { generateBoard, evaluateSquare } from "@bingo/game-engine";
 import { prisma } from "../db/prisma.js";
 import type { BoardSquare, PageVisitEvent } from "@bingo/shared";
 import { Prisma } from "@prisma/client";
+import { broadcastToGame } from "../realtime/game-connections.js";
 
 const defaultBoardConfig = {
   difficulty: "MIXED",
@@ -257,13 +258,20 @@ export async function gameRoutes(app: FastifyInstance) {
         },
       });
 
-      return {
+      const response = {
         gameId,
         playerId: player.id,
         mode: game.mode,
         completedSquares: newlyClaimedSquares,
         completedSquareIds: claims.map((claim) => claim.squareId),
       };
+
+      broadcastToGame(gameId, {
+        type: "GAME_STATE_UPDATED",
+        data: response,
+      });
+
+      return response;
     }
 
     if (game.mode === "NORMAL") {
@@ -292,7 +300,7 @@ export async function gameRoutes(app: FastifyInstance) {
         },
       });
 
-      return {
+      const response = {
         gameId,
         playerId: player.id,
         mode: game.mode,
@@ -301,6 +309,13 @@ export async function gameRoutes(app: FastifyInstance) {
           (completion) => completion.squareId,
         ),
       };
+
+      broadcastToGame(gameId, {
+        type: "GAME_STATE_UPDATED",
+        data: response,
+      });
+
+      return response;
     }
 
     return reply
