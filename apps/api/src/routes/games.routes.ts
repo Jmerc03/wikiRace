@@ -5,6 +5,13 @@ import { prisma } from "../db/prisma.js";
 import type { BoardSquare, PageVisitEvent } from "@bingo/shared";
 import { Prisma } from "@prisma/client";
 
+const defaultBoardConfig = {
+  difficulty: "MIXED",
+  vitalArticleTileCount: 15,
+  genericTileCount: 10,
+  maxTilesPerTopic: 3,
+} as const;
+
 const createGameSchema = z.object({
   mode: z.enum(["NORMAL", "LOCKOUT"]).default("NORMAL"),
   boardConfig: z
@@ -14,7 +21,7 @@ const createGameSchema = z.object({
       genericTileCount: z.number().int().min(0).max(25).default(10),
       maxTilesPerTopic: z.number().int().min(1).max(25).default(3),
     })
-    .optional(),
+    .default(defaultBoardConfig),
 });
 
 const pageVisitSchema = z.object({
@@ -28,12 +35,14 @@ const pageVisitSchema = z.object({
 export async function gameRoutes(app: FastifyInstance) {
   app.post("/", async (request, reply) => {
     const body = createGameSchema.parse(request.body ?? {});
-    const generatedBoard = generateBoard(body.boardConfig);
+    const boardConfig = body.boardConfig;
+    const generatedBoard = generateBoard(boardConfig);
 
     const game = await prisma.game.create({
       data: {
         mode: body.mode,
         status: "ACTIVE",
+        boardConfig: boardConfig as Prisma.InputJsonValue,
         board: {
           create: {
             size: generatedBoard.size,
@@ -143,6 +152,7 @@ export async function gameRoutes(app: FastifyInstance) {
     return {
       gameId,
       playerId,
+      boardConfig: game.boardConfig,
       board: game.board,
       completedSquareIds: completions.map((completion) => completion.squareId),
     };
