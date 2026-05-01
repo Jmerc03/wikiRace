@@ -4,6 +4,10 @@ let currentBoard: any = null;
 let completedSquareIds = new Set<string>();
 let ws: WebSocket | null = null;
 
+let currentMode: string | null = null;
+let currentBoardConfig: unknown = null;
+let currentPlayerCount: number | null = null;
+
 type SavedGameState = {
   gameId?: string;
   playerId?: string;
@@ -69,6 +73,9 @@ async function startGame(mode = "NORMAL", boardConfig?: unknown) {
   currentBoard = game.board;
   playerId = game.players?.[0]?.id ?? null;
   completedSquareIds = new Set<string>();
+  currentMode = game.mode ?? null;
+  currentBoardConfig = game.boardConfig ?? null;
+  currentPlayerCount = game.players?.length ?? null;
 
   await chrome.storage.local.set({
     gameId,
@@ -85,6 +92,10 @@ async function startGame(mode = "NORMAL", boardConfig?: unknown) {
 
   return {
     gameId,
+    playerId,
+    playerCount: currentPlayerCount,
+    mode: currentMode,
+    boardConfig: currentBoardConfig,
     board: currentBoard,
     completedSquareIds: Array.from(completedSquareIds),
   };
@@ -119,6 +130,15 @@ async function syncGameState() {
   console.log("Storage during sync:", debugStorage);
 
   if (!res.ok) {
+    gameId = null;
+    playerId = null;
+    currentBoard = null;
+    currentMode = null;
+    currentBoardConfig = null;
+    currentPlayerCount = null;
+    completedSquareIds = new Set<string>();
+    await chrome.storage.local.clear();
+
     return {
       gameId: null,
       playerId: null,
@@ -129,12 +149,23 @@ async function syncGameState() {
 
   currentBoard = state.board;
   completedSquareIds = new Set<string>(state.completedSquareIds ?? []);
+  currentMode = state.mode ?? null;
+  currentBoardConfig = state.boardConfig ?? null;
+  currentPlayerCount = state.playerCount ?? null;
 
   if (gameId) {
     connectWebSocket(gameId);
   }
 
-  return state;
+  return {
+    gameId,
+    playerId,
+    mode: currentMode,
+    boardConfig: currentBoardConfig,
+    playerCount: currentPlayerCount,
+    board: currentBoard,
+    completedSquareIds: Array.from(completedSquareIds),
+  };
 }
 
 async function joinGame(joinGameId: string) {
@@ -144,10 +175,24 @@ async function joinGame(joinGameId: string) {
 
   const state = await res.json();
 
+  if (!res.ok) {
+    return {
+      gameId: null,
+      playerId: null,
+      playerCount: null,
+      board: null,
+      completedSquareIds: [],
+      error: state.error ?? "Failed to join game",
+    };
+  }
+
   gameId = state.gameId;
   playerId = state.playerId;
   currentBoard = state.board;
   completedSquareIds = new Set<string>(state.completedSquareIds ?? []);
+  currentMode = state.mode ?? null;
+  currentBoardConfig = state.boardConfig ?? null;
+  currentPlayerCount = state.playerCount ?? null;
 
   await chrome.storage.local.set({
     gameId,
@@ -161,6 +206,9 @@ async function joinGame(joinGameId: string) {
   return {
     gameId,
     playerId,
+    playerCount: currentPlayerCount,
+    mode: currentMode,
+    boardConfig: currentBoardConfig,
     board: currentBoard,
     completedSquareIds: Array.from(completedSquareIds),
   };
@@ -187,6 +235,14 @@ async function sendPageVisit(data: unknown) {
 
   const result = await res.json();
 
+  if (result.board) {
+    currentBoard = result.board;
+  }
+
+  currentMode = result.mode ?? currentMode;
+  currentBoardConfig = result.boardConfig ?? currentBoardConfig;
+  currentPlayerCount = result.playerCount ?? currentPlayerCount;
+
   for (const square of result.completedSquares ?? []) {
     completedSquareIds.add(square.id);
   }
@@ -196,6 +252,10 @@ async function sendPageVisit(data: unknown) {
       type: "GAME_STATE_UPDATED",
       data: {
         gameId,
+        playerId,
+        mode: currentMode,
+        boardConfig: currentBoardConfig,
+        playerCount: currentPlayerCount,
         board: currentBoard,
         completedSquareIds: Array.from(completedSquareIds),
       },
@@ -222,6 +282,9 @@ async function clearGame() {
   playerId = null;
   currentBoard = null;
   completedSquareIds = new Set<string>();
+  currentMode = null;
+  currentBoardConfig = null;
+  currentPlayerCount = null;
 
   await chrome.storage.local.remove(["gameId", "playerId"]);
   await chrome.storage.local.clear();
@@ -283,12 +346,20 @@ function connectWebSocket(activeGameId: string) {
     }
 
     completedSquareIds = new Set<string>(message.data.completedSquareIds ?? []);
+    currentBoard = message.data.board ?? currentBoard;
+    currentMode = message.data.mode ?? currentMode;
+    currentBoardConfig = message.data.boardConfig ?? currentBoardConfig;
+    currentPlayerCount = message.data.playerCount ?? currentPlayerCount;
 
     try {
       await chrome.runtime.sendMessage({
         type: "GAME_STATE_UPDATED",
         data: {
           gameId: activeGameId,
+          playerId,
+          mode: currentMode,
+          boardConfig: currentBoardConfig,
+          playerCount: currentPlayerCount,
           board: currentBoard,
           completedSquareIds: Array.from(completedSquareIds),
         },

@@ -136,6 +136,7 @@ export async function gameRoutes(app: FastifyInstance) {
             squares: true,
           },
         },
+        players: true,
       },
     });
 
@@ -155,6 +156,7 @@ export async function gameRoutes(app: FastifyInstance) {
         playerId,
         mode: game.mode,
         boardConfig: game.boardConfig,
+        playerCount: game.players.length,
         board: game.board,
         completedSquareIds: claims.map((claim) => claim.squareId),
       };
@@ -172,6 +174,7 @@ export async function gameRoutes(app: FastifyInstance) {
       playerId,
       mode: game.mode,
       boardConfig: game.boardConfig,
+      playerCount: game.players.length,
       board: game.board,
       completedSquareIds: completions.map((completion) => completion.squareId),
     };
@@ -188,6 +191,7 @@ export async function gameRoutes(app: FastifyInstance) {
             squares: true,
           },
         },
+        players: true,
       },
     });
 
@@ -224,7 +228,9 @@ export async function gameRoutes(app: FastifyInstance) {
     return {
       gameId,
       playerId: player.id,
+      playerCount: game.players.length + 1,
       mode: game.mode,
+      boardConfig: game.boardConfig,
       board: game.board,
       completedSquareIds,
     };
@@ -315,6 +321,9 @@ export async function gameRoutes(app: FastifyInstance) {
         gameId,
         playerId: player.id,
         mode: game.mode,
+        boardConfig: game.boardConfig,
+        playerCount: game.players.length,
+        board: game.board,
         completedSquares: newlyClaimedSquares,
         completedSquareIds: claims.map((claim) => claim.squareId),
       };
@@ -357,6 +366,9 @@ export async function gameRoutes(app: FastifyInstance) {
         gameId,
         playerId: player.id,
         mode: game.mode,
+        boardConfig: game.boardConfig,
+        playerCount: game.players.length,
+        board: game.board,
         completedSquares,
         completedSquareIds: completions.map(
           (completion) => completion.squareId,

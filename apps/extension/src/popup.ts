@@ -6,6 +6,13 @@ type BoardSquare = {
 
 type GameState = {
   gameId: string | null;
+  playerId?: string | null;
+  mode?: string;
+  error?: string;
+  playerCount?: number;
+  boardConfig?: {
+    difficulty?: string;
+  };
   board: {
     squares: BoardSquare[];
   } | null;
@@ -26,6 +33,7 @@ const joinGameBtn = document.getElementById("join-game-btn");
 
 const statusEl = document.getElementById("status");
 const progressEl = document.getElementById("progress");
+const gameInfoEl = document.getElementById("game-info");
 
 const boardEl = document.getElementById("board");
 
@@ -91,13 +99,14 @@ copyGameIdButton?.addEventListener("click", async () => {
   const state = await chrome.runtime.sendMessage({ type: "GET_GAME_STATE" });
 
   if (!state?.gameId) {
+    if (statusEl) statusEl.textContent = "No active game to copy.";
     return;
   }
 
   await navigator.clipboard.writeText(state.gameId);
 
   if (statusEl) {
-    statusEl.textContent = "Game ID copied!";
+    statusEl.textContent = "Game ID copied.";
   }
 });
 
@@ -111,8 +120,17 @@ async function loadExistingState() {
 function renderState(state: GameState) {
   if (!statusEl || !boardEl) return;
 
+  if (state?.error) {
+    statusEl.textContent = state.error;
+    return;
+  }
+
   if (!state?.gameId || !state.board) {
     statusEl.textContent = "No game started.";
+
+    if (gameInfoEl) {
+      gameInfoEl.innerHTML = "";
+    }
 
     if (copyGameIdButton instanceof HTMLElement) {
       copyGameIdButton.style.display = "none";
@@ -139,6 +157,15 @@ function renderState(state: GameState) {
   }
 
   statusEl.textContent = `Game active: ${state.gameId}`;
+
+  if (gameInfoEl) {
+    gameInfoEl.innerHTML = `
+      <p><strong>Mode:</strong> ${state.mode ?? "Unknown"}</p>
+      <p><strong>Difficulty:</strong> ${state.boardConfig?.difficulty ?? "Unknown"}</p>
+      <p><strong>Players:</strong> ${typeof state.playerCount === "number" ? state.playerCount : "Unknown"}</p>
+      <p><strong>Game ID:</strong> <code>${state.gameId}</code></p>
+    `;
+  }
 
   if (copyGameIdButton instanceof HTMLElement) {
     copyGameIdButton.style.display = "inline-block";
