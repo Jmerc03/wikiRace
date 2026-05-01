@@ -20,7 +20,7 @@ async function loadSavedGameState() {
 
 chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
   if (message.type === "START_GAME") {
-    void startGame(message.boardConfig).then(sendResponse);
+    void startGame(message.mode, message.boardConfig).then(sendResponse);
     return true;
   }
 
@@ -42,12 +42,12 @@ chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
   return false;
 });
 
-async function startGame(boardConfig?: unknown) {
+async function startGame(mode = "NORMAL", boardConfig?: unknown) {
   const res = await fetch("http://localhost:4000/games", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      mode: "NORMAL",
+      mode,
       boardConfig,
     }),
   });

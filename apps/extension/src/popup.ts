@@ -12,16 +12,25 @@ type GameState = {
   completedSquareIds: string[];
 };
 
+const gameModeSelect = document.getElementById("game-mode");
+
 const difficultySelect = document.getElementById("difficulty");
 
 const startButton = document.getElementById("start");
 const refreshButton = document.getElementById("refresh");
-const statusEl = document.getElementById("status");
-const boardEl = document.getElementById("board");
 const endGameButton = document.getElementById("end-game");
+
+const statusEl = document.getElementById("status");
 const progressEl = document.getElementById("progress");
 
+const boardEl = document.getElementById("board");
+
 startButton?.addEventListener("click", async () => {
+  const mode =
+    gameModeSelect instanceof HTMLSelectElement
+      ? gameModeSelect.value
+      : "NORMAL";
+
   const difficulty =
     difficultySelect instanceof HTMLSelectElement
       ? difficultySelect.value
@@ -29,6 +38,7 @@ startButton?.addEventListener("click", async () => {
 
   const state = await chrome.runtime.sendMessage({
     type: "START_GAME",
+    mode,
     boardConfig: {
       difficulty,
       vitalArticleTileCount: 15,
@@ -62,6 +72,10 @@ function renderState(state: GameState) {
   if (!state?.gameId || !state.board) {
     statusEl.textContent = "No game started.";
 
+    if (gameModeSelect instanceof HTMLElement) {
+      gameModeSelect.style.display = "inline-block";
+    }
+
     if (difficultySelect instanceof HTMLElement) {
       difficultySelect.style.display = "inline-block";
     }
@@ -79,6 +93,10 @@ function renderState(state: GameState) {
   }
 
   statusEl.textContent = `Game active: ${state.gameId}`;
+
+  if (gameModeSelect instanceof HTMLElement) {
+    gameModeSelect.style.display = "none";
+  }
 
   if (difficultySelect instanceof HTMLElement) {
     difficultySelect.style.display = "none";
