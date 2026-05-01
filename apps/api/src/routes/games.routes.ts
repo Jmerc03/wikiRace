@@ -7,6 +7,14 @@ import { Prisma } from "@prisma/client";
 
 const createGameSchema = z.object({
   mode: z.enum(["NORMAL", "LOCKOUT"]).default("NORMAL"),
+  boardConfig: z
+    .object({
+      difficulty: z.enum(["EASY", "MIXED", "HARD"]).default("MIXED"),
+      vitalArticleTileCount: z.number().int().min(0).max(25).default(15),
+      genericTileCount: z.number().int().min(0).max(25).default(10),
+      maxTilesPerTopic: z.number().int().min(1).max(25).default(3),
+    })
+    .optional(),
 });
 
 const pageVisitSchema = z.object({
@@ -20,7 +28,7 @@ const pageVisitSchema = z.object({
 export async function gameRoutes(app: FastifyInstance) {
   app.post("/", async (request, reply) => {
     const body = createGameSchema.parse(request.body ?? {});
-    const generatedBoard = generateBoard();
+    const generatedBoard = generateBoard(body.boardConfig);
 
     const game = await prisma.game.create({
       data: {
