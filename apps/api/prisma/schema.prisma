@@ -7,77 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Game {
-  id          String           @id @default(uuid())
-  mode        GameMode
-  status      GameStatus       @default(ACTIVE)
-  createdAt   DateTime         @default(now())
-  boardConfig Json?
-  board       Board?
-  visits      PageVisitEvent[]
-  players     Player[]
-}
-
-model Player {
-  id          String             @id @default(uuid())
-  gameId      String
-  displayName String
-  joinedAt    DateTime           @default(now())
-  visits      PageVisitEvent[]
-  game        Game               @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  completions SquareCompletion[]
-}
-
-model Board {
-  id      String        @id @default(uuid())
-  gameId  String        @unique
-  size    Int           @default(5)
-  game    Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  squares BoardSquare[]
-}
-
-model BoardSquare {
-  id          String             @id @default(uuid())
-  boardId     String
-  position    Int
-  type        SquareType
-  label       String
-  condition   Json
-  difficulty  Difficulty
-  board       Board              @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  completions SquareCompletion[]
-
-  @@unique([boardId, position])
-}
-
-model PageVisitEvent {
-  id          String             @id @default(uuid())
-  gameId      String
-  playerId    String
-  url         String
-  title       String
-  categories  Json
-  links       Json
-  createdAt   DateTime           @default(now())
-  game        Game               @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  player      Player             @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  completions SquareCompletion[]
-}
-
-model SquareCompletion {
-  id               String         @id @default(uuid())
-  gameId           String
-  playerId         String
-  squareId         String
-  pageVisitEventId String
-  completedAt      DateTime       @default(now())
-  pageVisitEvent   PageVisitEvent @relation(fields: [pageVisitEventId], references: [id], onDelete: Cascade)
-  player           Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  square           BoardSquare    @relation(fields: [squareId], references: [id], onDelete: Cascade)
-
-  @@unique([playerId, squareId])
-}
-
 enum GameMode {
   NORMAL
   LOCKOUT
@@ -101,4 +30,100 @@ enum Difficulty {
   EASY
   MEDIUM
   HARD
+}
+
+model Game {
+  id        String     @id @default(uuid())
+  mode      GameMode
+  status    GameStatus @default(ACTIVE)
+  boardConfig Json?
+  createdAt DateTime   @default(now())
+
+  board     Board?
+  players   Player[]
+  visits    PageVisitEvent[]
+}
+
+model Player {
+  id          String   @id @default(uuid())
+  gameId      String
+  displayName String
+  joinedAt    DateTime @default(now())
+
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  claims SquareClaim[]
+  visits      PageVisitEvent[]
+  completions SquareCompletion[]
+}
+
+model Board {
+  id     String @id @default(uuid())
+  gameId String @unique
+  size   Int    @default(5)
+
+  game    Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  squares BoardSquare[]
+}
+
+model BoardSquare {
+  id         String     @id @default(uuid())
+  boardId    String
+  position   Int
+  type       SquareType
+  label      String
+  condition  Json
+  difficulty Difficulty
+
+  board       Board              @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  completions SquareCompletion[]
+  claims SquareClaim[]
+
+  @@unique([boardId, position])
+}
+
+model PageVisitEvent {
+  id        String   @id @default(uuid())
+  gameId    String
+  playerId  String
+  url       String
+  title     String
+  categories Json
+  links      Json
+  createdAt DateTime @default(now())
+
+  game        Game               @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player      Player             @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  completions SquareCompletion[]
+  claims SquareClaim[]
+}
+
+model SquareCompletion {
+  id               String   @id @default(uuid())
+  gameId           String
+  playerId         String
+  squareId         String
+  pageVisitEventId String
+  completedAt      DateTime @default(now())
+
+  player         Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  square         BoardSquare    @relation(fields: [squareId], references: [id], onDelete: Cascade)
+  pageVisitEvent PageVisitEvent @relation(fields: [pageVisitEventId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, squareId])
+}
+
+model SquareClaim {
+  id               String   @id @default(uuid())
+  gameId           String
+  playerId         String
+  squareId         String
+  pageVisitEventId String
+  claimedAt        DateTime @default(now())
+
+  player         Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  square         BoardSquare    @relation(fields: [squareId], references: [id], onDelete: Cascade)
+  pageVisitEvent PageVisitEvent @relation(fields: [pageVisitEventId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, squareId])
 }

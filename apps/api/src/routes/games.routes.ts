@@ -142,6 +142,23 @@ export async function gameRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Game not found" });
     }
 
+    if (game.mode === "LOCKOUT") {
+      const claims = await prisma.squareClaim.findMany({
+        where: {
+          gameId,
+        },
+      });
+
+      return {
+        gameId,
+        playerId,
+        mode: game.mode,
+        boardConfig: game.boardConfig,
+        board: game.board,
+        completedSquareIds: claims.map((claim) => claim.squareId),
+      };
+    }
+
     const completions = await prisma.squareCompletion.findMany({
       where: {
         gameId,
@@ -152,6 +169,7 @@ export async function gameRoutes(app: FastifyInstance) {
     return {
       gameId,
       playerId,
+      mode: game.mode,
       boardConfig: game.boardConfig,
       board: game.board,
       completedSquareIds: completions.map((completion) => completion.squareId),
@@ -213,36 +231,80 @@ export async function gameRoutes(app: FastifyInstance) {
       evaluateSquare(square as BoardSquare, pageVisitEvent),
     );
 
-    for (const square of completedSquares) {
-      await prisma.squareCompletion.upsert({
+    if (game.mode === "LOCKOUT") {
+      const newlyClaimedSquares: typeof completedSquares = [];
+
+      for (const square of completedSquares) {
+        try {
+          await prisma.squareClaim.create({
+            data: {
+              gameId,
+              playerId: player.id,
+              squareId: square.id,
+              pageVisitEventId: visit.id,
+            },
+          });
+
+          newlyClaimedSquares.push(square);
+        } catch (err) {
+          console.error("Failed to create square claim:", err);
+        }
+      }
+
+      const claims = await prisma.squareClaim.findMany({
         where: {
-          playerId_squareId: {
-            playerId: player.id,
-            squareId: square.id,
-          },
-        },
-        update: {},
-        create: {
           gameId,
-          playerId: player.id,
-          squareId: square.id,
-          pageVisitEventId: visit.id,
         },
       });
-    }
 
-    const completions = await prisma.squareCompletion.findMany({
-      where: {
+      return {
         gameId,
         playerId: player.id,
-      },
-    });
+        mode: game.mode,
+        completedSquares: newlyClaimedSquares,
+        completedSquareIds: claims.map((claim) => claim.squareId),
+      };
+    }
 
-    return {
-      gameId,
-      playerId: player.id,
-      completedSquares,
-      completedSquareIds: completions.map((completion) => completion.squareId),
-    };
+    if (game.mode === "NORMAL") {
+      for (const square of completedSquares) {
+        await prisma.squareCompletion.upsert({
+          where: {
+            playerId_squareId: {
+              playerId: player.id,
+              squareId: square.id,
+            },
+          },
+          update: {},
+          create: {
+            gameId,
+            playerId: player.id,
+            squareId: square.id,
+            pageVisitEventId: visit.id,
+          },
+        });
+      }
+
+      const completions = await prisma.squareCompletion.findMany({
+        where: {
+          gameId,
+          playerId: player.id,
+        },
+      });
+
+      return {
+        gameId,
+        playerId: player.id,
+        mode: game.mode,
+        completedSquares,
+        completedSquareIds: completions.map(
+          (completion) => completion.squareId,
+        ),
+      };
+    }
+
+    return reply
+      .code(400)
+      .send({ error: `Unsupported game mode: ${game.mode}` });
   });
 }
