@@ -177,6 +177,59 @@ export async function gameRoutes(app: FastifyInstance) {
     };
   });
 
+  app.post("/:gameId/players", async (request, reply) => {
+    const { gameId } = request.params as { gameId: string };
+
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        board: {
+          include: {
+            squares: true,
+          },
+        },
+      },
+    });
+
+    if (!game) {
+      return reply.code(404).send({ error: "Game not found" });
+    }
+
+    const player = await prisma.player.create({
+      data: {
+        gameId,
+        displayName: "Player",
+      },
+    });
+
+    let completedSquareIds: string[] = [];
+
+    if (game.mode === "LOCKOUT") {
+      const claims = await prisma.squareClaim.findMany({
+        where: { gameId },
+      });
+
+      completedSquareIds = claims.map((c) => c.squareId);
+    } else {
+      const completions = await prisma.squareCompletion.findMany({
+        where: {
+          gameId,
+          playerId: player.id,
+        },
+      });
+
+      completedSquareIds = completions.map((c) => c.squareId);
+    }
+
+    return {
+      gameId,
+      playerId: player.id,
+      mode: game.mode,
+      board: game.board,
+      completedSquareIds,
+    };
+  });
+
   app.post("/:gameId/events/page-visit", async (request, reply) => {
     const { gameId } = request.params as { gameId: string };
     const event = pageVisitSchema.parse(request.body);

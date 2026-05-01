@@ -19,11 +19,34 @@ const difficultySelect = document.getElementById("difficulty");
 const startButton = document.getElementById("start");
 const refreshButton = document.getElementById("refresh");
 const endGameButton = document.getElementById("end-game");
+const copyGameIdButton = document.getElementById("copy-game-id");
+
+const joinGameInput = document.getElementById("join-game-id");
+const joinGameBtn = document.getElementById("join-game-btn");
 
 const statusEl = document.getElementById("status");
 const progressEl = document.getElementById("progress");
 
 const boardEl = document.getElementById("board");
+
+if (!(joinGameBtn instanceof HTMLButtonElement)) {
+  throw new Error("join-game-btn not found or wrong type");
+}
+
+joinGameBtn.addEventListener("click", async () => {
+  if (!(joinGameInput instanceof HTMLInputElement)) return;
+
+  const gameId = joinGameInput.value.trim();
+
+  if (!gameId) return;
+
+  const state = await chrome.runtime.sendMessage({
+    type: "JOIN_GAME",
+    gameId,
+  });
+
+  renderState(state);
+});
 
 startButton?.addEventListener("click", async () => {
   const mode =
@@ -55,8 +78,27 @@ refreshButton?.addEventListener("click", async () => {
 });
 
 endGameButton?.addEventListener("click", async () => {
-  const state = await chrome.runtime.sendMessage({ type: "CLEAR_GAME" });
+  console.log("End Game clicked");
+
+  const state = await chrome.runtime.sendMessage({
+    type: "CLEAR_GAME",
+  });
+
   renderState(state);
+});
+
+copyGameIdButton?.addEventListener("click", async () => {
+  const state = await chrome.runtime.sendMessage({ type: "GET_GAME_STATE" });
+
+  if (!state?.gameId) {
+    return;
+  }
+
+  await navigator.clipboard.writeText(state.gameId);
+
+  if (statusEl) {
+    statusEl.textContent = "Game ID copied!";
+  }
 });
 
 void loadExistingState();
@@ -71,6 +113,10 @@ function renderState(state: GameState) {
 
   if (!state?.gameId || !state.board) {
     statusEl.textContent = "No game started.";
+
+    if (copyGameIdButton instanceof HTMLElement) {
+      copyGameIdButton.style.display = "none";
+    }
 
     if (gameModeSelect instanceof HTMLElement) {
       gameModeSelect.style.display = "inline-block";
@@ -93,6 +139,10 @@ function renderState(state: GameState) {
   }
 
   statusEl.textContent = `Game active: ${state.gameId}`;
+
+  if (copyGameIdButton instanceof HTMLElement) {
+    copyGameIdButton.style.display = "inline-block";
+  }
 
   if (gameModeSelect instanceof HTMLElement) {
     gameModeSelect.style.display = "none";
