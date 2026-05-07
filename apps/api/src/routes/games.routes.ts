@@ -29,6 +29,10 @@ const createGameSchema = z.object({
     .default(defaultBoardConfig),
 });
 
+const createPlayerSchema = z.object({
+  displayName: z.string().trim().min(1).max(40).default("Player"),
+});
+
 const pageVisitSchema = z.object({
   playerId: z.string(),
   url: z.string().url(),
@@ -40,6 +44,12 @@ const pageVisitSchema = z.object({
 export async function gameRoutes(app: FastifyInstance) {
   app.post("/", async (request, reply) => {
     const body = createGameSchema.parse(request.body ?? {});
+    const displayName =
+      request.body &&
+      typeof request.body === "object" &&
+      "displayName" in request.body
+        ? createPlayerSchema.parse(request.body).displayName
+        : "Player 1";
     const boardConfig = body.boardConfig;
     const generatedBoard = generateBoard(boardConfig);
 
@@ -64,7 +74,7 @@ export async function gameRoutes(app: FastifyInstance) {
         },
         players: {
           create: {
-            displayName: "Player 1",
+            displayName,
           },
         },
       },
@@ -173,8 +183,13 @@ export async function gameRoutes(app: FastifyInstance) {
         gameId,
         playerId,
         mode: game.mode,
+        status: game.status,
         boardConfig: game.boardConfig,
         playerCount: game.players.length,
+        players: game.players.map((player) => ({
+          id: player.id,
+          displayName: player.displayName,
+        })),
         board: game.board,
         completedSquareIds: claims.map((claim) => claim.squareId),
         winner,
@@ -213,8 +228,13 @@ export async function gameRoutes(app: FastifyInstance) {
       gameId,
       playerId,
       mode: game.mode,
+      status: game.status,
       boardConfig: game.boardConfig,
       playerCount: game.players.length,
+      players: game.players.map((player) => ({
+        id: player.id,
+        displayName: player.displayName,
+      })),
       board: game.board,
       completedSquareIds,
       winner,
@@ -225,6 +245,7 @@ export async function gameRoutes(app: FastifyInstance) {
 
   app.post("/:gameId/players", async (request, reply) => {
     const { gameId } = request.params as { gameId: string };
+    const body = createPlayerSchema.parse(request.body ?? {});
 
     const game = await prisma.game.findUnique({
       where: { id: gameId },
@@ -242,12 +263,20 @@ export async function gameRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Game not found" });
     }
 
+    if (game.status === "FINISHED") {
+      return reply.code(409).send({ error: "Game is already finished" });
+    }
+
     const playerNumber = game.players.length + 1;
+    const displayName =
+      body.displayName === "Player"
+        ? `Player ${playerNumber}`
+        : body.displayName;
 
     const player = await prisma.player.create({
       data: {
         gameId,
-        displayName: `Player ${playerNumber}`,
+        displayName,
       },
     });
 
@@ -290,8 +319,20 @@ export async function gameRoutes(app: FastifyInstance) {
     return {
       gameId,
       playerId: player.id,
+      playerName: player.displayName,
       playerCount: game.players.length + 1,
+      players: [
+        ...game.players.map((existingPlayer) => ({
+          id: existingPlayer.id,
+          displayName: existingPlayer.displayName,
+        })),
+        {
+          id: player.id,
+          displayName: player.displayName,
+        },
+      ],
       mode: game.mode,
+      status: game.status,
       boardConfig: game.boardConfig,
       board: game.board,
       completedSquareIds,
@@ -317,6 +358,16 @@ export async function gameRoutes(app: FastifyInstance) {
 
     if (!game || !game.board) {
       return reply.code(404).send({ error: "Game not found" });
+    }
+
+    if (game.status === "FINISHED") {
+      const state = await buildGameState(gameId, event.playerId);
+
+      if (!state) {
+        return reply.code(404).send({ error: "Game not found" });
+      }
+
+      return state;
     }
 
     let player = game.players.find((p) => p.id === event.playerId);
@@ -396,12 +447,28 @@ export async function gameRoutes(app: FastifyInstance) {
       const winningLineType = winningLineResult?.type ?? null;
       const winner = winningLineResult !== null;
 
+      if (winner) {
+        await prisma.game.update({
+          where: {
+            id: gameId,
+          },
+          data: {
+            status: "FINISHED",
+          },
+        });
+      }
+
       const response = {
         gameId,
         playerId: player.id,
         mode: game.mode,
+        status: winner ? "FINISHED" : game.status,
         boardConfig: game.boardConfig,
         playerCount: game.players.length,
+        players: game.players.map((player) => ({
+          id: player.id,
+          displayName: player.displayName,
+        })),
         board: game.board,
         completedSquares: newlyClaimedSquares,
         completedSquareIds: claimedSquareIds,
@@ -463,12 +530,28 @@ export async function gameRoutes(app: FastifyInstance) {
       const winningLineType = winningLineResult?.type ?? null;
       const winner = winningLineResult !== null;
 
+      if (winner) {
+        await prisma.game.update({
+          where: {
+            id: gameId,
+          },
+          data: {
+            status: "FINISHED",
+          },
+        });
+      }
+
       const response = {
         gameId,
         playerId: player.id,
         mode: game.mode,
+        status: winner ? "FINISHED" : game.status,
         boardConfig: game.boardConfig,
         playerCount: game.players.length,
+        players: game.players.map((player) => ({
+          id: player.id,
+          displayName: player.displayName,
+        })),
         board: game.board,
         completedSquares,
         completedSquareIds: completions.map(
@@ -491,4 +574,106 @@ export async function gameRoutes(app: FastifyInstance) {
       .code(400)
       .send({ error: `Unsupported game mode: ${game.mode}` });
   });
+
+  async function buildGameState(gameId: string, playerId: string) {
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        board: {
+          include: {
+            squares: true,
+          },
+        },
+        players: true,
+      },
+    });
+
+    if (!game || !game.board) {
+      return null;
+    }
+
+    if (game.mode === "LOCKOUT") {
+      const claims = await prisma.squareClaim.findMany({
+        where: {
+          gameId,
+        },
+        include: {
+          player: true,
+        },
+      });
+
+      const claimedSquareIds = claims.map((claim) => claim.squareId);
+
+      const claimedPositions = game.board.squares
+        .filter((square) => claimedSquareIds.includes(square.id))
+        .map((square) => square.position);
+
+      const winningLineResult = getWinningLineResult(claimedPositions);
+      const winningLine = winningLineResult?.positions ?? null;
+      const winningLineType = winningLineResult?.type ?? null;
+      const winner = winningLineResult !== null;
+
+      return {
+        gameId,
+        playerId,
+        mode: game.mode,
+        status: game.status,
+        boardConfig: game.boardConfig,
+        playerCount: game.players.length,
+        players: game.players.map((player) => ({
+          id: player.id,
+          displayName: player.displayName,
+        })),
+        board: game.board,
+        completedSquareIds: claimedSquareIds,
+        winner,
+        winningLine,
+        winningLineType,
+        squareClaims: claims.map((claim) => ({
+          squareId: claim.squareId,
+          playerId: claim.playerId,
+          playerName: claim.player.displayName,
+          claimedAt: claim.claimedAt,
+        })),
+      };
+    }
+
+    const completions = await prisma.squareCompletion.findMany({
+      where: {
+        gameId,
+        playerId,
+      },
+    });
+
+    const completedSquareIds = completions.map(
+      (completion) => completion.squareId,
+    );
+
+    const completedPositions = game.board.squares
+      .filter((square) => completedSquareIds.includes(square.id))
+      .map((square) => square.position);
+
+    const winningLineResult = getWinningLineResult(completedPositions);
+    const winningLine = winningLineResult?.positions ?? null;
+    const winningLineType = winningLineResult?.type ?? null;
+    const winner = winningLineResult !== null;
+
+    return {
+      gameId,
+      playerId,
+      mode: game.mode,
+      status: game.status,
+      boardConfig: game.boardConfig,
+      playerCount: game.players.length,
+      players: game.players.map((player) => ({
+        id: player.id,
+        displayName: player.displayName,
+      })),
+      board: game.board,
+      completedSquareIds,
+      winner,
+      winningLine,
+      winningLineType,
+    };
+  }
 }

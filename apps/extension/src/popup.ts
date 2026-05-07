@@ -4,12 +4,20 @@ type BoardSquare = {
   label: string;
 };
 
+type PlayerSummary = {
+  id: string;
+  displayName: string;
+};
+
 type GameState = {
   gameId: string | null;
   playerId?: string | null;
+  playerName?: string | null;
   mode?: string;
+  status?: string;
   error?: string;
   playerCount?: number;
+  players?: PlayerSummary[];
   winner?: boolean;
   winningLine?: number[] | null;
   winningLineType?: "ROW" | "COLUMN" | "DIAGONAL" | null;
@@ -31,6 +39,7 @@ type SquareClaim = {
 };
 
 const gameModeSelect = document.getElementById("game-mode");
+const playerNameInput = document.getElementById("player-name");
 
 const difficultySelect = document.getElementById("difficulty");
 
@@ -55,11 +64,17 @@ if (!(joinGameBtn instanceof HTMLButtonElement)) {
 joinGameBtn.addEventListener("click", async () => {
   if (!(joinGameInput instanceof HTMLInputElement)) return;
 
+  const displayName =
+    playerNameInput instanceof HTMLInputElement && playerNameInput.value.trim()
+      ? playerNameInput.value.trim()
+      : undefined;
+
   const gameId = joinGameInput.value.trim();
 
   if (!gameId) return;
 
   const state = await chrome.runtime.sendMessage({
+    displayName,
     type: "JOIN_GAME",
     gameId,
   });
@@ -68,6 +83,10 @@ joinGameBtn.addEventListener("click", async () => {
 });
 
 startButton?.addEventListener("click", async () => {
+  const displayName =
+    playerNameInput instanceof HTMLInputElement && playerNameInput.value.trim()
+      ? playerNameInput.value.trim()
+      : undefined;
   const mode =
     gameModeSelect instanceof HTMLSelectElement
       ? gameModeSelect.value
@@ -79,6 +98,7 @@ startButton?.addEventListener("click", async () => {
       : "MIXED";
 
   const state = await chrome.runtime.sendMessage({
+    displayName,
     type: "START_GAME",
     mode,
     boardConfig: {
@@ -96,8 +116,6 @@ refreshButton?.addEventListener("click", async () => {
 });
 
 endGameButton?.addEventListener("click", async () => {
-  console.log("End Game clicked");
-
   const state = await chrome.runtime.sendMessage({
     type: "CLEAR_GAME",
   });
@@ -181,10 +199,13 @@ function renderState(state: GameState) {
   if (gameInfoEl) {
     gameInfoEl.innerHTML = `
       <p><strong>Mode:</strong> ${state.mode ?? "Unknown"}</p>
+      <p><strong>Game State:</strong> ${state.status ?? "Unknown"}</p>
       <p><strong>Difficulty:</strong> ${state.boardConfig?.difficulty ?? "Unknown"}</p>
       <p><strong>Players:</strong> ${typeof state.playerCount === "number" ? state.playerCount : "Unknown"}</p>
+      <p><strong>Player List:</strong> ${state.players?.map((player) => player.displayName).join(", ") ?? "Unknown"}</p>
       <p><strong>Status:</strong> ${statusText}</p>
       <p><strong>Game ID:</strong> <code>${state.gameId}</code></p>
+      <p><strong>You:</strong> ${state.playerName ?? "Unknown"}</p>
     `;
   }
 

@@ -1,13 +1,20 @@
 let gameId: string | null = null;
 let playerId: string | null = null;
+let playerName: string | null = null;
 let currentBoard: any = null;
 let completedSquareIds = new Set<string>();
 let ws: WebSocket | null = null;
 
 let currentMode: string | null = null;
+let currentStatus: string | null = null;
 let currentBoardConfig: unknown = null;
 let currentPlayerCount: number | null = null;
+type BackgroundPlayerSummary = {
+  id: string;
+  displayName: string;
+};
 
+let currentPlayers: BackgroundPlayerSummary[] = [];
 let currentSquareClaims: unknown[] = [];
 let currentWinner = false;
 let currentWinningLine: number[] | null = null;
@@ -30,7 +37,9 @@ async function loadSavedGameState() {
 
 chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
   if (message.type === "START_GAME") {
-    void startGame(message.mode, message.boardConfig).then(sendResponse);
+    void startGame(message.mode, message.boardConfig, message.displayName).then(
+      sendResponse,
+    );
     return true;
   }
 
@@ -45,7 +54,7 @@ chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
   }
 
   if (message.type === "JOIN_GAME") {
-    void joinGame(message.gameId).then(sendResponse);
+    void joinGame(message.gameId, message.displayName).then(sendResponse);
     return true;
   }
 
@@ -62,13 +71,18 @@ chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
   return false;
 });
 
-async function startGame(mode = "NORMAL", boardConfig?: unknown) {
+async function startGame(
+  mode = "NORMAL",
+  boardConfig?: unknown,
+  displayName?: string,
+) {
   const res = await fetch("http://localhost:4000/games", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       mode,
       boardConfig,
+      displayName,
     }),
   });
 
@@ -77,10 +91,13 @@ async function startGame(mode = "NORMAL", boardConfig?: unknown) {
   gameId = game.id;
   currentBoard = game.board;
   playerId = game.players?.[0]?.id ?? null;
+  playerName = game.players?.[0]?.displayName ?? null;
   completedSquareIds = new Set<string>();
   currentMode = game.mode ?? null;
+  currentStatus = game.status ?? null;
   currentBoardConfig = game.boardConfig ?? null;
   currentPlayerCount = game.players?.length ?? null;
+  currentPlayers = (game.players ?? []) as BackgroundPlayerSummary[];
   currentSquareClaims = [];
   currentWinner = game.winner ?? false;
   currentWinningLine = game.winningLine ?? null;
@@ -103,7 +120,9 @@ async function startGame(mode = "NORMAL", boardConfig?: unknown) {
     gameId,
     playerId,
     playerCount: currentPlayerCount,
+    players: currentPlayers,
     mode: currentMode,
+    status: currentStatus,
     boardConfig: currentBoardConfig,
     board: currentBoard,
     completedSquareIds: Array.from(completedSquareIds),
@@ -123,8 +142,10 @@ async function syncGameState() {
     currentBoard = null;
     completedSquareIds = new Set<string>();
     currentMode = null;
+    currentStatus = null;
     currentBoardConfig = null;
     currentPlayerCount = null;
+    currentPlayers = [];
     currentSquareClaims = [];
     currentWinner = false;
     currentWinningLine = null;
@@ -147,18 +168,15 @@ async function syncGameState() {
 
   const state = await res.json();
 
-  console.log("syncGameState before load:", { gameId, playerId });
-
-  const debugStorage = await chrome.storage.local.get(null);
-  console.log("Storage during sync:", debugStorage);
-
   if (!res.ok) {
     gameId = null;
     playerId = null;
     currentBoard = null;
     currentMode = null;
+    currentStatus = null;
     currentBoardConfig = null;
     currentPlayerCount = null;
+    currentPlayers = [];
     completedSquareIds = new Set<string>();
     currentSquareClaims = [];
     currentWinner = false;
@@ -181,8 +199,13 @@ async function syncGameState() {
   currentBoard = state.board;
   completedSquareIds = new Set<string>(state.completedSquareIds ?? []);
   currentMode = state.mode ?? null;
+  currentStatus = state.status ?? null;
   currentBoardConfig = state.boardConfig ?? null;
   currentPlayerCount = state.playerCount ?? null;
+  currentPlayers = (state.players ?? []) as BackgroundPlayerSummary[];
+  playerName =
+    currentPlayers.find((player) => player.id === playerId)?.displayName ??
+    playerName;
   currentSquareClaims = state.squareClaims ?? [];
   currentWinner = state.winner ?? false;
   currentWinningLine = state.winningLine ?? null;
@@ -196,8 +219,11 @@ async function syncGameState() {
     gameId,
     playerId,
     mode: currentMode,
+    status: currentStatus,
     boardConfig: currentBoardConfig,
     playerCount: currentPlayerCount,
+    playerName,
+    players: currentPlayers,
     board: currentBoard,
     completedSquareIds: Array.from(completedSquareIds),
     squareClaims: currentSquareClaims,
@@ -207,9 +233,11 @@ async function syncGameState() {
   };
 }
 
-async function joinGame(joinGameId: string) {
+async function joinGame(joinGameId: string, displayName?: string) {
   const res = await fetch(`http://localhost:4000/games/${joinGameId}/players`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ displayName }),
   });
 
   const state = await res.json();
@@ -218,6 +246,7 @@ async function joinGame(joinGameId: string) {
     return {
       gameId: null,
       playerId: null,
+      playerName: null,
       playerCount: null,
       board: null,
       completedSquareIds: [],
@@ -231,11 +260,14 @@ async function joinGame(joinGameId: string) {
 
   gameId = state.gameId;
   playerId = state.playerId;
+  playerName = state.playerName ?? null;
   currentBoard = state.board;
   completedSquareIds = new Set<string>(state.completedSquareIds ?? []);
   currentMode = state.mode ?? null;
+  currentStatus = state.status ?? null;
   currentBoardConfig = state.boardConfig ?? null;
   currentPlayerCount = state.playerCount ?? null;
+  currentPlayers = (state.players ?? []) as BackgroundPlayerSummary[];
   currentSquareClaims = state.squareClaims ?? [];
   currentWinner = state.winner ?? false;
   currentWinningLine = state.winningLine ?? null;
@@ -253,8 +285,11 @@ async function joinGame(joinGameId: string) {
   return {
     gameId,
     playerId,
+    playerName,
     playerCount: currentPlayerCount,
+    players: currentPlayers,
     mode: currentMode,
+    status: currentStatus,
     boardConfig: currentBoardConfig,
     board: currentBoard,
     completedSquareIds: Array.from(completedSquareIds),
@@ -291,8 +326,14 @@ async function sendPageVisit(data: unknown) {
   }
 
   currentMode = result.mode ?? currentMode;
+  currentStatus = result.status ?? currentStatus;
   currentBoardConfig = result.boardConfig ?? currentBoardConfig;
   currentPlayerCount = result.playerCount ?? currentPlayerCount;
+  currentPlayers = (result.players ??
+    currentPlayers) as BackgroundPlayerSummary[];
+  playerName =
+    currentPlayers.find((player) => player.id === playerId)?.displayName ??
+    playerName;
   currentSquareClaims = result.squareClaims ?? currentSquareClaims;
   currentWinner = result.winner ?? currentWinner;
   currentWinningLine = result.winningLine ?? currentWinningLine;
@@ -314,8 +355,6 @@ async function sendPageVisit(data: unknown) {
 }
 
 async function clearGame() {
-  console.log("CLEAR_GAME received");
-
   if (ws) {
     ws.onclose = null;
     ws.onerror = null;
@@ -329,8 +368,10 @@ async function clearGame() {
   currentBoard = null;
   completedSquareIds = new Set<string>();
   currentMode = null;
+  currentStatus = null;
   currentBoardConfig = null;
   currentPlayerCount = null;
+  currentPlayers = [];
   currentSquareClaims = [];
   currentWinner = false;
   currentWinningLine = null;
@@ -339,12 +380,12 @@ async function clearGame() {
   await chrome.storage.local.remove(["gameId", "playerId"]);
   await chrome.storage.local.clear();
 
-  const afterClear = await chrome.storage.local.get(null);
-  console.log("Storage after clear:", afterClear);
-
   return {
     gameId: null,
     playerId: null,
+    playerName: null,
+    playerCount: null,
+    players: currentPlayers,
     board: null,
     completedSquareIds: [],
     squareClaims: [],
@@ -402,8 +443,14 @@ function connectWebSocket(activeGameId: string) {
     completedSquareIds = new Set<string>(message.data.completedSquareIds ?? []);
     currentBoard = message.data.board ?? currentBoard;
     currentMode = message.data.mode ?? currentMode;
+    currentStatus = message.data.status ?? currentStatus;
     currentBoardConfig = message.data.boardConfig ?? currentBoardConfig;
     currentPlayerCount = message.data.playerCount ?? currentPlayerCount;
+    currentPlayers = (message.data.players ??
+      currentPlayers) as BackgroundPlayerSummary[];
+    playerName =
+      currentPlayers.find((player) => player.id === playerId)?.displayName ??
+      playerName;
     currentSquareClaims = message.data.squareClaims ?? currentSquareClaims;
     currentWinner = message.data.winner ?? currentWinner;
     currentWinningLine = message.data.winningLine ?? currentWinningLine;
