@@ -10,6 +10,8 @@ let currentPlayerCount: number | null = null;
 
 let currentSquareClaims: unknown[] = [];
 let currentWinner = false;
+let currentWinningLine: number[] | null = null;
+let currentWinningLineType: string | null = null;
 
 type SavedGameState = {
   gameId?: string;
@@ -81,6 +83,8 @@ async function startGame(mode = "NORMAL", boardConfig?: unknown) {
   currentPlayerCount = game.players?.length ?? null;
   currentSquareClaims = [];
   currentWinner = game.winner ?? false;
+  currentWinningLine = game.winningLine ?? null;
+  currentWinningLineType = game.winningLineType ?? null;
 
   await chrome.storage.local.set({
     gameId,
@@ -105,6 +109,8 @@ async function startGame(mode = "NORMAL", boardConfig?: unknown) {
     completedSquareIds: Array.from(completedSquareIds),
     squareClaims: currentSquareClaims,
     winner: currentWinner,
+    winningLine: currentWinningLine,
+    winningLineType: currentWinningLineType,
   };
 }
 
@@ -121,6 +127,8 @@ async function syncGameState() {
     currentPlayerCount = null;
     currentSquareClaims = [];
     currentWinner = false;
+    currentWinningLine = null;
+    currentWinningLineType = null;
 
     return {
       gameId: null,
@@ -128,6 +136,8 @@ async function syncGameState() {
       board: null,
       completedSquareIds: [],
       squareClaims: [],
+      winningLine: null,
+      winningLineType: null,
     };
   }
 
@@ -152,6 +162,8 @@ async function syncGameState() {
     completedSquareIds = new Set<string>();
     currentSquareClaims = [];
     currentWinner = false;
+    currentWinningLine = null;
+    currentWinningLineType = null;
     await chrome.storage.local.clear();
 
     return {
@@ -161,6 +173,8 @@ async function syncGameState() {
       completedSquareIds: [],
       squareClaims: [],
       error: state.error ?? "Failed to load game state",
+      winningLine: null,
+      winningLineType: null,
     };
   }
 
@@ -171,6 +185,8 @@ async function syncGameState() {
   currentPlayerCount = state.playerCount ?? null;
   currentSquareClaims = state.squareClaims ?? [];
   currentWinner = state.winner ?? false;
+  currentWinningLine = state.winningLine ?? null;
+  currentWinningLineType = state.winningLineType ?? null;
 
   if (gameId) {
     connectWebSocket(gameId);
@@ -186,6 +202,8 @@ async function syncGameState() {
     completedSquareIds: Array.from(completedSquareIds),
     squareClaims: currentSquareClaims,
     winner: currentWinner,
+    winningLine: currentWinningLine,
+    winningLineType: currentWinningLineType,
   };
 }
 
@@ -205,6 +223,8 @@ async function joinGame(joinGameId: string) {
       completedSquareIds: [],
       squareClaims: [],
       winner: false,
+      winningLine: null,
+      winningLineType: null,
       error: state.error ?? "Failed to join game",
     };
   }
@@ -218,6 +238,8 @@ async function joinGame(joinGameId: string) {
   currentPlayerCount = state.playerCount ?? null;
   currentSquareClaims = state.squareClaims ?? [];
   currentWinner = state.winner ?? false;
+  currentWinningLine = state.winningLine ?? null;
+  currentWinningLineType = state.winningLineType ?? null;
 
   await chrome.storage.local.set({
     gameId,
@@ -238,6 +260,8 @@ async function joinGame(joinGameId: string) {
     completedSquareIds: Array.from(completedSquareIds),
     squareClaims: currentSquareClaims,
     winner: currentWinner,
+    winningLine: currentWinningLine,
+    winningLineType: currentWinningLineType,
   };
 }
 
@@ -271,6 +295,8 @@ async function sendPageVisit(data: unknown) {
   currentPlayerCount = result.playerCount ?? currentPlayerCount;
   currentSquareClaims = result.squareClaims ?? currentSquareClaims;
   currentWinner = result.winner ?? currentWinner;
+  currentWinningLine = result.winningLine ?? currentWinningLine;
+  currentWinningLineType = result.winningLineType ?? currentWinningLineType;
 
   for (const square of result.completedSquares ?? []) {
     completedSquareIds.add(square.id);
@@ -307,6 +333,8 @@ async function clearGame() {
   currentPlayerCount = null;
   currentSquareClaims = [];
   currentWinner = false;
+  currentWinningLine = null;
+  currentWinningLineType = null;
 
   await chrome.storage.local.remove(["gameId", "playerId"]);
   await chrome.storage.local.clear();
@@ -321,6 +349,8 @@ async function clearGame() {
     completedSquareIds: [],
     squareClaims: [],
     winner: false,
+    winningLine: null,
+    winningLineType: null,
   };
 }
 
@@ -376,6 +406,9 @@ function connectWebSocket(activeGameId: string) {
     currentPlayerCount = message.data.playerCount ?? currentPlayerCount;
     currentSquareClaims = message.data.squareClaims ?? currentSquareClaims;
     currentWinner = message.data.winner ?? currentWinner;
+    currentWinningLine = message.data.winningLine ?? currentWinningLine;
+    currentWinningLineType =
+      message.data.winningLineType ?? currentWinningLineType;
 
     try {
       await chrome.runtime.sendMessage({

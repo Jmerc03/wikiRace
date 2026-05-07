@@ -11,6 +11,8 @@ type GameState = {
   error?: string;
   playerCount?: number;
   winner?: boolean;
+  winningLine?: number[] | null;
+  winningLineType?: "ROW" | "COLUMN" | "DIAGONAL" | null;
   boardConfig?: {
     difficulty?: string;
   };
@@ -172,12 +174,16 @@ function renderState(state: GameState) {
     ? "BINGO! Game won."
     : `Game active: ${state.gameId}`;
 
+  const statusText = state.winner
+    ? `BINGO${state.winningLineType ? ` (${formatWinningLineType(state.winningLineType)})` : ""}`
+    : "In progress";
+
   if (gameInfoEl) {
     gameInfoEl.innerHTML = `
       <p><strong>Mode:</strong> ${state.mode ?? "Unknown"}</p>
       <p><strong>Difficulty:</strong> ${state.boardConfig?.difficulty ?? "Unknown"}</p>
       <p><strong>Players:</strong> ${typeof state.playerCount === "number" ? state.playerCount : "Unknown"}</p>
-      <p><strong>Status:</strong> ${state.winner ? "BINGO" : "In progress"}</p>
+      <p><strong>Status:</strong> ${statusText}</p>
       <p><strong>Game ID:</strong> <code>${state.gameId}</code></p>
     `;
   }
@@ -208,6 +214,7 @@ function renderState(state: GameState) {
   }
 
   const completed = new Set(state.completedSquareIds);
+  const winningPositions = new Set(state.winningLine ?? []);
 
   boardEl.innerHTML = "";
 
@@ -221,7 +228,17 @@ function renderState(state: GameState) {
 
   for (const square of squares) {
     const div = document.createElement("div");
-    div.className = completed.has(square.id) ? "square completed" : "square";
+    const classes = ["square"];
+
+    if (completed.has(square.id)) {
+      classes.push("completed");
+    }
+
+    if (winningPositions.has(square.position)) {
+      classes.push("winning-square");
+    }
+
+    div.className = classes.join(" ");
 
     const claim = claimsBySquareId.get(square.id);
 
@@ -239,6 +256,12 @@ function renderState(state: GameState) {
 
     boardEl.appendChild(div);
   }
+}
+
+function formatWinningLineType(type: "ROW" | "COLUMN" | "DIAGONAL") {
+  if (type === "ROW") return "row";
+  if (type === "COLUMN") return "column";
+  return "diagonal";
 }
 
 chrome.runtime.onMessage.addListener((message) => {
