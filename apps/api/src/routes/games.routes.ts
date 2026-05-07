@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { generateBoard, evaluateSquare } from "@bingo/game-engine";
+import { generateBoard, evaluateSquare, hasBingo } from "@bingo/game-engine";
 import { prisma } from "../db/prisma.js";
 import type { BoardSquare, PageVisitEvent } from "@bingo/shared";
 import { Prisma } from "@prisma/client";
@@ -149,7 +149,18 @@ export async function gameRoutes(app: FastifyInstance) {
         where: {
           gameId,
         },
+        include: {
+          player: true,
+        },
       });
+
+      const claimedSquareIds = claims.map((claim) => claim.squareId);
+
+      const claimedPositions = game.board.squares
+        .filter((square) => claimedSquareIds.includes(square.id))
+        .map((square) => square.position);
+
+      const winner = hasBingo(claimedPositions);
 
       return {
         gameId,
@@ -159,6 +170,13 @@ export async function gameRoutes(app: FastifyInstance) {
         playerCount: game.players.length,
         board: game.board,
         completedSquareIds: claims.map((claim) => claim.squareId),
+        winner,
+        squareClaims: claims.map((claim) => ({
+          squareId: claim.squareId,
+          playerId: claim.playerId,
+          playerName: claim.player.displayName,
+          claimedAt: claim.claimedAt,
+        })),
       };
     }
 
@@ -169,6 +187,16 @@ export async function gameRoutes(app: FastifyInstance) {
       },
     });
 
+    const completedSquareIds = completions.map(
+      (completion) => completion.squareId,
+    );
+
+    const completedPositions = game.board.squares
+      .filter((square) => completedSquareIds.includes(square.id))
+      .map((square) => square.position);
+
+    const winner = hasBingo(completedPositions);
+
     return {
       gameId,
       playerId,
@@ -176,7 +204,8 @@ export async function gameRoutes(app: FastifyInstance) {
       boardConfig: game.boardConfig,
       playerCount: game.players.length,
       board: game.board,
-      completedSquareIds: completions.map((completion) => completion.squareId),
+      completedSquareIds,
+      winner,
     };
   });
 
@@ -199,21 +228,40 @@ export async function gameRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Game not found" });
     }
 
+    const playerNumber = game.players.length + 1;
+
     const player = await prisma.player.create({
       data: {
         gameId,
-        displayName: "Player",
+        displayName: `Player ${playerNumber}`,
       },
     });
 
     let completedSquareIds: string[] = [];
+    let squareClaims: {
+      squareId: string;
+      playerId: string;
+      playerName: string;
+      claimedAt: Date;
+    }[] = [];
 
     if (game.mode === "LOCKOUT") {
       const claims = await prisma.squareClaim.findMany({
-        where: { gameId },
+        where: {
+          gameId,
+        },
+        include: {
+          player: true,
+        },
       });
 
       completedSquareIds = claims.map((c) => c.squareId);
+      squareClaims = claims.map((claim) => ({
+        squareId: claim.squareId,
+        playerId: claim.playerId,
+        playerName: claim.player.displayName,
+        claimedAt: claim.claimedAt,
+      }));
     } else {
       const completions = await prisma.squareCompletion.findMany({
         where: {
@@ -233,6 +281,7 @@ export async function gameRoutes(app: FastifyInstance) {
       boardConfig: game.boardConfig,
       board: game.board,
       completedSquareIds,
+      squareClaims,
     };
   });
 
@@ -259,11 +308,13 @@ export async function gameRoutes(app: FastifyInstance) {
     let player = game.players.find((p) => p.id === event.playerId);
 
     if (!player) {
+      const playerNumber = game.players.length + 1;
+
       player = await prisma.player.create({
         data: {
           id: event.playerId,
           gameId,
-          displayName: "Player 1",
+          displayName: `Player ${playerNumber}`,
         },
       });
     }
@@ -315,7 +366,18 @@ export async function gameRoutes(app: FastifyInstance) {
         where: {
           gameId,
         },
+        include: {
+          player: true,
+        },
       });
+
+      const claimedSquareIds = claims.map((claim) => claim.squareId);
+
+      const claimedPositions = game.board.squares
+        .filter((square) => claimedSquareIds.includes(square.id))
+        .map((square) => square.position);
+
+      const winner = hasBingo(claimedPositions);
 
       const response = {
         gameId,
@@ -325,7 +387,14 @@ export async function gameRoutes(app: FastifyInstance) {
         playerCount: game.players.length,
         board: game.board,
         completedSquares: newlyClaimedSquares,
-        completedSquareIds: claims.map((claim) => claim.squareId),
+        completedSquareIds: claimedSquareIds,
+        winner,
+        squareClaims: claims.map((claim) => ({
+          squareId: claim.squareId,
+          playerId: claim.playerId,
+          playerName: claim.player.displayName,
+          claimedAt: claim.claimedAt,
+        })),
       };
 
       broadcastToGame(gameId, {
@@ -362,6 +431,16 @@ export async function gameRoutes(app: FastifyInstance) {
         },
       });
 
+      const completedSquareIds = completions.map(
+        (completion) => completion.squareId,
+      );
+
+      const completedPositions = game.board.squares
+        .filter((square) => completedSquareIds.includes(square.id))
+        .map((square) => square.position);
+
+      const winner = hasBingo(completedPositions);
+
       const response = {
         gameId,
         playerId: player.id,
@@ -373,6 +452,7 @@ export async function gameRoutes(app: FastifyInstance) {
         completedSquareIds: completions.map(
           (completion) => completion.squareId,
         ),
+        winner,
       };
 
       broadcastToGame(gameId, {

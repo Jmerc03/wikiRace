@@ -10,6 +10,7 @@ type GameState = {
   mode?: string;
   error?: string;
   playerCount?: number;
+  winner?: boolean;
   boardConfig?: {
     difficulty?: string;
   };
@@ -17,6 +18,14 @@ type GameState = {
     squares: BoardSquare[];
   } | null;
   completedSquareIds: string[];
+  squareClaims?: SquareClaim[];
+};
+
+type SquareClaim = {
+  squareId: string;
+  playerId: string;
+  playerName: string;
+  claimedAt: string;
 };
 
 const gameModeSelect = document.getElementById("game-mode");
@@ -81,8 +90,7 @@ startButton?.addEventListener("click", async () => {
 });
 
 refreshButton?.addEventListener("click", async () => {
-  const state = await chrome.runtime.sendMessage({ type: "SYNC_GAME_STATE" });
-  renderState(state);
+  await syncAndRenderState();
 });
 
 endGameButton?.addEventListener("click", async () => {
@@ -113,6 +121,10 @@ copyGameIdButton?.addEventListener("click", async () => {
 void loadExistingState();
 
 async function loadExistingState() {
+  await syncAndRenderState();
+}
+
+async function syncAndRenderState() {
   const state = await chrome.runtime.sendMessage({ type: "SYNC_GAME_STATE" });
   renderState(state);
 }
@@ -156,13 +168,16 @@ function renderState(state: GameState) {
     return;
   }
 
-  statusEl.textContent = `Game active: ${state.gameId}`;
+  statusEl.textContent = state.winner
+    ? "BINGO! Game won."
+    : `Game active: ${state.gameId}`;
 
   if (gameInfoEl) {
     gameInfoEl.innerHTML = `
       <p><strong>Mode:</strong> ${state.mode ?? "Unknown"}</p>
       <p><strong>Difficulty:</strong> ${state.boardConfig?.difficulty ?? "Unknown"}</p>
       <p><strong>Players:</strong> ${typeof state.playerCount === "number" ? state.playerCount : "Unknown"}</p>
+      <p><strong>Status:</strong> ${state.winner ? "BINGO" : "In progress"}</p>
       <p><strong>Game ID:</strong> <code>${state.gameId}</code></p>
     `;
   }
@@ -200,16 +215,34 @@ function renderState(state: GameState) {
     (a, b) => a.position - b.position,
   );
 
+  const claimsBySquareId = new Map(
+    (state.squareClaims ?? []).map((claim) => [claim.squareId, claim]),
+  );
+
   for (const square of squares) {
     const div = document.createElement("div");
     div.className = completed.has(square.id) ? "square completed" : "square";
-    div.textContent = square.label;
+
+    const claim = claimsBySquareId.get(square.id);
+
+    const labelEl = document.createElement("div");
+    labelEl.className = "square-label";
+    labelEl.textContent = square.label;
+    div.appendChild(labelEl);
+
+    if (claim) {
+      const claimEl = document.createElement("div");
+      claimEl.className = "square-claim";
+      claimEl.textContent = `Claimed by ${claim.playerName}`;
+      div.appendChild(claimEl);
+    }
+
     boardEl.appendChild(div);
   }
 }
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "GAME_STATE_UPDATED") {
-    renderState(message.data);
+    void syncAndRenderState();
   }
 });

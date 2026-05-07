@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
   <head>
+    <meta charset="UTF-8" />
     <style>
       body {
         width: 360px;
@@ -23,11 +24,25 @@
         font-size: 11px;
         text-align: center;
         background: #f7f7f7;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
       }
 
       .completed {
         background: #b6f2c2;
         border-color: #2f9e44;
+      }
+
+      .square-label {
+        font-weight: 500;
+      }
+
+      .square-claim {
+        font-size: 10px;
+        font-weight: bold;
       }
     </style>
   </head>

@@ -8,6 +8,9 @@ let currentMode: string | null = null;
 let currentBoardConfig: unknown = null;
 let currentPlayerCount: number | null = null;
 
+let currentSquareClaims: unknown[] = [];
+let currentWinner = false;
+
 type SavedGameState = {
   gameId?: string;
   playerId?: string;
@@ -76,6 +79,8 @@ async function startGame(mode = "NORMAL", boardConfig?: unknown) {
   currentMode = game.mode ?? null;
   currentBoardConfig = game.boardConfig ?? null;
   currentPlayerCount = game.players?.length ?? null;
+  currentSquareClaims = [];
+  currentWinner = game.winner ?? false;
 
   await chrome.storage.local.set({
     gameId,
@@ -98,6 +103,8 @@ async function startGame(mode = "NORMAL", boardConfig?: unknown) {
     boardConfig: currentBoardConfig,
     board: currentBoard,
     completedSquareIds: Array.from(completedSquareIds),
+    squareClaims: currentSquareClaims,
+    winner: currentWinner,
   };
 }
 
@@ -109,12 +116,18 @@ async function syncGameState() {
   if (!gameId || !playerId) {
     currentBoard = null;
     completedSquareIds = new Set<string>();
+    currentMode = null;
+    currentBoardConfig = null;
+    currentPlayerCount = null;
+    currentSquareClaims = [];
+    currentWinner = false;
 
     return {
       gameId: null,
       playerId: null,
       board: null,
       completedSquareIds: [],
+      squareClaims: [],
     };
   }
 
@@ -137,6 +150,8 @@ async function syncGameState() {
     currentBoardConfig = null;
     currentPlayerCount = null;
     completedSquareIds = new Set<string>();
+    currentSquareClaims = [];
+    currentWinner = false;
     await chrome.storage.local.clear();
 
     return {
@@ -144,6 +159,8 @@ async function syncGameState() {
       playerId: null,
       board: null,
       completedSquareIds: [],
+      squareClaims: [],
+      error: state.error ?? "Failed to load game state",
     };
   }
 
@@ -152,6 +169,8 @@ async function syncGameState() {
   currentMode = state.mode ?? null;
   currentBoardConfig = state.boardConfig ?? null;
   currentPlayerCount = state.playerCount ?? null;
+  currentSquareClaims = state.squareClaims ?? [];
+  currentWinner = state.winner ?? false;
 
   if (gameId) {
     connectWebSocket(gameId);
@@ -165,6 +184,8 @@ async function syncGameState() {
     playerCount: currentPlayerCount,
     board: currentBoard,
     completedSquareIds: Array.from(completedSquareIds),
+    squareClaims: currentSquareClaims,
+    winner: currentWinner,
   };
 }
 
@@ -182,6 +203,8 @@ async function joinGame(joinGameId: string) {
       playerCount: null,
       board: null,
       completedSquareIds: [],
+      squareClaims: [],
+      winner: false,
       error: state.error ?? "Failed to join game",
     };
   }
@@ -193,6 +216,8 @@ async function joinGame(joinGameId: string) {
   currentMode = state.mode ?? null;
   currentBoardConfig = state.boardConfig ?? null;
   currentPlayerCount = state.playerCount ?? null;
+  currentSquareClaims = state.squareClaims ?? [];
+  currentWinner = state.winner ?? false;
 
   await chrome.storage.local.set({
     gameId,
@@ -211,6 +236,8 @@ async function joinGame(joinGameId: string) {
     boardConfig: currentBoardConfig,
     board: currentBoard,
     completedSquareIds: Array.from(completedSquareIds),
+    squareClaims: currentSquareClaims,
+    winner: currentWinner,
   };
 }
 
@@ -242,6 +269,8 @@ async function sendPageVisit(data: unknown) {
   currentMode = result.mode ?? currentMode;
   currentBoardConfig = result.boardConfig ?? currentBoardConfig;
   currentPlayerCount = result.playerCount ?? currentPlayerCount;
+  currentSquareClaims = result.squareClaims ?? currentSquareClaims;
+  currentWinner = result.winner ?? currentWinner;
 
   for (const square of result.completedSquares ?? []) {
     completedSquareIds.add(square.id);
@@ -250,15 +279,6 @@ async function sendPageVisit(data: unknown) {
   try {
     await chrome.runtime.sendMessage({
       type: "GAME_STATE_UPDATED",
-      data: {
-        gameId,
-        playerId,
-        mode: currentMode,
-        boardConfig: currentBoardConfig,
-        playerCount: currentPlayerCount,
-        board: currentBoard,
-        completedSquareIds: Array.from(completedSquareIds),
-      },
     });
   } catch {
     // No popup is currently open to receive the update.
@@ -285,6 +305,8 @@ async function clearGame() {
   currentMode = null;
   currentBoardConfig = null;
   currentPlayerCount = null;
+  currentSquareClaims = [];
+  currentWinner = false;
 
   await chrome.storage.local.remove(["gameId", "playerId"]);
   await chrome.storage.local.clear();
@@ -297,6 +319,8 @@ async function clearGame() {
     playerId: null,
     board: null,
     completedSquareIds: [],
+    squareClaims: [],
+    winner: false,
   };
 }
 
@@ -350,19 +374,12 @@ function connectWebSocket(activeGameId: string) {
     currentMode = message.data.mode ?? currentMode;
     currentBoardConfig = message.data.boardConfig ?? currentBoardConfig;
     currentPlayerCount = message.data.playerCount ?? currentPlayerCount;
+    currentSquareClaims = message.data.squareClaims ?? currentSquareClaims;
+    currentWinner = message.data.winner ?? currentWinner;
 
     try {
       await chrome.runtime.sendMessage({
         type: "GAME_STATE_UPDATED",
-        data: {
-          gameId: activeGameId,
-          playerId,
-          mode: currentMode,
-          boardConfig: currentBoardConfig,
-          playerCount: currentPlayerCount,
-          board: currentBoard,
-          completedSquareIds: Array.from(completedSquareIds),
-        },
       });
     } catch {
       // Popup is closed.
