@@ -7,6 +7,19 @@ type BoardSquare = {
 type PlayerSummary = {
   id: string;
   displayName: string;
+  color?: string | null;
+  teamId?: string | null;
+};
+
+type TeamSummary = {
+  id: string;
+  name: string;
+  color: string;
+  players?: {
+    id: string;
+    displayName: string;
+    color?: string | null;
+  }[];
 };
 
 type GameState = {
@@ -18,6 +31,7 @@ type GameState = {
   error?: string;
   playerCount?: number;
   players?: PlayerSummary[];
+  teams?: TeamSummary[];
   winner?: boolean;
   winningLine?: number[] | null;
   winningLineType?: "ROW" | "COLUMN" | "DIAGONAL" | null;
@@ -35,6 +49,10 @@ type SquareClaim = {
   squareId: string;
   playerId: string;
   playerName: string;
+  playerColor?: string | null;
+  teamId?: string | null;
+  teamName?: string | null;
+  teamColor?: string | null;
   claimedAt: string;
 };
 
@@ -54,6 +72,11 @@ const joinGameBtn = document.getElementById("join-game-btn");
 const statusEl = document.getElementById("status");
 const progressEl = document.getElementById("progress");
 const gameInfoEl = document.getElementById("game-info");
+
+const teamNameInput = document.getElementById("team-name");
+const createTeamBtn = document.getElementById("create-team-btn");
+const teamSelect = document.getElementById("team-select");
+const joinTeamBtn = document.getElementById("join-team-btn");
 
 const boardEl = document.getElementById("board");
 
@@ -138,6 +161,34 @@ copyGameIdButton?.addEventListener("click", async () => {
   }
 });
 
+createTeamBtn?.addEventListener("click", async () => {
+  if (!(teamNameInput instanceof HTMLInputElement)) return;
+
+  const name = teamNameInput.value.trim();
+  if (!name) return;
+
+  await chrome.runtime.sendMessage({
+    type: "CREATE_TEAM",
+    name,
+  });
+
+  await syncAndRenderState();
+});
+
+joinTeamBtn?.addEventListener("click", async () => {
+  if (!(teamSelect instanceof HTMLSelectElement)) return;
+
+  const teamId = teamSelect.value;
+  if (!teamId) return;
+
+  await chrome.runtime.sendMessage({
+    type: "JOIN_TEAM",
+    teamId,
+  });
+
+  await syncAndRenderState();
+});
+
 void loadExistingState();
 
 async function loadExistingState() {
@@ -196,6 +247,29 @@ function renderState(state: GameState) {
     ? `BINGO${state.winningLineType ? ` (${formatWinningLineType(state.winningLineType)})` : ""}`
     : "In progress";
 
+  if (teamSelect instanceof HTMLSelectElement) {
+    teamSelect.innerHTML = "";
+
+    for (const team of state.teams ?? []) {
+      const option = document.createElement("option");
+      option.value = team.id;
+      option.textContent = team.name;
+      teamSelect.appendChild(option);
+    }
+  }
+
+  const teamRosterHtml = state.teams?.length
+    ? state.teams
+        .map((team) => {
+          const playerNames = team.players?.length
+            ? team.players.map((player) => player.displayName).join(", ")
+            : "No players yet";
+
+          return `<p><strong>${team.name}:</strong> ${playerNames}</p>`;
+        })
+        .join("")
+    : "<p>No teams yet.</p>";
+
   if (gameInfoEl) {
     gameInfoEl.innerHTML = `
       <p><strong>Mode:</strong> ${state.mode ?? "Unknown"}</p>
@@ -203,6 +277,7 @@ function renderState(state: GameState) {
       <p><strong>Difficulty:</strong> ${state.boardConfig?.difficulty ?? "Unknown"}</p>
       <p><strong>Players:</strong> ${typeof state.playerCount === "number" ? state.playerCount : "Unknown"}</p>
       <p><strong>Player List:</strong> ${state.players?.map((player) => player.displayName).join(", ") ?? "Unknown"}</p>
+      <div><strong>Team Rosters:</strong>${teamRosterHtml}</div>
       <p><strong>Status:</strong> ${statusText}</p>
       <p><strong>Game ID:</strong> <code>${state.gameId}</code></p>
       <p><strong>You:</strong> ${state.playerName ?? "Unknown"}</p>
@@ -269,9 +344,18 @@ function renderState(state: GameState) {
     div.appendChild(labelEl);
 
     if (claim) {
+      const claimColor = claim.teamColor ?? claim.playerColor;
+      const claimOwnerName = claim.teamName ?? claim.playerName;
+
+      if (claimColor) {
+        div.style.background = claimColor;
+        div.style.borderColor = claimColor;
+        div.style.color = "#111";
+      }
+
       const claimEl = document.createElement("div");
       claimEl.className = "square-claim";
-      claimEl.textContent = `Claimed by ${claim.playerName}`;
+      claimEl.textContent = `Claimed by ${claimOwnerName}`;
       div.appendChild(claimEl);
     }
 

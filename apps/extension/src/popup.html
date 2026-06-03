@@ -32,13 +32,11 @@
       }
 
       .completed {
-        background: #b6f2c2;
         border-color: #2f9e44;
       }
 
       .winning-square {
         outline: 3px solid #f59f00;
-        box-shadow: 0 0 8px rgba(245, 159, 0, 0.85);
       }
 
       .square-label {
@@ -82,6 +80,16 @@
     <input id="join-game-id" type="text" placeholder="Enter Game ID" />
 
     <button id="join-game-btn">Join Game</button>
+
+    <hr />
+
+    <h3>Teams</h3>
+
+    <input id="team-name" type="text" placeholder="Team name" />
+    <button id="create-team-btn">Create Team</button>
+
+    <select id="team-select"></select>
+    <button id="join-team-btn">Join Selected Team</button>
 
     <p id="status">No game started.</p>
     <p id="progress"></p>

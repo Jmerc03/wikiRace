@@ -9,16 +9,25 @@ let currentMode: string | null = null;
 let currentStatus: string | null = null;
 let currentBoardConfig: unknown = null;
 let currentPlayerCount: number | null = null;
-type BackgroundPlayerSummary = {
-  id: string;
-  displayName: string;
-};
-
 let currentPlayers: BackgroundPlayerSummary[] = [];
+let currentTeams: BackgroundTeamSummary[] = [];
+
 let currentSquareClaims: unknown[] = [];
 let currentWinner = false;
 let currentWinningLine: number[] | null = null;
 let currentWinningLineType: string | null = null;
+
+type BackgroundPlayerSummary = {
+  id: string;
+  displayName: string;
+  color?: string | null;
+};
+
+type BackgroundTeamSummary = {
+  id: string;
+  name: string;
+  color: string;
+};
 
 type SavedGameState = {
   gameId?: string;
@@ -68,6 +77,16 @@ chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
     return false;
   }
 
+  if (message.type === "CREATE_TEAM") {
+    void createTeam(message.name).then(sendResponse);
+    return true;
+  }
+
+  if (message.type === "JOIN_TEAM") {
+    void joinTeam(message.teamId).then(sendResponse);
+    return true;
+  }
+
   return false;
 });
 
@@ -98,6 +117,7 @@ async function startGame(
   currentBoardConfig = game.boardConfig ?? null;
   currentPlayerCount = game.players?.length ?? null;
   currentPlayers = (game.players ?? []) as BackgroundPlayerSummary[];
+  currentTeams = (game.teams ?? []) as BackgroundTeamSummary[];
   currentSquareClaims = [];
   currentWinner = game.winner ?? false;
   currentWinningLine = game.winningLine ?? null;
@@ -121,6 +141,7 @@ async function startGame(
     playerId,
     playerCount: currentPlayerCount,
     players: currentPlayers,
+    teams: currentTeams,
     mode: currentMode,
     status: currentStatus,
     boardConfig: currentBoardConfig,
@@ -203,6 +224,7 @@ async function syncGameState() {
   currentBoardConfig = state.boardConfig ?? null;
   currentPlayerCount = state.playerCount ?? null;
   currentPlayers = (state.players ?? []) as BackgroundPlayerSummary[];
+  currentTeams = (state.teams ?? []) as BackgroundTeamSummary[];
   playerName =
     currentPlayers.find((player) => player.id === playerId)?.displayName ??
     playerName;
@@ -224,6 +246,7 @@ async function syncGameState() {
     playerCount: currentPlayerCount,
     playerName,
     players: currentPlayers,
+    teams: currentTeams,
     board: currentBoard,
     completedSquareIds: Array.from(completedSquareIds),
     squareClaims: currentSquareClaims,
@@ -268,6 +291,7 @@ async function joinGame(joinGameId: string, displayName?: string) {
   currentBoardConfig = state.boardConfig ?? null;
   currentPlayerCount = state.playerCount ?? null;
   currentPlayers = (state.players ?? []) as BackgroundPlayerSummary[];
+  currentTeams = (state.teams ?? []) as BackgroundTeamSummary[];
   currentSquareClaims = state.squareClaims ?? [];
   currentWinner = state.winner ?? false;
   currentWinningLine = state.winningLine ?? null;
@@ -288,6 +312,7 @@ async function joinGame(joinGameId: string, displayName?: string) {
     playerName,
     playerCount: currentPlayerCount,
     players: currentPlayers,
+    teams: currentTeams,
     mode: currentMode,
     status: currentStatus,
     boardConfig: currentBoardConfig,
@@ -298,6 +323,57 @@ async function joinGame(joinGameId: string, displayName?: string) {
     winningLine: currentWinningLine,
     winningLineType: currentWinningLineType,
   };
+}
+
+async function createTeam(name: string) {
+  if (!gameId) {
+    await loadSavedGameState();
+  }
+
+  if (!gameId) {
+    return { error: "No active game." };
+  }
+
+  const res = await fetch(`http://localhost:4000/games/${gameId}/teams`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    return { error: result.error ?? "Failed to create team." };
+  }
+
+  return syncGameState();
+}
+
+async function joinTeam(teamId: string) {
+  if (!gameId || !playerId) {
+    await loadSavedGameState();
+  }
+
+  if (!gameId || !playerId) {
+    return { error: "No active game/player." };
+  }
+
+  const res = await fetch(
+    `http://localhost:4000/games/${gameId}/teams/${teamId}/join`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId }),
+    },
+  );
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    return { error: result.error ?? "Failed to join team." };
+  }
+
+  return syncGameState();
 }
 
 async function sendPageVisit(data: unknown) {
@@ -331,6 +407,7 @@ async function sendPageVisit(data: unknown) {
   currentPlayerCount = result.playerCount ?? currentPlayerCount;
   currentPlayers = (result.players ??
     currentPlayers) as BackgroundPlayerSummary[];
+  currentTeams = (result.teams ?? currentTeams) as BackgroundTeamSummary[];
   playerName =
     currentPlayers.find((player) => player.id === playerId)?.displayName ??
     playerName;
@@ -372,6 +449,7 @@ async function clearGame() {
   currentBoardConfig = null;
   currentPlayerCount = null;
   currentPlayers = [];
+  currentTeams = [];
   currentSquareClaims = [];
   currentWinner = false;
   currentWinningLine = null;
@@ -386,6 +464,7 @@ async function clearGame() {
     playerName: null,
     playerCount: null,
     players: currentPlayers,
+    teams: currentTeams,
     board: null,
     completedSquareIds: [],
     squareClaims: [],
@@ -456,6 +535,8 @@ function connectWebSocket(activeGameId: string) {
     currentWinningLine = message.data.winningLine ?? currentWinningLine;
     currentWinningLineType =
       message.data.winningLineType ?? currentWinningLineType;
+    currentTeams = (message.data.teams ??
+      currentTeams) as BackgroundTeamSummary[];
 
     try {
       await chrome.runtime.sendMessage({

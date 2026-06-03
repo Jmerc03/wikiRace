@@ -38,8 +38,8 @@ logs/
 # =========================
 # Prisma
 # =========================
-prisma/dev.db
-prisma/dev.db-journal
+**/prisma/dev.db
+**/prisma/dev.db-journal
 
 # =========================
 # Docker
@@ -83,3 +83,15 @@ scripts/raw-data/
 *.csv
 *.xml
 *.tsv
+
+# =========================
+# AI / Agent tooling
+# =========================
+.codex/
+CURRENT_TASK.md
+SCRATCHPAD.md
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo

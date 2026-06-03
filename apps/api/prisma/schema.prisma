@@ -42,18 +42,34 @@ model Game {
   board     Board?
   players   Player[]
   visits    PageVisitEvent[]
+  teams     Team[]
 }
 
 model Player {
   id          String   @id @default(uuid())
   gameId      String
+  teamId String?
   displayName String
+  color       String?
   joinedAt    DateTime @default(now())
 
   game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  team   Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
   claims SquareClaim[]
   visits      PageVisitEvent[]
   completions SquareCompletion[]
+
+}
+
+model Team {
+  id        String   @id @default(uuid())
+  gameId    String
+  name      String
+  color     String
+  createdAt DateTime @default(now())
+
+  game    Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  players Player[]
 }
 
 model Board {
