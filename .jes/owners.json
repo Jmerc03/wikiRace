@@ -1,0 +1,76 @@
+{
+  "repository_id": "JES-REPO-WIKIRACE",
+  "name": "WikiRace monorepo",
+  "owners": [
+    {
+      "target_id": "JES-SYSTEM-WIKIRACE",
+      "target_type": "System",
+      "name": "WikiRace System",
+      "source_path": ".",
+      "relationship_id": "JES-REL-WR-ROOT",
+      "owned_artifact_classes": [
+        "integration_architecture",
+        "system_requirements",
+        "interface_contracts",
+        "system_validation",
+        "release_composition"
+      ]
+    },
+    {
+      "target_id": "JES-SUBSYSTEM-WR-API",
+      "target_type": "Subsystem",
+      "name": "API",
+      "source_path": "apps/api",
+      "relationship_id": "JES-REL-WR-API",
+      "owned_artifact_classes": [
+        "subsystem_architecture",
+        "implementation",
+        "subsystem_tests",
+        "subsystem_documentation"
+      ],
+      "system_id": "JES-SYSTEM-WIKIRACE"
+    },
+    {
+      "target_id": "JES-SUBSYSTEM-WR-EXTENSION",
+      "target_type": "Subsystem",
+      "name": "Chrome extension",
+      "source_path": "apps/extension",
+      "relationship_id": "JES-REL-WR-EXTENSION",
+      "owned_artifact_classes": [
+        "subsystem_architecture",
+        "implementation",
+        "subsystem_tests",
+        "subsystem_documentation"
+      ],
+      "system_id": "JES-SYSTEM-WIKIRACE"
+    },
+    {
+      "target_id": "JES-SUBSYSTEM-WR-ENGINE",
+      "target_type": "Subsystem",
+      "name": "Game engine",
+      "source_path": "packages/game-engine",
+      "relationship_id": "JES-REL-WR-ENGINE",
+      "owned_artifact_classes": [
+        "subsystem_architecture",
+        "implementation",
+        "subsystem_tests",
+        "subsystem_documentation"
+      ],
+      "system_id": "JES-SYSTEM-WIKIRACE"
+    },
+    {
+      "target_id": "JES-SUBSYSTEM-WR-SHARED",
+      "target_type": "Subsystem",
+      "name": "Shared contracts",
+      "source_path": "packages/shared",
+      "relationship_id": "JES-REL-WR-SHARED",
+      "owned_artifact_classes": [
+        "subsystem_architecture",
+        "implementation",
+        "subsystem_tests",
+        "subsystem_documentation"
+      ],
+      "system_id": "JES-SYSTEM-WIKIRACE"
+    }
+  ]
+}

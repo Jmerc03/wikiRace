@@ -1,0 +1,85 @@
+{
+  "schema_version": "jes-repository.v2",
+  "repository_id": "JES-REPO-WIKIRACE",
+  "name": "WikiRace monorepo",
+  "relationships": [
+    {
+      "id": "JES-REL-WR-ROOT",
+      "type": "repository_relates_system",
+      "target_id": "JES-SYSTEM-WIKIRACE",
+      "role": "system_authority"
+    },
+    {
+      "id": "JES-REL-WR-API",
+      "type": "repository_relates_subsystem",
+      "target_id": "JES-SUBSYSTEM-WR-API",
+      "role": "subsystem_authority"
+    },
+    {
+      "id": "JES-REL-WR-EXTENSION",
+      "type": "repository_relates_subsystem",
+      "target_id": "JES-SUBSYSTEM-WR-EXTENSION",
+      "role": "subsystem_authority"
+    },
+    {
+      "id": "JES-REL-WR-ENGINE",
+      "type": "repository_relates_subsystem",
+      "target_id": "JES-SUBSYSTEM-WR-ENGINE",
+      "role": "subsystem_authority"
+    },
+    {
+      "id": "JES-REL-WR-SHARED",
+      "type": "repository_relates_subsystem",
+      "target_id": "JES-SUBSYSTEM-WR-SHARED",
+      "role": "subsystem_authority"
+    }
+  ],
+  "authorities": [
+    {
+      "relationship_id": "JES-REL-WR-ROOT",
+      "owned_artifact_classes": [
+        "integration_architecture",
+        "system_requirements",
+        "interface_contracts",
+        "system_validation",
+        "release_composition"
+      ]
+    },
+    {
+      "relationship_id": "JES-REL-WR-API",
+      "owned_artifact_classes": [
+        "subsystem_architecture",
+        "implementation",
+        "subsystem_tests",
+        "subsystem_documentation"
+      ]
+    },
+    {
+      "relationship_id": "JES-REL-WR-EXTENSION",
+      "owned_artifact_classes": [
+        "subsystem_architecture",
+        "implementation",
+        "subsystem_tests",
+        "subsystem_documentation"
+      ]
+    },
+    {
+      "relationship_id": "JES-REL-WR-ENGINE",
+      "owned_artifact_classes": [
+        "subsystem_architecture",
+        "implementation",
+        "subsystem_tests",
+        "subsystem_documentation"
+      ]
+    },
+    {
+      "relationship_id": "JES-REL-WR-SHARED",
+      "owned_artifact_classes": [
+        "subsystem_architecture",
+        "implementation",
+        "subsystem_tests",
+        "subsystem_documentation"
+      ]
+    }
+  ]
+}

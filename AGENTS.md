@@ -23,17 +23,26 @@ Before making changes:
 After API changes:
 
 ```bash
-npm run --workspace=api build
+npm run build:api
 ```
 
 After extension changes:
 
 ```bash
-cd apps/extension
-rm -rf dist
-npx tsc
-cp public/manifest.json dist/
-cp src/popup.html dist/
+npm run build:extension
+```
+
+After changes spanning workspaces:
+
+```bash
+npm run build
+npm test
+```
+
+After Prisma changes:
+
+```bash
+npm run prisma:validate
 ```
 
 ## Current Project State

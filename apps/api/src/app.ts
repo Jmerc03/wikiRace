@@ -7,7 +7,7 @@ import { realtimeRoutes } from "./routes/realtime.routes.js";
 
 export function buildApp() {
   const app = Fastify({
-    logger: true,
+    logger: process.env.NODE_ENV !== "test",
   });
 
   app.register(websocket);

@@ -95,3 +95,10 @@ SCRATCHPAD.md
 # TypeScript
 # =========================
 *.tsbuildinfo
+
+# Host-local services and retained JES requests/evidence
+.local/
+.jes/local/
+.jes/reports/
+playwright-report/
+test-results/

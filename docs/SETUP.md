@@ -21,14 +21,16 @@ npm install
 ## Run API
 
 ```bash
-npm run --workspace=api dev
+npm run dev:api
 ```
 
 Build:
 
 ```bash
-npm run --workspace=api build
+npm run build:api
 ```
+
+The root API and game-engine commands build their workspace dependencies first.
 
 ---
 
@@ -37,20 +39,25 @@ npm run --workspace=api build
 Generate client:
 
 ```bash
-cd apps/api
-npx prisma generate
+npm run prisma:generate
+```
+
+Validate schema:
+
+```bash
+npm run prisma:validate
 ```
 
 Create migration:
 
 ```bash
-npx prisma migrate dev --name migration_name
+npm run prisma:migrate:dev -- --name migration_name
 ```
 
 Open Prisma Studio:
 
 ```bash
-npx prisma studio
+npm run prisma:studio
 ```
 
 ---
@@ -60,21 +67,20 @@ npx prisma studio
 Build:
 
 ```bash
-cd apps/extension
+npm run build:extension
+```
 
-rm -rf dist
+Type-check without rebuilding:
 
-npx tsc
-
-cp public/manifest.json dist/
-
-cp src/popup.html dist/
+```bash
+npm run --workspace=extension typecheck
 ```
 
 Reload extension:
 
 - Open chrome://extensions
 - Enable Developer Mode
+- Load `apps/extension/dist` if the extension is not installed
 - Click Reload
 
 ---
@@ -84,8 +90,35 @@ Reload extension:
 Build:
 
 ```bash
-npm run --workspace=@bingo/game-engine build
+npm run build:game-engine
 ```
+
+---
+
+## Tests
+
+Run all tests:
+
+```bash
+npm test
+```
+
+Run one test suite:
+
+```bash
+npm run test:game-engine
+npm run test:api
+```
+
+Database-backed tests run with `npm run test:integration`. They create a unique
+`wr_test_*` schema, apply checked-in migrations, exercise actual API and
+WebSocket behavior, then remove only that schema. Set
+`WIKIRACE_TEST_DATABASE_URL` to an explicitly chosen test PostgreSQL database;
+the default is `postgresql://wikirace@127.0.0.1:55432/wikirace`.
+
+JES 0.3.0 project state and approved milestone/package records are in
+`project-management/PROJECT_STATE.md`. Local request/receipt and baseline logs
+are retained under `.jes/local` and are not committed as source.
 
 ---
 
@@ -100,11 +133,19 @@ npm run build
 Run API only:
 
 ```bash
-npm run --workspace=api dev
+npm run dev:api
 ```
 
 Run extension build:
 
 ```bash
-cd apps/extension && npx tsc
+npm run build:extension
+```
+
+Build an individual workspace:
+
+```bash
+npm run build:shared
+npm run build:game-engine
+npm run build:api
 ```

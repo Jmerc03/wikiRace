@@ -33,6 +33,7 @@ type GameState = {
   players?: PlayerSummary[];
   teams?: TeamSummary[];
   winner?: boolean;
+  winningOwner?: WinningOwner | null;
   winningLine?: number[] | null;
   winningLineType?: "ROW" | "COLUMN" | "DIAGONAL" | null;
   boardConfig?: {
@@ -43,6 +44,14 @@ type GameState = {
   } | null;
   completedSquareIds: string[];
   squareClaims?: SquareClaim[];
+};
+
+type WinningOwner = {
+  ownerKey: string;
+  type: "TEAM" | "PLAYER";
+  id: string;
+  name: string;
+  color?: string | null;
 };
 
 type SquareClaim = {
@@ -77,6 +86,10 @@ const teamNameInput = document.getElementById("team-name");
 const createTeamBtn = document.getElementById("create-team-btn");
 const teamSelect = document.getElementById("team-select");
 const joinTeamBtn = document.getElementById("join-team-btn");
+const leaveTeamBtn = document.getElementById("leave-team-btn");
+const teamSection = document.getElementById("team-section");
+const currentTeamEl = document.getElementById("current-team");
+const teamRostersEl = document.getElementById("team-rosters");
 
 const boardEl = document.getElementById("board");
 
@@ -167,12 +180,12 @@ createTeamBtn?.addEventListener("click", async () => {
   const name = teamNameInput.value.trim();
   if (!name) return;
 
-  await chrome.runtime.sendMessage({
+  const state = await chrome.runtime.sendMessage({
     type: "CREATE_TEAM",
     name,
   });
 
-  await syncAndRenderState();
+  renderState(state);
 });
 
 joinTeamBtn?.addEventListener("click", async () => {
@@ -181,12 +194,20 @@ joinTeamBtn?.addEventListener("click", async () => {
   const teamId = teamSelect.value;
   if (!teamId) return;
 
-  await chrome.runtime.sendMessage({
+  const state = await chrome.runtime.sendMessage({
     type: "JOIN_TEAM",
     teamId,
   });
 
-  await syncAndRenderState();
+  renderState(state);
+});
+
+leaveTeamBtn?.addEventListener("click", async () => {
+  const state = await chrome.runtime.sendMessage({
+    type: "LEAVE_TEAM",
+  });
+
+  renderState(state);
 });
 
 void loadExistingState();
@@ -210,9 +231,22 @@ function renderState(state: GameState) {
 
   if (!state?.gameId || !state.board) {
     statusEl.textContent = "No game started.";
+    statusEl.classList.remove("winner-status");
 
     if (gameInfoEl) {
-      gameInfoEl.innerHTML = "";
+      gameInfoEl.replaceChildren();
+    }
+
+    if (currentTeamEl) {
+      currentTeamEl.replaceChildren();
+    }
+
+    if (teamRostersEl) {
+      teamRostersEl.replaceChildren();
+    }
+
+    if (teamSection instanceof HTMLElement) {
+      teamSection.hidden = true;
     }
 
     if (copyGameIdButton instanceof HTMLElement) {
@@ -239,50 +273,79 @@ function renderState(state: GameState) {
     return;
   }
 
-  statusEl.textContent = state.winner
-    ? "BINGO! Game won."
-    : `Game active: ${state.gameId}`;
+  const winnerMessage = getWinnerMessage(state);
 
-  const statusText = state.winner
-    ? `BINGO${state.winningLineType ? ` (${formatWinningLineType(state.winningLineType)})` : ""}`
-    : "In progress";
+  statusEl.textContent = winnerMessage
+    ? `${winnerMessage}.`
+    : `Game active: ${state.gameId}`;
+  statusEl.classList.toggle("winner-status", Boolean(winnerMessage));
+
+  const statusText =
+    state.mode === "LOCKOUT" && winnerMessage
+      ? winnerMessage
+      : state.winner
+        ? `BINGO${state.winningLineType ? ` (${formatWinningLineType(state.winningLineType)})` : ""}`
+        : "In progress";
+
+  const currentPlayer = state.players?.find(
+    (player) => player.id === state.playerId,
+  );
+  const currentTeam = state.teams?.find(
+    (team) => team.id === currentPlayer?.teamId,
+  );
+  const gameFinished = state.status === "FINISHED";
+
+  if (teamSection instanceof HTMLElement) {
+    teamSection.hidden = false;
+  }
 
   if (teamSelect instanceof HTMLSelectElement) {
-    teamSelect.innerHTML = "";
+    teamSelect.replaceChildren();
 
-    for (const team of state.teams ?? []) {
+    const availableTeams = (state.teams ?? []).filter(
+      (team) => team.id !== currentTeam?.id,
+    );
+
+    for (const team of availableTeams) {
       const option = document.createElement("option");
       option.value = team.id;
       option.textContent = team.name;
       teamSelect.appendChild(option);
     }
+
+    if (availableTeams.length === 0) {
+      const option = document.createElement("option");
+      option.textContent = "No other teams";
+      option.value = "";
+      teamSelect.appendChild(option);
+    }
+
+    teamSelect.disabled = availableTeams.length === 0 || gameFinished;
   }
 
-  const teamRosterHtml = state.teams?.length
-    ? state.teams
-        .map((team) => {
-          const playerNames = team.players?.length
-            ? team.players.map((player) => player.displayName).join(", ")
-            : "No players yet";
-
-          return `<p><strong>${team.name}:</strong> ${playerNames}</p>`;
-        })
-        .join("")
-    : "<p>No teams yet.</p>";
-
-  if (gameInfoEl) {
-    gameInfoEl.innerHTML = `
-      <p><strong>Mode:</strong> ${state.mode ?? "Unknown"}</p>
-      <p><strong>Game State:</strong> ${state.status ?? "Unknown"}</p>
-      <p><strong>Difficulty:</strong> ${state.boardConfig?.difficulty ?? "Unknown"}</p>
-      <p><strong>Players:</strong> ${typeof state.playerCount === "number" ? state.playerCount : "Unknown"}</p>
-      <p><strong>Player List:</strong> ${state.players?.map((player) => player.displayName).join(", ") ?? "Unknown"}</p>
-      <div><strong>Team Rosters:</strong>${teamRosterHtml}</div>
-      <p><strong>Status:</strong> ${statusText}</p>
-      <p><strong>Game ID:</strong> <code>${state.gameId}</code></p>
-      <p><strong>You:</strong> ${state.playerName ?? "Unknown"}</p>
-    `;
+  if (createTeamBtn instanceof HTMLButtonElement) {
+    createTeamBtn.disabled = gameFinished;
   }
+
+  if (teamNameInput instanceof HTMLInputElement) {
+    teamNameInput.disabled = gameFinished;
+  }
+
+  if (joinTeamBtn instanceof HTMLButtonElement) {
+    joinTeamBtn.disabled =
+      gameFinished ||
+      !(teamSelect instanceof HTMLSelectElement) ||
+      !teamSelect.value;
+  }
+
+  if (leaveTeamBtn instanceof HTMLButtonElement) {
+    leaveTeamBtn.hidden = !currentTeam;
+    leaveTeamBtn.disabled = gameFinished;
+  }
+
+  renderCurrentTeam(currentTeam, currentPlayer);
+  renderTeamRosters(state.teams ?? [], currentTeam?.id, state.playerId);
+  renderGameInfo(state, statusText);
 
   if (copyGameIdButton instanceof HTMLElement) {
     copyGameIdButton.style.display = "inline-block";
@@ -361,6 +424,158 @@ function renderState(state: GameState) {
 
     boardEl.appendChild(div);
   }
+}
+
+function getWinnerMessage(state: GameState) {
+  if (!state.winner) {
+    return null;
+  }
+
+  if (state.mode === "LOCKOUT" && state.winningOwner) {
+    if (state.winningOwner.type === "TEAM") {
+      const teamName = /^team\b/i.test(state.winningOwner.name)
+        ? state.winningOwner.name
+        : `Team ${state.winningOwner.name}`;
+      return `${teamName} won by majority`;
+    }
+
+    return `${state.winningOwner.name} won by majority`;
+  }
+
+  return "BINGO! Game won";
+}
+
+function renderCurrentTeam(
+  currentTeam: TeamSummary | undefined,
+  currentPlayer: PlayerSummary | undefined,
+) {
+  if (!currentTeamEl) return;
+
+  currentTeamEl.replaceChildren();
+
+  const label = document.createElement("span");
+  label.className = "current-team-label";
+  label.textContent = "Your team";
+
+  const value = document.createElement("strong");
+  value.textContent = currentTeam?.name ?? "Not on a team";
+
+  const swatch = document.createElement("span");
+  swatch.className = "color-swatch";
+  swatch.style.background = currentTeam?.color ?? currentPlayer?.color ?? "#ced4da";
+
+  currentTeamEl.append(swatch, label, value);
+  currentTeamEl.classList.toggle("has-team", Boolean(currentTeam));
+
+  if (currentTeam) {
+    currentTeamEl.style.borderColor = currentTeam.color;
+  } else {
+    currentTeamEl.style.removeProperty("border-color");
+  }
+}
+
+function renderTeamRosters(
+  teams: TeamSummary[],
+  currentTeamId: string | undefined,
+  currentPlayerId: string | null | undefined,
+) {
+  if (!teamRostersEl) return;
+
+  teamRostersEl.replaceChildren();
+
+  if (teams.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No teams yet.";
+    teamRostersEl.appendChild(empty);
+    return;
+  }
+
+  for (const team of teams) {
+    const card = document.createElement("div");
+    card.className = "team-card";
+    card.style.borderLeftColor = team.color;
+
+    const header = document.createElement("div");
+    header.className = "team-card-header";
+
+    const swatch = document.createElement("span");
+    swatch.className = "color-swatch";
+    swatch.style.background = team.color;
+
+    const title = document.createElement("strong");
+    title.textContent = team.name;
+
+    header.append(swatch, title);
+
+    if (team.id === currentTeamId) {
+      const badge = document.createElement("span");
+      badge.className = "current-team-badge";
+      badge.textContent = "Your team";
+      header.appendChild(badge);
+    }
+
+    const members = document.createElement("div");
+    members.className = "team-members";
+
+    if (!team.players?.length) {
+      members.textContent = "No players yet";
+    } else {
+      for (const player of team.players) {
+        const member = document.createElement("span");
+        member.className = "team-member";
+        member.textContent =
+          player.id === currentPlayerId
+            ? `${player.displayName} (you)`
+            : player.displayName;
+        members.appendChild(member);
+      }
+    }
+
+    card.append(header, members);
+    teamRostersEl.appendChild(card);
+  }
+}
+
+function renderGameInfo(state: GameState, statusText: string) {
+  if (!gameInfoEl) return;
+
+  gameInfoEl.replaceChildren();
+
+  appendInfoRow(gameInfoEl, "Mode", state.mode ?? "Unknown");
+  appendInfoRow(gameInfoEl, "Game state", state.status ?? "Unknown");
+  appendInfoRow(
+    gameInfoEl,
+    "Difficulty",
+    state.boardConfig?.difficulty ?? "Unknown",
+  );
+  appendInfoRow(
+    gameInfoEl,
+    "Players",
+    typeof state.playerCount === "number"
+      ? String(state.playerCount)
+      : "Unknown",
+  );
+  appendInfoRow(gameInfoEl, "Status", statusText);
+  appendInfoRow(gameInfoEl, "You", state.playerName ?? "Unknown");
+  appendInfoRow(gameInfoEl, "Game ID", state.gameId ?? "Unknown", true);
+}
+
+function appendInfoRow(
+  container: HTMLElement,
+  labelText: string,
+  valueText: string,
+  code = false,
+) {
+  const label = document.createElement("span");
+  label.className = "info-label";
+  label.textContent = labelText;
+
+  const value = document.createElement(code ? "code" : "span");
+  value.className = "info-value";
+  value.textContent = valueText;
+
+  container.append(label, value);
 }
 
 function formatWinningLineType(type: "ROW" | "COLUMN" | "DIAGONAL") {

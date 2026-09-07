@@ -4,24 +4,241 @@
     <meta charset="UTF-8" />
     <style>
       body {
-        width: 360px;
-        font-family: Arial, sans-serif;
-        padding: 12px;
+        width: 400px;
+        margin: 0;
+        padding: 14px;
+        color: #212529;
+        background: #f8f9fa;
+        font-family:
+          Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        box-sizing: border-box;
+      }
+
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h2 {
+        margin-bottom: 12px;
+        font-size: 20px;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+
+      label {
+        color: #495057;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      input,
+      select,
+      button {
+        min-height: 32px;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font: inherit;
+      }
+
+      input,
+      select {
+        min-width: 0;
+        padding: 5px 7px;
+        background: #fff;
+      }
+
+      button {
+        padding: 5px 9px;
+        color: #212529;
+        background: #fff;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      button:hover:not(:disabled) {
+        border-color: #495057;
+        background: #f1f3f5;
+      }
+
+      button:disabled {
+        cursor: default;
+        opacity: 0.5;
+      }
+
+      hr {
+        margin: 14px 0;
+        border: 0;
+        border-top: 1px solid #dee2e6;
+      }
+
+      .control-grid {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 7px 8px;
+        align-items: center;
+      }
+
+      .action-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .action-row > input,
+      .action-row > select {
+        flex: 1;
+      }
+
+      .secondary-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .danger-action {
+        color: #c92a2a;
+      }
+
+      #status {
+        margin: 12px 0 4px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      #status.winner-status {
+        color: #2b8a3e;
+      }
+
+      #progress {
+        margin-bottom: 8px;
+        color: #495057;
+        font-size: 11px;
+      }
+
+      #game-info {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 4px 10px;
+        padding: 9px 0;
+        border-top: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 11px;
+      }
+
+      .info-label {
+        color: #6c757d;
+        font-weight: 600;
+      }
+
+      .info-value {
+        overflow-wrap: anywhere;
+      }
+
+      #team-section[hidden] {
+        display: none;
+      }
+
+      .current-team {
+        display: grid;
+        grid-template-columns: 12px auto 1fr;
+        gap: 7px;
+        align-items: center;
+        margin-bottom: 8px;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        background: #fff;
+      }
+
+      .current-team-label {
+        color: #6c757d;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .color-swatch {
+        width: 10px;
+        height: 10px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 50%;
+        box-sizing: border-box;
+      }
+
+      .team-rosters {
+        display: grid;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .team-card {
+        padding: 8px;
+        border: 1px solid #dee2e6;
+        border-left-width: 4px;
+        border-radius: 6px;
+        background: #fff;
+      }
+
+      .team-card-header {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 5px;
+        font-size: 12px;
+      }
+
+      .current-team-badge {
+        margin-left: auto;
+        padding: 2px 5px;
+        border-radius: 4px;
+        color: #2b8a3e;
+        background: #ebfbee;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .team-members {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        color: #495057;
+        font-size: 10px;
+      }
+
+      .team-member {
+        padding: 2px 5px;
+        border-radius: 4px;
+        background: #f1f3f5;
+      }
+
+      .empty-state {
+        margin: 0;
+        color: #868e96;
+        font-size: 11px;
       }
 
       #board {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
         gap: 6px;
-        margin-top: 12px;
+        margin-top: 10px;
       }
 
       .square {
-        min-height: 60px;
+        min-height: 64px;
         border: 1px solid #ccc;
         border-radius: 6px;
         padding: 6px;
-        font-size: 11px;
+        overflow-wrap: anywhere;
+        font-size: 10px;
         text-align: center;
         background: #f7f7f7;
 
@@ -52,44 +269,61 @@
   <body>
     <h2>Wikipedia Bingo</h2>
 
-    <label for="player-name">Name:</label>
-    <input id="player-name" type="text" placeholder="Player name" />
+    <div class="control-grid">
+      <label for="player-name">Name</label>
+      <input id="player-name" type="text" placeholder="Player name" />
 
-    <label for="game-mode">Mode:</label>
-    <select id="game-mode">
-      <option value="NORMAL" selected>Normal</option>
-      <option value="LOCKOUT">Lockout</option>
-    </select>
+      <label for="game-mode">Mode</label>
+      <select id="game-mode">
+        <option value="NORMAL" selected>Normal</option>
+        <option value="LOCKOUT">Lockout</option>
+      </select>
 
-    <label for="difficulty">Difficulty:</label>
-    <select id="difficulty">
-      <option value="EASY">Easy</option>
-      <option value="MIXED" selected>Mixed</option>
-      <option value="HARD">Hard</option>
-    </select>
+      <label for="difficulty">Difficulty</label>
+      <select id="difficulty">
+        <option value="EASY">Easy</option>
+        <option value="MIXED" selected>Mixed</option>
+        <option value="HARD">Hard</option>
+      </select>
+    </div>
 
-    <button id="start">Start Game</button>
-    <button id="refresh">Refresh Board</button>
-    <button id="end-game">Leave Game</button>
-    <button id="copy-game-id">Copy Game ID</button>
+    <div class="secondary-actions">
+      <button id="start">Start Game</button>
+      <button id="refresh">Refresh Board</button>
+      <button id="end-game">Leave Game</button>
+      <button id="copy-game-id">Copy Game ID</button>
+    </div>
 
     <hr />
 
     <h3>Join Game</h3>
 
-    <input id="join-game-id" type="text" placeholder="Enter Game ID" />
-
-    <button id="join-game-btn">Join Game</button>
+    <div class="action-row">
+      <input id="join-game-id" type="text" placeholder="Enter Game ID" />
+      <button id="join-game-btn">Join Game</button>
+    </div>
 
     <hr />
 
-    <h3>Teams</h3>
+    <section id="team-section" hidden>
+      <h3>Teams</h3>
+      <div id="current-team" class="current-team"></div>
 
-    <input id="team-name" type="text" placeholder="Team name" />
-    <button id="create-team-btn">Create Team</button>
+      <div class="action-row">
+        <input id="team-name" type="text" placeholder="Team name" />
+        <button id="create-team-btn">Create Team</button>
+      </div>
 
-    <select id="team-select"></select>
-    <button id="join-team-btn">Join Selected Team</button>
+      <div class="action-row">
+        <select id="team-select"></select>
+        <button id="join-team-btn">Join Team</button>
+        <button id="leave-team-btn" class="danger-action" hidden>
+          Leave Team
+        </button>
+      </div>
+
+      <div id="team-rosters" class="team-rosters"></div>
+    </section>
 
     <p id="status">No game started.</p>
     <p id="progress"></p>

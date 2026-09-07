@@ -43,7 +43,11 @@ Opposing teams cannot claim already-owned squares.
 
 Winner:
 
-First owner (player or team) to complete a bingo line.
+First owner (player or team) to claim a majority of the board.
+
+On a 5x5 board, majority is 13 squares.
+
+Bingo rows, columns, and diagonals do not determine Lockout wins.
 
 ---
 
@@ -71,7 +75,7 @@ Bingo checked per player.
 
 Lockout Mode:
 
-Bingo checked per owner.
+Majority territory control checked per owner.
 
 Owner:
 
@@ -82,3 +86,4 @@ or
 player:<playerId>
 
 Claims from different owners never combine to form a bingo.
+Claims from different owners never combine to form a majority.

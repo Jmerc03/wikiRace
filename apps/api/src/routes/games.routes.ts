@@ -9,6 +9,15 @@ import { prisma } from "../db/prisma.js";
 import type { BoardSquare, PageVisitEvent } from "@bingo/shared";
 import { Prisma } from "@prisma/client";
 import { broadcastToGame } from "../realtime/game-connections.js";
+import {
+  buildPlayerSummaries,
+  buildSquareClaimSummaries,
+  buildTeamSummaries,
+  buildLockoutWinningResult,
+  buildWinningResult,
+  buildWinningOwner,
+  getLockoutWinningOwnerResult,
+} from "./games.helpers.js";
 
 const defaultBoardConfig = {
   difficulty: "MIXED",
@@ -41,75 +50,6 @@ function getTeamColor(teamNumber: number) {
 
 function getPlayerColor(playerNumber: number) {
   return PLAYER_COLORS[(playerNumber - 1) % PLAYER_COLORS.length];
-}
-
-type LockoutClaimForWinCheck = {
-  squareId: string;
-  playerId: string;
-  player: {
-    teamId: string | null;
-  };
-};
-
-type SquareForWinCheck = {
-  id: string;
-  position: number;
-};
-
-function getLockoutWinningLineResult(
-  claims: LockoutClaimForWinCheck[],
-  squares: SquareForWinCheck[],
-) {
-  const positionsByOwner = new Map<string, number[]>();
-
-  for (const claim of claims) {
-    const ownerKey = claim.player.teamId
-      ? `team:${claim.player.teamId}`
-      : `player:${claim.playerId}`;
-
-    const square = squares.find((square) => square.id === claim.squareId);
-
-    if (!square) {
-      continue;
-    }
-
-    const positions = positionsByOwner.get(ownerKey) ?? [];
-    positions.push(square.position);
-    positionsByOwner.set(ownerKey, positions);
-  }
-
-  for (const positions of positionsByOwner.values()) {
-    const winningLineResult = getWinningLineResult(positions);
-
-    if (winningLineResult) {
-      return winningLineResult;
-    }
-  }
-
-  return null;
-}
-
-function buildTeamSummaries(
-  teams: { id: string; name: string; color: string }[],
-  players: {
-    id: string;
-    displayName: string;
-    color: string | null;
-    teamId: string | null;
-  }[],
-) {
-  return teams.map((team) => ({
-    id: team.id,
-    name: team.name,
-    color: team.color,
-    players: players
-      .filter((player) => player.teamId === team.id)
-      .map((player) => ({
-        id: player.id,
-        displayName: player.displayName,
-        color: player.color,
-      })),
-  }));
 }
 
 const createGameSchema = z.object({
@@ -286,6 +226,70 @@ export async function gameRoutes(app: FastifyInstance) {
     };
   });
 
+  app.post("/:gameId/teams/leave", async (request, reply) => {
+    const { gameId } = request.params as { gameId: string };
+    const body = joinTeamSchema.parse(request.body ?? {});
+
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        players: {
+          orderBy: {
+            joinedAt: "asc",
+          },
+        },
+      },
+    });
+
+    if (!game) {
+      return reply.code(404).send({ error: "Game not found" });
+    }
+
+    if (game.status === "FINISHED") {
+      return reply.code(409).send({ error: "Game is already finished" });
+    }
+
+    const playerIndex = game.players.findIndex(
+      (player) => player.id === body.playerId,
+    );
+    const player = game.players[playerIndex];
+
+    if (!player) {
+      return reply.code(404).send({ error: "Player not found" });
+    }
+
+    if (!player.teamId) {
+      return reply.code(409).send({ error: "Player is not on a team" });
+    }
+
+    const claimCount = await prisma.squareClaim.count({
+      where: {
+        gameId,
+        playerId: player.id,
+      },
+    });
+
+    if (claimCount > 0) {
+      return reply.code(409).send({
+        error: "Cannot leave team after claiming squares",
+      });
+    }
+
+    const updatedPlayer = await prisma.player.update({
+      where: {
+        id: player.id,
+      },
+      data: {
+        teamId: null,
+        color: getPlayerColor(playerIndex + 1),
+      },
+    });
+
+    return {
+      player: updatedPlayer,
+    };
+  });
+
   app.get("/:gameId/board", async (request, reply) => {
     const { gameId } = request.params as { gameId: string };
 
@@ -344,13 +348,17 @@ export async function gameRoutes(app: FastifyInstance) {
         },
       });
 
-      const winningLineResult = getLockoutWinningLineResult(
+      const winningOwnerResult = getLockoutWinningOwnerResult(
         claims,
         game.board.squares,
       );
-      const winningLine = winningLineResult?.positions ?? null;
-      const winningLineType = winningLineResult?.type ?? null;
-      const winner = winningLineResult !== null;
+      const { winner, winningLine, winningLineType } =
+        buildLockoutWinningResult(winningOwnerResult);
+      const winningOwner = buildWinningOwner(
+        winningOwnerResult,
+        game.players,
+        game.teams,
+      );
 
       return {
         gameId,
@@ -359,34 +367,15 @@ export async function gameRoutes(app: FastifyInstance) {
         status: game.status,
         boardConfig: game.boardConfig,
         playerCount: game.players.length,
-        players: game.players.map((player) => ({
-          id: player.id,
-          displayName: player.displayName,
-          color: player.color,
-          teamId: player.teamId,
-        })),
+        players: buildPlayerSummaries(game.players),
         teams: buildTeamSummaries(game.teams, game.players),
         board: game.board,
         completedSquareIds: claims.map((claim) => claim.squareId),
         winner,
+        winningOwner,
         winningLine,
         winningLineType,
-        squareClaims: claims.map((claim) => {
-          const team = game.teams.find(
-            (team) => team.id === claim.player.teamId,
-          );
-
-          return {
-            squareId: claim.squareId,
-            playerId: claim.playerId,
-            playerName: claim.player.displayName,
-            playerColor: claim.player.color,
-            teamId: claim.player.teamId,
-            teamName: team?.name ?? null,
-            teamColor: team?.color ?? null,
-            claimedAt: claim.claimedAt,
-          };
-        }),
+        squareClaims: buildSquareClaimSummaries(claims, game.teams),
       };
     }
 
@@ -405,10 +394,9 @@ export async function gameRoutes(app: FastifyInstance) {
       .filter((square) => completedSquareIds.includes(square.id))
       .map((square) => square.position);
 
-    const winningLineResult = getWinningLineResult(completedPositions);
-    const winningLine = winningLineResult?.positions ?? null;
-    const winningLineType = winningLineResult?.type ?? null;
-    const winner = winningLineResult !== null;
+    const { winner, winningLine, winningLineType } = buildWinningResult(
+      getWinningLineResult(completedPositions),
+    );
 
     return {
       gameId,
@@ -417,12 +405,7 @@ export async function gameRoutes(app: FastifyInstance) {
       status: game.status,
       boardConfig: game.boardConfig,
       playerCount: game.players.length,
-      players: game.players.map((player) => ({
-        id: player.id,
-        displayName: player.displayName,
-        color: player.color,
-        teamId: player.teamId,
-      })),
+      players: buildPlayerSummaries(game.players),
       teams: buildTeamSummaries(game.teams, game.players),
       board: game.board,
       completedSquareIds,
@@ -525,12 +508,7 @@ export async function gameRoutes(app: FastifyInstance) {
       playerName: player.displayName,
       playerCount: game.players.length + 1,
       players: [
-        ...game.players.map((existingPlayer) => ({
-          id: existingPlayer.id,
-          displayName: existingPlayer.displayName,
-          color: existingPlayer.color,
-          teamId: existingPlayer.teamId,
-        })),
+        ...buildPlayerSummaries(game.players),
         {
           id: player.id,
           displayName: player.displayName,
@@ -674,13 +652,17 @@ export async function gameRoutes(app: FastifyInstance) {
 
       const claimedSquareIds = claims.map((claim) => claim.squareId);
 
-      const winningLineResult = getLockoutWinningLineResult(
+      const winningOwnerResult = getLockoutWinningOwnerResult(
         claims,
         game.board.squares,
       );
-      const winningLine = winningLineResult?.positions ?? null;
-      const winningLineType = winningLineResult?.type ?? null;
-      const winner = winningLineResult !== null;
+      const { winner, winningLine, winningLineType } =
+        buildLockoutWinningResult(winningOwnerResult);
+      const winningOwner = buildWinningOwner(
+        winningOwnerResult,
+        game.players,
+        game.teams,
+      );
 
       if (winner) {
         await prisma.game.update({
@@ -700,35 +682,16 @@ export async function gameRoutes(app: FastifyInstance) {
         status: winner ? "FINISHED" : game.status,
         boardConfig: game.boardConfig,
         playerCount: game.players.length,
-        players: game.players.map((player) => ({
-          id: player.id,
-          displayName: player.displayName,
-          color: player.color,
-          teamId: player.teamId,
-        })),
+        players: buildPlayerSummaries(game.players),
         teams: buildTeamSummaries(game.teams, game.players),
         board: game.board,
         completedSquares: newlyClaimedSquares,
         completedSquareIds: claimedSquareIds,
         winner,
+        winningOwner,
         winningLine,
         winningLineType,
-        squareClaims: claims.map((claim) => {
-          const team = game.teams.find(
-            (team) => team.id === claim.player.teamId,
-          );
-
-          return {
-            squareId: claim.squareId,
-            playerId: claim.playerId,
-            playerName: claim.player.displayName,
-            playerColor: claim.player.color,
-            teamId: claim.player.teamId,
-            teamName: team?.name ?? null,
-            teamColor: team?.color ?? null,
-            claimedAt: claim.claimedAt,
-          };
-        }),
+        squareClaims: buildSquareClaimSummaries(claims, game.teams),
       };
 
       broadcastToGame(gameId, {
@@ -773,10 +736,9 @@ export async function gameRoutes(app: FastifyInstance) {
         .filter((square) => completedSquareIds.includes(square.id))
         .map((square) => square.position);
 
-      const winningLineResult = getWinningLineResult(completedPositions);
-      const winningLine = winningLineResult?.positions ?? null;
-      const winningLineType = winningLineResult?.type ?? null;
-      const winner = winningLineResult !== null;
+      const { winner, winningLine, winningLineType } = buildWinningResult(
+        getWinningLineResult(completedPositions),
+      );
 
       if (winner) {
         await prisma.game.update({
@@ -796,12 +758,7 @@ export async function gameRoutes(app: FastifyInstance) {
         status: winner ? "FINISHED" : game.status,
         boardConfig: game.boardConfig,
         playerCount: game.players.length,
-        players: game.players.map((player) => ({
-          id: player.id,
-          displayName: player.displayName,
-          color: player.color,
-          teamId: player.teamId,
-        })),
+        players: buildPlayerSummaries(game.players),
         teams: buildTeamSummaries(game.teams, game.players),
         board: game.board,
         completedSquares,
@@ -856,13 +813,17 @@ export async function gameRoutes(app: FastifyInstance) {
 
       const claimedSquareIds = claims.map((claim) => claim.squareId);
 
-      const winningLineResult = getLockoutWinningLineResult(
+      const winningOwnerResult = getLockoutWinningOwnerResult(
         claims,
         game.board.squares,
       );
-      const winningLine = winningLineResult?.positions ?? null;
-      const winningLineType = winningLineResult?.type ?? null;
-      const winner = winningLineResult !== null;
+      const { winner, winningLine, winningLineType } =
+        buildLockoutWinningResult(winningOwnerResult);
+      const winningOwner = buildWinningOwner(
+        winningOwnerResult,
+        game.players,
+        game.teams,
+      );
 
       return {
         gameId,
@@ -871,34 +832,15 @@ export async function gameRoutes(app: FastifyInstance) {
         status: game.status,
         boardConfig: game.boardConfig,
         playerCount: game.players.length,
-        players: game.players.map((player) => ({
-          id: player.id,
-          displayName: player.displayName,
-          color: player.color,
-          teamId: player.teamId,
-        })),
+        players: buildPlayerSummaries(game.players),
         teams: buildTeamSummaries(game.teams, game.players),
         board: game.board,
         completedSquareIds: claimedSquareIds,
         winner,
+        winningOwner,
         winningLine,
         winningLineType,
-        squareClaims: claims.map((claim) => {
-          const team = game.teams.find(
-            (team) => team.id === claim.player.teamId,
-          );
-
-          return {
-            squareId: claim.squareId,
-            playerId: claim.playerId,
-            playerName: claim.player.displayName,
-            playerColor: claim.player.color,
-            teamId: claim.player.teamId,
-            teamName: team?.name ?? null,
-            teamColor: team?.color ?? null,
-            claimedAt: claim.claimedAt,
-          };
-        }),
+        squareClaims: buildSquareClaimSummaries(claims, game.teams),
       };
     }
 
@@ -917,10 +859,9 @@ export async function gameRoutes(app: FastifyInstance) {
       .filter((square) => completedSquareIds.includes(square.id))
       .map((square) => square.position);
 
-    const winningLineResult = getWinningLineResult(completedPositions);
-    const winningLine = winningLineResult?.positions ?? null;
-    const winningLineType = winningLineResult?.type ?? null;
-    const winner = winningLineResult !== null;
+    const { winner, winningLine, winningLineType } = buildWinningResult(
+      getWinningLineResult(completedPositions),
+    );
 
     return {
       gameId,
@@ -929,12 +870,7 @@ export async function gameRoutes(app: FastifyInstance) {
       status: game.status,
       boardConfig: game.boardConfig,
       playerCount: game.players.length,
-      players: game.players.map((player) => ({
-        id: player.id,
-        displayName: player.displayName,
-        color: player.color,
-        teamId: player.teamId,
-      })),
+      players: buildPlayerSummaries(game.players),
       teams: buildTeamSummaries(game.teams, game.players),
       board: game.board,
       completedSquareIds,

@@ -5,6 +5,23 @@
     "apps/*",
     "packages/*"
   ],
+  "scripts": {
+    "build": "npm run build:api && npm run build:extension",
+    "build:shared": "npm run --workspace=@bingo/shared build",
+    "build:game-engine": "npm run build:shared && npm run --workspace=@bingo/game-engine build",
+    "build:api": "npm run build:game-engine && npm run --workspace=api build",
+    "build:extension": "npm run --workspace=extension build",
+    "dev:api": "npm run build:game-engine && npm run --workspace=api dev",
+    "prisma:generate": "npm run --workspace=api prisma:generate",
+    "prisma:validate": "npm run --workspace=api prisma:validate",
+    "prisma:migrate:dev": "npm run --workspace=api prisma:migrate:dev --",
+    "prisma:studio": "npm run --workspace=api prisma:studio",
+    "test": "npm run test:game-engine && npm run test:api",
+    "test:game-engine": "npm run --workspace=@bingo/game-engine test",
+    "test:api": "npm run build:game-engine && npm run --workspace=api test",
+    "test:integration": "npm run build:api && node scripts/test-integration.mjs",
+    "prisma:migrate:deploy": "npm run --workspace=api exec -- prisma migrate deploy"
+  },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "tsx": "^4.21.0"

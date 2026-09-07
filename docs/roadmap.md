@@ -25,20 +25,30 @@
 
 - Team creation
 - Team joining
+- Team leaving
 - Team colors
 - Team ownership
 - Team-aware win detection
+- Owner-aware Lockout winner display
 - Team roster API support
+- Team roster cards
+- Current team display
+
+### Repository Stabilization
+
+- Standardized root and workspace build scripts
+- Initial win-checker and Lockout ownership tests
+- Pure response-shaping helpers
 
 ---
 
 ## In Progress
 
-### Team UX
+### Stabilization
 
-- Team roster display
-- Better current team display
-- Leave team functionality
+- Add database-backed route characterization tests
+- Document and prioritize deferred architectural work
+- Track remaining work in [TECH_DEBT.md](TECH_DEBT.md)
 
 ---
 
@@ -60,6 +70,9 @@
 - Browser source overlay
 - Streamer-friendly layout
 - OBS integration
+
+Spectator and overlay work remain deferred until the stabilization items above
+are complete.
 
 ---
 
