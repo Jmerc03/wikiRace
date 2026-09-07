@@ -176,3 +176,18 @@ Esbuild bundles script entry points; the build uses portable Node file APIs.
 
 The service still uses one API process for realtime rooms. A multi-process
 deployment needs shared pub/sub and is outside the current local qualification.
+
+## Spectator and operator runtime
+
+The API serves a small static operator page, spectator UI, transparent browser
+source layout, and packaged extension. Public spectator reads use the same
+explicit state serializer in a repeatable-read transaction, select only a player
+in that game, and never enroll or score. Viewer JavaScript renders user content
+as text and refetches on WebSocket invalidation with bounded polling recovery.
+
+`/health` is process liveness and instance ownership; `/ready` checks database
+connectivity and required migrated columns. `scripts/local.mjs` owns a dedicated
+local profile, verifies process/database identity before stopping anything, and
+preserves data across restarts. `scripts/test-integration.mjs` creates and removes
+only its own random schema. The distributable extension archive is generated
+from built assets with fixed entry timestamps and excludes source maps.

@@ -153,10 +153,32 @@ test("unknown, forged, and foreign sessions cannot mutate or read player state",
 test("session hashes and tokens never appear in public game or ordinary state responses", async () => {
   const host=await createGame(); const guest=await join(host.gameId);
   const player=await prisma.player.findUniqueOrThrow({where:{id:host.playerId}});
-  for (const response of [(await app.inject({url:`/games/${host.gameId}`})).body, JSON.stringify(await state(host.gameId,guest.playerId))]) {
+  for (const response of [(await app.inject({url:`/games/${host.gameId}`})).body, (await app.inject({url:`/games/${host.gameId}/spectator`})).body, JSON.stringify(await state(host.gameId,guest.playerId))]) {
     assert.ok(!response.includes("sessionTokenHash")); assert.ok(!response.includes("playerToken"));
     assert.ok(!response.includes(player.sessionTokenHash!)); assert.ok(!response.includes(tokens.get(host.playerId)!));
   }
+});
+
+test("spectator reads follow only players in that game and never enroll or score", async () => {
+  const host=await createGame(); const guest=await join(host.gameId); const foreign=await createGame();
+  await visit(host.gameId,host.playerId,0);
+  const playerCount=await prisma.player.count(); const visitCount=await prisma.pageVisitEvent.count();
+  const defaultView=await app.inject({url:`/games/${host.gameId}/spectator`});
+  assert.equal(defaultView.statusCode,200); assert.equal(defaultView.json().spectator,true);
+  assert.equal(defaultView.json().completedSquareIds.length,1);
+  const guestView=await app.inject({url:`/games/${host.gameId}/spectator?playerId=${guest.playerId}`});
+  assert.equal(guestView.statusCode,200); assert.equal(guestView.json().completedSquareIds.length,0);
+  for(const id of [foreign.playerId,randomUUID()]) assert.equal((await app.inject({url:`/games/${host.gameId}/spectator?playerId=${id}`})).statusCode,404);
+  assert.equal((await app.inject({url:`/games/${randomUUID()}/spectator`})).statusCode,404);
+  assert.equal(await prisma.player.count(),playerCount); assert.equal(await prisma.pageVisitEvent.count(),visitCount);
+});
+
+test("readiness checks the database schema and the operator page has an explicit content policy", async () => {
+  const ready=await app.inject({url:"/ready"}); assert.equal(ready.statusCode,200); assert.equal(ready.json().database,"connected");
+  const home=await app.inject({url:"/"}); assert.equal(home.statusCode,200);
+  assert.match(String(home.headers["content-security-policy"]),/script-src 'self'/);
+  assert.equal(home.headers["x-content-type-options"],"nosniff");
+  assert.equal((await app.inject({url:"/assets/../../.env"})).statusCode,404);
 });
 
 test("a player's claims cannot transfer through a team change or foreign-game join", async () => {

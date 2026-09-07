@@ -1,6 +1,6 @@
 # WR-EWP-004 r1 — Watch, operate and validate the local product
 
-Status: In Progress. Phase 1A: EXECUTION. Owner: Codex. Date: 2026-09-07.
+Status: Done. Phase 1A: CLOSEOUT. Owner: Codex. Date: 2026-09-07.
 
 ## Objective and traceability
 
@@ -27,4 +27,12 @@ WR-DEC-006 approves r1 under the user's explicit owner/operator delegation, 2026
 
 ## Closeout
 
-Pending.
+Build, 28 unit tests, 20 isolated PostgreSQL/WebSocket cases, four actual Chromium workflows, and Prisma validation passed. Exact logs: `.jes/local/ewp-004/final-{build,unit,integration,browser,prisma}.log`. All temporary schemas were removed.
+
+Clean `npm ci` and managed setup passed; the install reports zero vulnerabilities. The exact operator run `.jes/local/ewp-004/operator/1788823509001/result.json` verifies repeated start/stop, full API/database restart, persisted identity/board, unchanged preexisting game count, and cleanup of its sole verification game. It leaves the service ready on port 4000. Setup/install logs are in the same package evidence root.
+
+Browser evidence `.jes/local/ewp-004/browser/1788823926376` verifies selected Normal progress, live updates, no enrollment/scoring by viewers, safe user-name rendering, transparent viewport-fitting overlay, landing readiness, archive contents, and Lockout winner. The equivalent operator, spectator, Lockout and overlay screenshots from the earlier passing run `1788823202695` were visually inspected. Extension M3 workflows also passed on the final sources.
+
+Source review and `git diff --check` passed. No Prisma schema changed in this package. Runtime dependency updates retain Prisma 6; reviewed `deepmerge-ts` 8 override is documented. Windows, Docker runtime, live Wikipedia and actual OBS capture are not converted into passing claims.
+
+Delegated owner decision: required M4 local gates accepted, WR-DEC-007. Further live/endurance/legacy qualification continues under WR-EWP-005; final delivered-use adjudication will reference both packages.

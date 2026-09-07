@@ -6,12 +6,12 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build:api && npm run build:extension",
+    "build": "npm run build:api && npm run build:extension && npm run package:extension",
     "build:shared": "npm run --workspace=@bingo/shared build",
     "build:game-engine": "npm run build:shared && npm run --workspace=@bingo/game-engine build",
     "build:api": "npm run build:game-engine && npm run --workspace=api build",
     "build:extension": "npm run build:shared && npm run --workspace=extension build",
-    "dev:api": "npm run build:game-engine && npm run --workspace=api dev",
+    "dev:api": "npm run build:game-engine && node scripts/dev-api.mjs",
     "prisma:generate": "npm run --workspace=api prisma:generate",
     "prisma:validate": "npm run --workspace=api prisma:validate",
     "prisma:migrate:dev": "npm run --workspace=api prisma:migrate:dev --",
@@ -23,11 +23,24 @@
     "test:browser": "npm run build && node scripts/test-integration.mjs --browser",
     "test:extension": "npm run build:shared && npm run --workspace=extension test",
     "browser:install": "node scripts/browser-install.mjs",
+    "package:extension": "node scripts/package-extension.mjs",
+    "setup:local": "node scripts/local.mjs setup",
+    "local:start": "node scripts/local.mjs start",
+    "local:stop": "node scripts/local.mjs stop",
+    "local:status": "node scripts/local.mjs status",
     "prisma:migrate:deploy": "npm run --workspace=api prisma:migrate:deploy"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^25.6.0",
-    "tsx": "^4.21.0"
+    "fflate": "^0.8.3",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.13"
   }
 }

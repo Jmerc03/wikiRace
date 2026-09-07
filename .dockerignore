@@ -1,0 +1,12 @@
+.git
+.local
+.jes/local
+.jes/reports
+node_modules
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+apps/api/public/downloads
+test-results
+playwright-report

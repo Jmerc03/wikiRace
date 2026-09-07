@@ -60,6 +60,8 @@ copyGameIdButton?.addEventListener("click", () => {
   if (latest?.gameId) void navigator.clipboard.writeText(latest.gameId).then(() => {if(statusEl) statusEl.textContent="Game ID copied.";}).catch(showError);
 });
 document.getElementById("open-board")?.addEventListener("click", () => void chrome.tabs.create({url:chrome.runtime.getURL("popup.html?view=board")}));
+document.getElementById("open-wikipedia")?.addEventListener("click", () => void chrome.tabs.create({url:"https://en.wikipedia.org/wiki/Special:Random"}));
+document.getElementById("watch-game")?.addEventListener("click", () => { if(latest?.gameId) void chrome.tabs.create({url:`${latest.apiOrigin}/spectate/${latest.gameId}`}); });
 document.getElementById("save-server")?.addEventListener("click", async () => {
   try {
     const apiOrigin=normalizeApiOrigin(valueOf(document.getElementById("api-origin")));
@@ -89,6 +91,7 @@ function renderState(state: GameState) {
   setHidden("join-section", hasSession);
   setHidden("team-controls", state.status !== "WAITING");
   setHidden("match-details", !hasSession);
+  setHidden("watch-game", !hasSession);
   const playerRoster=document.getElementById("player-roster");
   if(playerRoster) {
     playerRoster.replaceChildren();

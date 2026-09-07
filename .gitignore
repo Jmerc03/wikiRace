@@ -102,3 +102,4 @@ SCRATCHPAD.md
 .jes/reports/
 playwright-report/
 test-results/
+apps/api/public/downloads/

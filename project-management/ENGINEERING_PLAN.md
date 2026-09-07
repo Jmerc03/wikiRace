@@ -31,10 +31,10 @@ Consequential cross-component behavior is specified in [GAME_CONTRACT.md](../doc
 
 | Milestone | Required output and exit gate | Packages | State |
 | --- | --- | --- | --- |
-| M1 Foundation | JES ownership/records and preserved baseline; real database characterization passes | WR-EWP-001 | Active |
-| M2 Match integrity | Valid boards, validation errors, isolated identity, atomic claims/wins, stable winner | WR-EWP-002 | Planned |
-| M3 Complete player experience | Lobby/host/team lifecycle, leave/resume, configurable backend, resilient extension | WR-EWP-003 | Planned |
-| M4 Watch and operate | Spectator/stream pages, documented clean startup, integrated browser/API evidence, delivered-use review | WR-EWP-004 | Planned |
+| M1 Foundation | JES ownership/records and preserved baseline; real database characterization passes | WR-EWP-001 | Done |
+| M2 Match integrity | Valid boards, validation errors, isolated identity, atomic claims/wins, stable winner | WR-EWP-002 | Done |
+| M3 Complete player experience | Lobby/host/team lifecycle, leave/resume, configurable backend, resilient extension | WR-EWP-003 | Done |
+| M4 Watch and operate | Spectator/stream pages, documented clean startup, integrated browser/API evidence, delivered-use review | WR-EWP-004 | Done |
 
 ## Validation readiness and dependencies
 

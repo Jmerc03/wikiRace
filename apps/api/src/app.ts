@@ -6,6 +6,7 @@ import websocket from "@fastify/websocket";
 import { realtimeRoutes } from "./routes/realtime.routes.js";
 import { ZodError } from "zod";
 import { GameError } from "./game-errors.js";
+import { spectatorRoutes } from "./routes/spectator.routes.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -33,6 +34,7 @@ export function buildApp() {
   app.register(healthRoutes);
   app.register(gameRoutes, { prefix: "/games" });
   app.register(realtimeRoutes);
+  app.register(spectatorRoutes);
 
   return app;
 }

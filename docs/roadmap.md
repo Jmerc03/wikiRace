@@ -1,99 +1,20 @@
 # Roadmap
 
-## Completed
+The accepted plan and evidence are in [ENGINEERING_PLAN.md](../project-management/ENGINEERING_PLAN.md) and [PROJECT_STATE.md](../project-management/PROJECT_STATE.md).
 
-### Core Gameplay
+## Delivered local product
 
-- Create game
-- Join game
-- Multiplayer support
-- Normal mode
-- Lockout mode
+- M1: JES 0.3.0 registration, explicit monorepo ownership, preserved inherited baseline and real database characterization.
+- M2: protected player sessions, valid 25-square boards, transactional claims/completions, consistent final winners and separate Normal/Lockout rules.
+- M3: waiting lobby, host start/end/transfer, team setup, leave/resume, configurable server, WebSocket recovery and browser restart persistence.
+- M4: read-only spectator and transparent stream pages, downloadable extension, managed local startup/recovery, clean install and integrated browser verification.
 
-### Realtime
+## Current qualification
 
-- WebSocket synchronization
-- Live board updates
+Real Wikipedia extraction and extended realtime/recovery qualification are tracked separately from deterministic fixture tests. Follow bounded package status in `project-management/work-packages`.
 
-### Players
+## Future product decisions
 
-- Player names
-- Persistent player state
-- Player colors
+Public lobbies, matchmaking, friends, daily boards, speedruns, tournaments, rankings, statistics and AI boards remain future work. Public hosting, native Windows qualification and multi-process realtime require their own actual evidence and scoped delivery decision.
 
-### Teams
-
-- Team creation
-- Team joining
-- Team leaving
-- Team colors
-- Team ownership
-- Team-aware win detection
-- Owner-aware Lockout winner display
-- Team roster API support
-- Team roster cards
-- Current team display
-
-### Repository Stabilization
-
-- Standardized root and workspace build scripts
-- Initial win-checker and Lockout ownership tests
-- Pure response-shaping helpers
-
----
-
-## In Progress
-
-### Stabilization
-
-- Add database-backed route characterization tests
-- Document and prioritize deferred architectural work
-- Track remaining work in [TECH_DEBT.md](TECH_DEBT.md)
-
----
-
-## Next
-
-### Game Management
-
-- Leave game
-- Host controls
-- Better lobby experience
-
-### Spectators
-
-- Spectator mode
-- Read-only game view
-
-### Overlay
-
-- Browser source overlay
-- Streamer-friendly layout
-- OBS integration
-
-Spectator and overlay work remain deferred until the stabilization items above
-are complete.
-
----
-
-## Future
-
-### Social
-
-- Public lobbies
-- Matchmaking
-- Friends
-
-### Gameplay
-
-- Daily boards
-- Speedrun mode
-- Team tournaments
-- Draft mode
-
-### Advanced
-
-- Ranking system
-- Statistics
-- Match history
-- AI-generated boards
+See [TECH_DEBT.md](TECH_DEBT.md) for retained engineering limits.

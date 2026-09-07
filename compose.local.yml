@@ -1,0 +1,32 @@
+name: wikirace-local
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: wikirace
+      POSTGRES_DB: wikirace
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - wikirace_local_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wikirace -d wikirace"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://wikirace@postgres:5432/wikirace
+      HOST: 0.0.0.0
+      PORT: 4000
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["sh", "-c", "npm run prisma:migrate:deploy && node apps/api/dist/server.js"]
+volumes:
+  wikirace_local_pgdata:

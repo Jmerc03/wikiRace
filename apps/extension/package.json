@@ -13,7 +13,7 @@
   "description": "",
   "devDependencies": {
     "@types/chrome": "^0.1.40",
-    "esbuild": "^0.27.7",
+    "esbuild": "^0.28.2",
     "typescript": "^6.0.3"
   }
 }

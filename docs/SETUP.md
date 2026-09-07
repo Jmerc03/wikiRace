@@ -1,193 +1,140 @@
-# Setup
+# Setup and operation
 
-## Requirements
+## Local quick start
 
-- Node.js
-- PostgreSQL
-- Chrome
-
----
-
-## Install
-
-From repository root:
+Use Node.js 22.12 or newer. On macOS, put PostgreSQL tools (`pg_ctl`, `initdb`, `psql`, `createdb`) on PATH. Alternatively, run Docker Desktop and select Docker database mode.
 
 ```bash
-npm install
+npm ci
+npm run setup:local
+npm run local:start
 ```
 
----
+Open `http://127.0.0.1:4000`. The setup command initializes a **dedicated** native database only when its data directory is absent, verifies ownership of the selected database port, applies checked-in migrations, generates Prisma, builds the app, and packages the extension. Rerunning it preserves existing games.
 
-## Run API
+Defaults:
+
+| Item | Location |
+| --- | --- |
+| Operator page / API | `http://127.0.0.1:4000` |
+| Native PostgreSQL | `127.0.0.1:55432`, database/user `wikirace` |
+| Native data | `.local/postgres` |
+| Selected local configuration | `.local/runtime.json` |
+| API ownership/PID | `.local/api-owner.json` |
+| API/database logs | `.local/api.log`, `.local/postgres-server.log` |
+| Built extension | `apps/extension/dist` |
+| Extension ZIP/checksum | `apps/api/public/downloads` |
+
+`WIKIRACE_API_PORT` and `WIKIRACE_DB_PORT` can select non-default ports during setup. Docker database mode uses the port in `compose.local.yml`. These variables do not select or reset unrelated databases. Local trust authentication is restricted to the loopback profile; it is not a public production database configuration.
+
+## Stop and recover
 
 ```bash
-npm run dev:api
+npm run local:status
+npm run local:stop
+npm run local:start
 ```
 
-Build:
+Stop the dedicated database too when needed:
 
 ```bash
-npm run build:api
+npm run local:stop -- --database
+npm run local:start
 ```
 
-The root API and game-engine commands build their workspace dependencies first.
+The manager verifies the API instance identity before stopping its recorded PID. It refuses to take over an occupied API/database port. Starting the service restarts its stopped database. API and database restart preserve game state and session tokens. No reset command is part of normal setup/recovery.
 
----
+After source changes, run `npm run build`, then stop/start the managed API to load them. The generated extension must be reloaded through Chrome’s extensions page.
 
-## Prisma
+## Extension and play
 
-Generate client:
+1. Open the operator page and download/unzip the extension, or use `apps/extension/dist` directly.
+2. Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the folder containing `manifest.json`.
+3. Open WikiRace, enter a name, and **Create Lobby**. Share the game ID with another player using the same server.
+4. In Lockout, create/join teams in the lobby. The host selects **Start Match**.
+5. Browse English Wikipedia article pages. **Open Wikipedia** chooses a random starting article. **Open Full Board** keeps the board in a normal browser tab.
+6. **Leave Game** updates membership. **End Match** is a host action affecting everyone.
 
-```bash
-npm run prisma:generate
-```
+The extension retains identity and progress across browser restarts and server outages. Reconnect is automatic; **Refresh Board** forces a fetch. A temporary failure preserves credentials and the last known board. **Forget Local Session** explicitly abandons credentials when a session is unavailable; it does not notify an unreachable server. Server preferences survive leaving/forgetting.
 
-Validate schema:
+To change the backend, leave the current game and use **Server settings**. Enter an HTTP(S) origin without a path or credentials and select **Save Server**. Chrome requests access to that exact origin. The default is `http://localhost:4000`. English Wikipedia and loopback hosts are declared permissions; other hosts use optional permissions. All players need network access to the same chosen backend. Public hosting and TLS termination are operator deployment decisions outside the local evidence profile.
 
-```bash
-npm run prisma:validate
-```
+## Spectators and OBS
 
-Create migration:
+Open `/spectate/<game-id>` or select **Watch / Stream** in the extension. Spectators do not become players. Normal mode can follow any player's progress; Lockout shows exclusive ownership and team/player totals.
 
-```bash
-npm run prisma:migrate:dev -- --name migration_name
-```
+Select **Copy OBS link**, add a Browser Source in OBS, and paste the URL. Use width 1280 and height 900. `/overlay/<game-id>` has a transparent page background and hides interaction controls. An optional `?playerId=<id>` selects Normal progress. Browser rendering/transparency is tested; actual capture inside OBS is a separate operator check.
 
-Apply checked-in migrations without resetting data:
+## Development and migrations
 
-```bash
-npm run prisma:migrate:deploy
-```
-
-The September 7 match-integrity migration adds private session hashes, host and
-winner fields, and indexes. Existing records remain intact. Legacy players have
-no recoverable private token: explicitly join again to obtain a new identity;
-public player IDs cannot be used to recover credentials. Set `DATABASE_URL` to
-the intended database before applying migrations.
-
-Open Prisma Studio:
+Build all workspaces and package the extension:
 
 ```bash
-npm run prisma:studio
-```
-
----
-
-## Extension
-
-Build:
-
-```bash
-npm run build:extension
-```
-
-Type-check without rebuilding:
-
-```bash
-npm run --workspace=extension typecheck
-```
-
-Reload extension:
-
-- Open chrome://extensions
-- Enable Developer Mode
-- Load `apps/extension/dist` if the extension is not installed
-- Click Reload
-
-Open the extension, enter a player name, and **Create Lobby**. Share the game ID
-with another player using the same server. In Lockout, create/join teams while
-waiting. The host selects **Start Match**. Browse English Wikipedia articles to
-score; **Open Full Board** keeps the board in a normal browser tab. **Leave Game**
-updates membership, while **End Match** is a host action affecting everyone.
-
-The extension retains game identity across restart and server outages. Refresh
-after restoring the server. **Forget Local Session** explicitly abandons local
-credentials when a session is unavailable; it does not tell an unreachable
-server that the player left. Server preferences survive either leave action.
-
-To connect to another backend, leave the current game, open **Server settings**,
-enter its HTTP(S) origin, and select **Save Server**. Chrome asks for access to
-that specific origin. The default local origin is `http://localhost:4000`.
-Wikipedia access and loopback hosts are declared permissions; remote hosts are
-optional permissions requested through this user action.
-
----
-
-## Game Engine
-
-Build:
-
-```bash
-npm run build:game-engine
-```
-
----
-
-## Tests
-
-Run all tests:
-
-```bash
+npm run build
 npm test
 ```
 
-Run one test suite:
+Individual commands build required shared dependencies:
 
 ```bash
-npm run test:game-engine
-npm run test:api
+npm run build:api
+npm run build:extension
+npm run build:game-engine
+npm run --workspace=extension typecheck
 ```
 
-Install isolated Chromium tooling and run actual extension tests:
+For foreground development, set `DATABASE_URL` explicitly or use the selected `.local/runtime.json` profile, then run `npm run dev:api`. Without a local profile, the API loads `apps/api/.env`. `.env.example` documents the default local settings; existing `.env` files are not overwritten by setup.
+
+Prisma commands use the supplied `DATABASE_URL` or API environment file. For the default local database, a POSIX example is:
 
 ```bash
+export DATABASE_URL=postgresql://wikirace@127.0.0.1:55432/wikirace
+npm run prisma:generate
+npm run prisma:validate
+npm run prisma:migrate:deploy
+```
+
+PowerShell sets the same value with `$env:DATABASE_URL = 'postgresql://wikirace@127.0.0.1:55432/wikirace'`.
+
+To author a new migration, use `npm run prisma:migrate:dev -- --name migration_name`. Apply checked-in migrations with `prisma:migrate:deploy`; do not use a database reset for normal upgrades.
+
+The September 7 additive migration preserves existing games, players, visits and claims, and adds session hashes and stable host/winner fields. Legacy player records cannot recover private tokens from public IDs: explicitly join a new session. Historical records remain available. Prisma CLI stays at 6.19.3; the root development dependency ensures npm applies the reviewed `deepmerge-ts` security override across workspace links. See [dependency review](DEPENDENCIES.md).
+
+## Automated evidence
+
+```bash
+npm test
+npm run test:integration
 npm run browser:install
 npm run test:browser
 ```
 
-These tests use real installed extension profiles, PostgreSQL, HTTP and
-WebSockets, with deterministic Wikipedia DOM fixtures. Browser profile and API
-restart are exercised. Fixture navigation is not a claim of live Wikipedia
-availability. Chromium binaries live in ignored `.local/browsers`; test database
-isolation is the same as the API integration runner.
+Each integration/browser run creates a random `wr_test_*` PostgreSQL schema, applies migrations, executes actual HTTP/WebSocket/browser work, and removes only that schema. Set `WIKIRACE_TEST_DATABASE_URL` to use an explicitly chosen test database; default is the dedicated local instance. A missing database fails the suite rather than skipping it.
 
-Database-backed tests run with `npm run test:integration`. They create a unique
-`wr_test_*` schema, apply checked-in migrations, exercise actual API and
-WebSocket behavior, then remove only that schema. Set
-`WIKIRACE_TEST_DATABASE_URL` to an explicitly chosen test PostgreSQL database;
-the default is `postgresql://wikirace@127.0.0.1:55432/wikirace`.
+Chromium binaries live under ignored `.local/browsers`. The deterministic browser suite loads actual extension profiles and uses synthetic Wikipedia article DOM. It verifies two-player Normal isolation, Lockout teams/majority, saved-profile resume, API stop/restart, live spectators, safe name rendering and overlay transparency. It does not assert live Wikipedia availability by itself.
 
-JES 0.3.0 project state and approved milestone/package records are in
-`project-management/PROJECT_STATE.md`. Local request/receipt and baseline logs
-are retained under `.jes/local` and are not committed as source.
+`node scripts/verify-local.mjs` exercises idempotent managed start/stop, a full API/database restart, preserved sessions/boards, and restores the original game count. It stops only the dedicated local stack; do not run it concurrently with other WikiRace tests or active play.
 
----
+## Docker alternative
 
-## Useful Commands
+The new local composition uses a separate project/volume from the old `docker-compose.yml`, preserving any older volume.
 
-Build everything:
+Database-only setup through the manager:
 
 ```bash
-npm run build
+WIKIRACE_DB_MODE=docker npm run setup:local
+npm run local:start
 ```
 
-Run API only:
+In PowerShell use `$env:WIKIRACE_DB_MODE = 'docker'` before setup. A complete optional container composition is:
 
 ```bash
-npm run dev:api
+docker compose -f compose.local.yml up --build -d
+docker compose -f compose.local.yml stop
 ```
 
-Run extension build:
+Do not run the managed native API and container API on port 4000 at the same time. Do not add `-v` when stopping: that deletes database volumes. Docker/native Windows commands are provided as implementation paths; current host qualification is recorded separately in project state. The empty Kubernetes files remain historical placeholders, not a deployable production system.
 
-```bash
-npm run build:extension
-```
+## JES
 
-Build an individual workspace:
-
-```bash
-npm run build:shared
-npm run build:game-engine
-npm run build:api
-```
+The project uses JES 0.3.0 with one repository/System and four explicit Subsystem owners. Planning, exact package decisions and closeouts are repository-owned in `project-management`; local Core has the registered project/owner graph. Reports/receipts and test logs live in ignored `.jes/local` and `.jes/reports`. No synthetic Execution or human Approval objects are created for this manually initiated Codex task.
