@@ -1,6 +1,6 @@
 # WR-EWP-002 r1 — Match integrity
 
-Status: In Progress. Phase 1A: EXECUTION. Owner: Codex. Date: 2026-09-07.
+Status: Done. Phase 1A: CLOSEOUT. Owner: Codex. Date: 2026-09-07.
 
 ## Objective and traceability
 
@@ -31,4 +31,8 @@ WR-DEC-004 approves exact r1 under the user's explicit delegation. Scope reviewe
 
 ## Closeout
 
-Pending. Package technical completion does not assert extension browser qualification or delivered-product acceptance.
+Completed. `npm run build`, `npm test` (26 unit cases), `npm run test:integration` (13 real PostgreSQL/WebSocket cases), and Prisma validation passed. The additive migration deployed successfully to the dedicated local database. Evidence: `.jes/local/ewp-002/{integration-01,unit-01,build-01,prisma-validate,migrate-deploy}.log`.
+
+Routes now use protected sessions, explicit public summaries, row-locked atomic mutations, post-commit invalidation, global persisted winner, bounded inputs and full boards. Existing helper/rule behavior and baseline tests are retained. The extension stores/sends the token and refetches its own state on notifications. Observations: previous broadcasts overwrote independent Normal progress; unknown event player IDs created players; failures could partially persist claims. Covered by regression tests and resolved within this package.
+
+M3 owns waiting-lobby lifecycle and robust browser recovery. Legacy tokenless sessions require explicit rejoin; their records remain. Package technical completion does not assert extension browser qualification or delivered-product acceptance.

@@ -54,6 +54,18 @@ Create migration:
 npm run prisma:migrate:dev -- --name migration_name
 ```
 
+Apply checked-in migrations without resetting data:
+
+```bash
+npm run prisma:migrate:deploy
+```
+
+The September 7 match-integrity migration adds private session hashes, host and
+winner fields, and indexes. Existing records remain intact. Legacy players have
+no recoverable private token: explicitly join again to obtain a new identity;
+public player IDs cannot be used to recover credentials. Set `DATABASE_URL` to
+the intended database before applying migrations.
+
 Open Prisma Studio:
 
 ```bash

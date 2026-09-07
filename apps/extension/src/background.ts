@@ -1,5 +1,6 @@
 let gameId: string | null = null;
 let playerId: string | null = null;
+let playerToken: string | null = null;
 let playerName: string | null = null;
 let currentBoard: any = null;
 let completedSquareIds = new Set<string>();
@@ -43,16 +44,19 @@ type BackgroundWinningOwner = {
 type SavedGameState = {
   gameId?: string;
   playerId?: string;
+  playerToken?: string;
 };
 
 async function loadSavedGameState() {
   const saved = (await chrome.storage.local.get([
     "gameId",
     "playerId",
+    "playerToken",
   ])) as SavedGameState;
 
   gameId = saved.gameId ?? null;
   playerId = saved.playerId ?? null;
+  playerToken = saved.playerToken ?? null;
 }
 
 chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
@@ -113,7 +117,7 @@ async function startGame(
 ) {
   const res = await fetch("http://localhost:4000/games", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
     body: JSON.stringify({
       mode,
       boardConfig,
@@ -125,7 +129,8 @@ async function startGame(
 
   gameId = game.id;
   currentBoard = game.board;
-  playerId = game.players?.[0]?.id ?? null;
+  playerId = game.playerId ?? game.players?.[0]?.id ?? null;
+  playerToken = game.playerToken ?? null;
   playerName = game.players?.[0]?.displayName ?? null;
   completedSquareIds = new Set<string>();
   currentMode = game.mode ?? null;
@@ -143,6 +148,7 @@ async function startGame(
   await chrome.storage.local.set({
     gameId,
     playerId,
+    playerToken,
   });
 
   if (gameId) {
@@ -206,6 +212,7 @@ async function syncGameState() {
 
   const res = await fetch(
     `http://localhost:4000/games/${gameId}/state?playerId=${playerId}`,
+    { headers: { Authorization: `Bearer ${playerToken ?? ""}` } },
   );
 
   const state = await res.json();
@@ -284,7 +291,7 @@ async function syncGameState() {
 async function joinGame(joinGameId: string, displayName?: string) {
   const res = await fetch(`http://localhost:4000/games/${joinGameId}/players`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
     body: JSON.stringify({ displayName }),
   });
 
@@ -309,6 +316,7 @@ async function joinGame(joinGameId: string, displayName?: string) {
 
   gameId = state.gameId;
   playerId = state.playerId;
+  playerToken = state.playerToken ?? null;
   playerName = state.playerName ?? null;
   currentBoard = state.board;
   completedSquareIds = new Set<string>(state.completedSquareIds ?? []);
@@ -327,6 +335,7 @@ async function joinGame(joinGameId: string, displayName?: string) {
   await chrome.storage.local.set({
     gameId,
     playerId,
+    playerToken,
   });
 
   if (gameId) {
@@ -364,8 +373,8 @@ async function createTeam(name: string) {
 
   const res = await fetch(`http://localhost:4000/games/${gameId}/teams`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name }),
+    headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
+    body: JSON.stringify({ name, playerId }),
   });
 
   const result = await res.json();
@@ -390,7 +399,7 @@ async function joinTeam(teamId: string) {
     `http://localhost:4000/games/${gameId}/teams/${teamId}/join`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
       body: JSON.stringify({ playerId }),
     },
   );
@@ -415,7 +424,7 @@ async function leaveTeam() {
 
   const res = await fetch(`http://localhost:4000/games/${gameId}/teams/leave`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
     body: JSON.stringify({ playerId }),
   });
 
@@ -439,7 +448,7 @@ async function sendPageVisit(data: unknown) {
     `http://localhost:4000/games/${gameId}/events/page-visit`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
       body: JSON.stringify({
         playerId,
         ...(data as object),
@@ -495,6 +504,7 @@ async function clearGame() {
 
   gameId = null;
   playerId = null;
+  playerToken = null;
   currentBoard = null;
   completedSquareIds = new Set<string>();
   currentMode = null;
@@ -509,7 +519,7 @@ async function clearGame() {
   currentWinningLine = null;
   currentWinningLineType = null;
 
-  await chrome.storage.local.remove(["gameId", "playerId"]);
+  await chrome.storage.local.remove(["gameId", "playerId", "playerToken"]);
   await chrome.storage.local.clear();
 
   return {
@@ -557,6 +567,7 @@ async function sendCurrentTabPageVisit() {
 }
 
 function connectWebSocket(activeGameId: string) {
+  if (ws?.url === `ws://localhost:4000/ws/${activeGameId}` && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
   if (ws) {
     ws.close();
   }
@@ -574,24 +585,7 @@ function connectWebSocket(activeGameId: string) {
       return;
     }
 
-    completedSquareIds = new Set<string>(message.data.completedSquareIds ?? []);
-    currentBoard = message.data.board ?? currentBoard;
-    currentMode = message.data.mode ?? currentMode;
-    currentStatus = message.data.status ?? currentStatus;
-    currentBoardConfig = message.data.boardConfig ?? currentBoardConfig;
-    currentPlayerCount = message.data.playerCount ?? currentPlayerCount;
-    currentPlayers = (message.data.players ??
-      currentPlayers) as BackgroundPlayerSummary[];
-    playerName =
-      currentPlayers.find((player) => player.id === playerId)?.displayName ??
-      playerName;
-    currentSquareClaims = message.data.squareClaims ?? currentSquareClaims;
-    currentWinner = message.data.winner ?? false;
-    currentWinningOwner = message.data.winningOwner ?? null;
-    currentWinningLine = message.data.winningLine ?? null;
-    currentWinningLineType = message.data.winningLineType ?? null;
-    currentTeams = (message.data.teams ??
-      currentTeams) as BackgroundTeamSummary[];
+    await syncGameState();
 
     try {
       await chrome.runtime.sendMessage({

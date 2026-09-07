@@ -20,7 +20,7 @@
     "test:game-engine": "npm run --workspace=@bingo/game-engine test",
     "test:api": "npm run build:game-engine && npm run --workspace=api test",
     "test:integration": "npm run build:api && node scripts/test-integration.mjs",
-    "prisma:migrate:deploy": "npm run --workspace=api exec -- prisma migrate deploy"
+    "prisma:migrate:deploy": "npm run --workspace=api prisma:migrate:deploy"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

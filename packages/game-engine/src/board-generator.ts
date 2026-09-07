@@ -6,9 +6,6 @@ import type {
 } from "@bingo/shared";
 import { vitalArticles, type VitalArticle } from "./vital-articles.js";
 
-const GENERIC_TILE_COUNT = 10;
-const VITAL_ARTICLE_TILE_COUNT = 15;
-
 const genericSquareTemplates: Omit<BoardSquare, "id" | "position">[] = [
   {
     type: "TITLE_CONTAINS",
@@ -88,6 +85,12 @@ const genericSquareTemplates: Omit<BoardSquare, "id" | "position">[] = [
     condition: { count: 200 },
     difficulty: "HARD",
   },
+  ...Array.from("BDEFGHIJKLNOPQRSTUVWXYZ", (letter) => ({
+    type: "TITLE_STARTS_WITH" as const,
+    label: `Visit a page starting with ${letter}`,
+    condition: { letter },
+    difficulty: "MEDIUM" as const,
+  })),
 ];
 
 const defaultBoardConfig: BoardGenerationConfig = {
@@ -100,7 +103,19 @@ const defaultBoardConfig: BoardGenerationConfig = {
 export function generateBoard(
   config: BoardGenerationConfig = defaultBoardConfig,
 ): Board {
+  if (![config.vitalArticleTileCount, config.genericTileCount].every(
+    (count) => Number.isInteger(count) && count >= 0 && count <= 25,
+  ) || config.vitalArticleTileCount + config.genericTileCount !== 25) {
+    throw new RangeError("Board tile counts must add up to 25");
+  }
+  if (!Number.isInteger(config.maxTilesPerTopic) || config.maxTilesPerTopic < 1 ||
+      config.maxTilesPerTopic > 25 || !["EASY", "MIXED", "HARD"].includes(config.difficulty)) {
+    throw new RangeError("Invalid board difficulty or topic limit");
+  }
   const selectedSquares = buildTwentyFiveSquares(config);
+  if (selectedSquares.length !== 25) {
+    throw new RangeError("Not enough distinct articles for this difficulty and topic limit; increase maxTilesPerTopic or choose more generic tiles");
+  }
 
   return {
     id: crypto.randomUUID(),
@@ -154,11 +169,14 @@ function selectDiverseVitalArticles(
   );
 
   const selected: VitalArticle[] = [];
+  const selectedTitles = new Set<string>();
   const topicCounts = new Map<string, number>();
 
   for (const article of shuffledArticles) {
     if (selected.length >= count) break;
 
+    const titleKey = article.title.trim().toLocaleLowerCase("en");
+    if (selectedTitles.has(titleKey)) continue;
     const topic = article.topic ?? "Unknown";
     const currentTopicCount = topicCounts.get(topic) ?? 0;
 
@@ -167,6 +185,7 @@ function selectDiverseVitalArticles(
     }
 
     selected.push(article);
+    selectedTitles.add(titleKey);
     topicCounts.set(topic, currentTopicCount + 1);
   }
 

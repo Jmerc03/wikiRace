@@ -1,882 +1,184 @@
 import type { FastifyInstance } from "fastify";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import {
-  generateBoard,
-  evaluateSquare,
-  getWinningLineResult,
-} from "@bingo/game-engine";
-import { prisma } from "../db/prisma.js";
-import type { BoardSquare, PageVisitEvent } from "@bingo/shared";
 import { Prisma } from "@prisma/client";
-import { broadcastToGame } from "../realtime/game-connections.js";
-import {
-  buildPlayerSummaries,
-  buildSquareClaimSummaries,
-  buildTeamSummaries,
-  buildLockoutWinningResult,
-  buildWinningResult,
-  buildWinningOwner,
-  getLockoutWinningOwnerResult,
-} from "./games.helpers.js";
+import { generateBoard, evaluateSquare, getWinningLineResult } from "@bingo/game-engine";
+import type { BoardSquare } from "@bingo/shared";
+import { prisma } from "../db/prisma.js";
+import { GameError } from "../game-errors.js";
+import { createPlayerSession, requirePlayer } from "../services/game-auth.js";
+import { buildGameState, gameInclude } from "../services/game-state.js";
+import { mutateGame } from "../services/game-mutations.js";
+import { getLockoutWinningOwnerResult } from "./games.helpers.js";
 
-const defaultBoardConfig = {
-  difficulty: "MIXED",
-  vitalArticleTileCount: 15,
-  genericTileCount: 10,
-  maxTilesPerTopic: 3,
-} as const;
-
-const PLAYER_COLORS = [
-  "rgba(255, 107, 107, 0.35)",
-  "rgba(77, 171, 247, 0.35)",
-  "rgba(81, 207, 102, 0.35)",
-  "rgba(252, 196, 25, 0.35)",
-  "rgba(177, 151, 252, 0.35)",
-  "rgba(255, 146, 43, 0.35)",
-];
-
-const TEAM_COLORS = [
-  "rgba(224, 49, 49, 0.35)",
-  "rgba(25, 113, 194, 0.35)",
-  "rgba(47, 158, 68, 0.35)",
-  "rgba(240, 140, 0, 0.35)",
-  "rgba(103, 65, 217, 0.35)",
-  "rgba(194, 37, 92, 0.35)",
-];
-
-function getTeamColor(teamNumber: number) {
-  return TEAM_COLORS[(teamNumber - 1) % TEAM_COLORS.length];
-}
-
-function getPlayerColor(playerNumber: number) {
-  return PLAYER_COLORS[(playerNumber - 1) % PLAYER_COLORS.length];
-}
-
+const PLAYER_COLORS = ["rgba(255,107,107,0.35)", "rgba(77,171,247,0.35)", "rgba(81,207,102,0.35)", "rgba(252,196,25,0.35)", "rgba(177,151,252,0.35)", "rgba(255,146,43,0.35)"];
+const TEAM_COLORS = ["rgba(224,49,49,0.35)", "rgba(25,113,194,0.35)", "rgba(47,158,68,0.35)", "rgba(240,140,0,0.35)", "rgba(103,65,217,0.35)", "rgba(194,37,92,0.35)"];
+const displayName = z.string().trim().min(1).max(40);
+const boardConfigSchema = z.object({
+  difficulty: z.enum(["EASY", "MIXED", "HARD"]).default("MIXED"),
+  vitalArticleTileCount: z.number().int().min(0).max(25).default(15),
+  genericTileCount: z.number().int().min(0).max(25).default(10),
+  maxTilesPerTopic: z.number().int().min(1).max(25).default(3),
+}).refine(value => value.vitalArticleTileCount + value.genericTileCount === 25, "Board tile counts must add up to 25");
 const createGameSchema = z.object({
   mode: z.enum(["NORMAL", "LOCKOUT"]).default("NORMAL"),
-  boardConfig: z
-    .object({
-      difficulty: z.enum(["EASY", "MIXED", "HARD"]).default("MIXED"),
-      vitalArticleTileCount: z.number().int().min(0).max(25).default(15),
-      genericTileCount: z.number().int().min(0).max(25).default(10),
-      maxTilesPerTopic: z.number().int().min(1).max(25).default(3),
-    })
-    .default(defaultBoardConfig),
+  displayName: displayName.default("Player 1"),
+  boardConfig: boardConfigSchema.default({ difficulty:"MIXED", vitalArticleTileCount:15, genericTileCount:10, maxTilesPerTopic:3 }),
+});
+const playerBody = z.object({ playerId: z.uuid() });
+const gameParams = z.object({ gameId: z.uuid() });
+const teamParams = gameParams.extend({ teamId: z.uuid() });
+
+export function isWikipediaArticle(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.origin !== "https://en.wikipedia.org" || url.username || url.password || !url.pathname.startsWith("/wiki/")) return false;
+    const title = decodeURIComponent(url.pathname.slice(6)).replaceAll("_", " ");
+    return title.trim().length > 0 && title !== "Main Page" && !/^(?:Special|Talk|User(?: talk)?|Wikipedia(?: talk)?|File(?: talk)?|Media|MediaWiki(?: talk)?|Template(?: talk)?|Help(?: talk)?|Category(?: talk)?|Portal(?: talk)?|Draft(?: talk)?|Module(?: talk)?|TimedText|Book):/i.test(title);
+  } catch { return false; }
+}
+const pageVisitSchema = playerBody.extend({
+  url: z.string().max(2048).url().refine(isWikipediaArticle, "Only English Wikipedia article pages count"),
+  title: z.string().trim().min(1).max(512),
+  categories: z.array(z.string().max(512)).max(500).default([]),
+  links: z.array(z.string().max(2048)).max(5000).default([]),
 });
 
-const createPlayerSchema = z.object({
-  displayName: z.string().trim().min(1).max(40).default("Player"),
-});
-
-const createTeamSchema = z.object({
-  name: z.string().trim().min(1).max(40),
-});
-
-const joinTeamSchema = z.object({
-  playerId: z.string(),
-});
-
-const pageVisitSchema = z.object({
-  playerId: z.string(),
-  url: z.string().url(),
-  title: z.string(),
-  categories: z.array(z.string()).default([]),
-  links: z.array(z.string()).default([]),
-});
+async function readableState(gameId: string, playerId: string | null) {
+  return prisma.$transaction(tx => buildGameState(tx, gameId, playerId), { isolationLevel: "RepeatableRead" });
+}
 
 export async function gameRoutes(app: FastifyInstance) {
   app.post("/", async (request, reply) => {
     const body = createGameSchema.parse(request.body ?? {});
-    const displayName =
-      request.body &&
-      typeof request.body === "object" &&
-      "displayName" in request.body
-        ? createPlayerSchema.parse(request.body).displayName
-        : "Player 1";
-    const boardConfig = body.boardConfig;
-    const generatedBoard = generateBoard(boardConfig);
-
-    const game = await prisma.game.create({
-      data: {
-        mode: body.mode,
-        status: "ACTIVE",
-        boardConfig: boardConfig as Prisma.InputJsonValue,
-        board: {
-          create: {
-            size: generatedBoard.size,
-            squares: {
-              create: generatedBoard.squares.map((square) => ({
-                position: square.position,
-                type: square.type,
-                label: square.label,
-                condition: square.condition as Prisma.InputJsonValue,
-                difficulty: square.difficulty,
-              })),
-            },
-          },
-        },
-        players: {
-          create: {
-            displayName,
-            color: getPlayerColor(1),
-          },
-        },
-      },
-      include: {
-        board: {
-          include: {
-            squares: true,
-          },
-        },
-        players: true,
-        teams: true,
-      },
+    const board = generateBoard(body.boardConfig);
+    const session = createPlayerSession();
+    const playerId = randomUUID();
+    const state = await prisma.$transaction(async tx => {
+      const game = await tx.game.create({ data: {
+        mode: body.mode, status: "ACTIVE", startedAt: new Date(), hostPlayerId: playerId,
+        boardConfig: body.boardConfig,
+        board: { create: { size: board.size, squares: { create: board.squares.map(square => ({
+          position: square.position, type: square.type, label: square.label,
+          condition: square.condition as Prisma.InputJsonValue, difficulty: square.difficulty,
+        })) } } },
+        players: { create: { id: playerId, displayName: body.displayName, color: PLAYER_COLORS[0], sessionTokenHash: session.sessionTokenHash } },
+      } });
+      return buildGameState(tx, game.id, playerId);
     });
-
-    return reply.code(201).send(game);
+    return reply.code(201).send({ ...state, id: state!.gameId, playerToken: session.playerToken });
   });
 
-  app.get("/:gameId", async (request, reply) => {
-    const { gameId } = request.params as { gameId: string };
-
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: {
-        board: {
-          include: {
-            squares: true,
-          },
-        },
-        players: true,
-        teams: true,
-      },
-    });
-
-    if (!game) {
-      return reply.code(404).send({ error: "Game not found" });
-    }
-
-    return game;
+  // Database player rows include secret hashes; only public summaries are sent.
+  app.get("/:gameId", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const state = await readableState(gameId, null);
+    if (!state) throw new GameError(404, "Game not found");
+    return { ...state, id: gameId };
   });
-
-  app.post("/:gameId/teams", async (request, reply) => {
-    const { gameId } = request.params as { gameId: string };
-    const body = createTeamSchema.parse(request.body ?? {});
-
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: {
-        teams: true,
-      },
-    });
-
-    if (!game) {
-      return reply.code(404).send({ error: "Game not found" });
-    }
-
-    if (game.status === "FINISHED") {
-      return reply.code(409).send({ error: "Game is already finished" });
-    }
-
-    const teamNumber = game.teams.length + 1;
-
-    const team = await prisma.team.create({
-      data: {
-        gameId,
-        name: body.name,
-        color: getTeamColor(teamNumber),
-      },
-    });
-
-    return team;
+  app.get("/:gameId/board", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const state = await readableState(gameId, null);
+    if (!state) throw new GameError(404, "Board not found");
+    return state.board;
   });
-
-  app.post("/:gameId/teams/:teamId/join", async (request, reply) => {
-    const { gameId, teamId } = request.params as {
-      gameId: string;
-      teamId: string;
-    };
-
-    const body = joinTeamSchema.parse(request.body ?? {});
-
-    const team = await prisma.team.findFirst({
-      where: {
-        id: teamId,
-        gameId,
-      },
-    });
-
-    if (!team) {
-      return reply.code(404).send({ error: "Team not found" });
-    }
-
-    const player = await prisma.player.update({
-      where: {
-        id: body.playerId,
-      },
-      data: {
-        teamId,
-        color: team.color,
-      },
-    });
-
-    return {
-      team,
-      player,
-    };
-  });
-
-  app.post("/:gameId/teams/leave", async (request, reply) => {
-    const { gameId } = request.params as { gameId: string };
-    const body = joinTeamSchema.parse(request.body ?? {});
-
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: {
-        players: {
-          orderBy: {
-            joinedAt: "asc",
-          },
-        },
-      },
-    });
-
-    if (!game) {
-      return reply.code(404).send({ error: "Game not found" });
-    }
-
-    if (game.status === "FINISHED") {
-      return reply.code(409).send({ error: "Game is already finished" });
-    }
-
-    const playerIndex = game.players.findIndex(
-      (player) => player.id === body.playerId,
-    );
-    const player = game.players[playerIndex];
-
-    if (!player) {
-      return reply.code(404).send({ error: "Player not found" });
-    }
-
-    if (!player.teamId) {
-      return reply.code(409).send({ error: "Player is not on a team" });
-    }
-
-    const claimCount = await prisma.squareClaim.count({
-      where: {
-        gameId,
-        playerId: player.id,
-      },
-    });
-
-    if (claimCount > 0) {
-      return reply.code(409).send({
-        error: "Cannot leave team after claiming squares",
-      });
-    }
-
-    const updatedPlayer = await prisma.player.update({
-      where: {
-        id: player.id,
-      },
-      data: {
-        teamId: null,
-        color: getPlayerColor(playerIndex + 1),
-      },
-    });
-
-    return {
-      player: updatedPlayer,
-    };
-  });
-
-  app.get("/:gameId/board", async (request, reply) => {
-    const { gameId } = request.params as { gameId: string };
-
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: {
-        board: {
-          include: {
-            squares: true,
-          },
-        },
-        players: true,
-        teams: true,
-      },
-    });
-
-    if (!game || !game.board) {
-      return reply.code(404).send({ error: "Board not found" });
-    }
-
-    return game.board;
-  });
-
-  app.get("/:gameId/state", async (request, reply) => {
-    const { gameId } = request.params as { gameId: string };
-    const playerId = (request.query as { playerId?: string }).playerId;
-
-    if (!playerId) {
-      return reply.code(400).send({ error: "playerId is required" });
-    }
-
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: {
-        board: {
-          include: {
-            squares: true,
-          },
-        },
-        players: true,
-        teams: true,
-      },
-    });
-
-    if (!game || !game.board) {
-      return reply.code(404).send({ error: "Game not found" });
-    }
-
-    if (game.mode === "LOCKOUT") {
-      const claims = await prisma.squareClaim.findMany({
-        where: {
-          gameId,
-        },
-        include: {
-          player: true,
-        },
-      });
-
-      const winningOwnerResult = getLockoutWinningOwnerResult(
-        claims,
-        game.board.squares,
-      );
-      const { winner, winningLine, winningLineType } =
-        buildLockoutWinningResult(winningOwnerResult);
-      const winningOwner = buildWinningOwner(
-        winningOwnerResult,
-        game.players,
-        game.teams,
-      );
-
-      return {
-        gameId,
-        playerId,
-        mode: game.mode,
-        status: game.status,
-        boardConfig: game.boardConfig,
-        playerCount: game.players.length,
-        players: buildPlayerSummaries(game.players),
-        teams: buildTeamSummaries(game.teams, game.players),
-        board: game.board,
-        completedSquareIds: claims.map((claim) => claim.squareId),
-        winner,
-        winningOwner,
-        winningLine,
-        winningLineType,
-        squareClaims: buildSquareClaimSummaries(claims, game.teams),
-      };
-    }
-
-    const completions = await prisma.squareCompletion.findMany({
-      where: {
-        gameId,
-        playerId,
-      },
-    });
-
-    const completedSquareIds = completions.map(
-      (completion) => completion.squareId,
-    );
-
-    const completedPositions = game.board.squares
-      .filter((square) => completedSquareIds.includes(square.id))
-      .map((square) => square.position);
-
-    const { winner, winningLine, winningLineType } = buildWinningResult(
-      getWinningLineResult(completedPositions),
-    );
-
-    return {
-      gameId,
-      playerId,
-      mode: game.mode,
-      status: game.status,
-      boardConfig: game.boardConfig,
-      playerCount: game.players.length,
-      players: buildPlayerSummaries(game.players),
-      teams: buildTeamSummaries(game.teams, game.players),
-      board: game.board,
-      completedSquareIds,
-      winner,
-      winningLine,
-      winningLineType,
-    };
-  });
-
-  app.post("/:gameId/players", async (request, reply) => {
-    const { gameId } = request.params as { gameId: string };
-    const body = createPlayerSchema.parse(request.body ?? {});
-
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: {
-        board: {
-          include: {
-            squares: true,
-          },
-        },
-        players: true,
-        teams: true,
-      },
-    });
-
-    if (!game) {
-      return reply.code(404).send({ error: "Game not found" });
-    }
-
-    if (game.status === "FINISHED") {
-      return reply.code(409).send({ error: "Game is already finished" });
-    }
-
-    const playerNumber = game.players.length + 1;
-    const displayName =
-      body.displayName === "Player"
-        ? `Player ${playerNumber}`
-        : body.displayName;
-
-    const player = await prisma.player.create({
-      data: {
-        gameId,
-        displayName,
-        color: getPlayerColor(playerNumber),
-      },
-    });
-
-    let completedSquareIds: string[] = [];
-    let squareClaims: {
-      squareId: string;
-      playerId: string;
-      playerName: string;
-      playerColor: string | null;
-      teamId: string | null;
-      teamName: string | null;
-      teamColor: string | null;
-      claimedAt: Date;
-    }[] = [];
-
-    if (game.mode === "LOCKOUT") {
-      const claims = await prisma.squareClaim.findMany({
-        where: {
-          gameId,
-        },
-        include: {
-          player: true,
-        },
-      });
-
-      completedSquareIds = claims.map((c) => c.squareId);
-      squareClaims = claims.map((claim) => {
-        const team = game.teams.find((team) => team.id === claim.player.teamId);
-
-        return {
-          squareId: claim.squareId,
-          playerId: claim.playerId,
-          playerName: claim.player.displayName,
-          playerColor: claim.player.color,
-          teamId: claim.player.teamId,
-          teamName: team?.name ?? null,
-          teamColor: team?.color ?? null,
-          claimedAt: claim.claimedAt,
-        };
-      });
-    } else {
-      const completions = await prisma.squareCompletion.findMany({
-        where: {
-          gameId,
-          playerId: player.id,
-        },
-      });
-
-      completedSquareIds = completions.map((c) => c.squareId);
-    }
-
-    return {
-      gameId,
-      playerId: player.id,
-      playerName: player.displayName,
-      playerCount: game.players.length + 1,
-      players: [
-        ...buildPlayerSummaries(game.players),
-        {
-          id: player.id,
-          displayName: player.displayName,
-          color: player.color,
-          teamId: player.teamId,
-        },
-      ],
-      teams: buildTeamSummaries(game.teams, game.players),
-      mode: game.mode,
-      status: game.status,
-      boardConfig: game.boardConfig,
-      board: game.board,
-      completedSquareIds,
-      squareClaims,
-    };
-  });
-
-  app.post("/:gameId/events/page-visit", async (request, reply) => {
-    const { gameId } = request.params as { gameId: string };
-    const event = pageVisitSchema.parse(request.body);
-
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: {
-        board: {
-          include: {
-            squares: true,
-          },
-        },
-        players: true,
-        teams: true,
-      },
-    });
-
-    if (!game || !game.board) {
-      return reply.code(404).send({ error: "Game not found" });
-    }
-
-    if (game.status === "FINISHED") {
-      const state = await buildGameState(gameId, event.playerId);
-
-      if (!state) {
-        return reply.code(404).send({ error: "Game not found" });
-      }
-
+  app.get("/:gameId/state", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const { playerId } = playerBody.parse(request.query);
+    return prisma.$transaction(async tx => {
+      await requirePlayer(tx, request, gameId, playerId);
+      const state = await buildGameState(tx, gameId, playerId);
+      if (!state) throw new GameError(404, "Game not found");
       return state;
-    }
-
-    let player = game.players.find((p) => p.id === event.playerId);
-
-    if (!player) {
-      const playerNumber = game.players.length + 1;
-
-      player = await prisma.player.create({
-        data: {
-          id: event.playerId,
-          gameId,
-          displayName: `Player ${playerNumber}`,
-          color: getPlayerColor(playerNumber),
-        },
-      });
-    }
-
-    const visit = await prisma.pageVisitEvent.create({
-      data: {
-        gameId,
-        playerId: player.id,
-        url: event.url,
-        title: event.title,
-        categories: event.categories,
-        links: event.links,
-      },
-    });
-
-    const pageVisitEvent: PageVisitEvent = {
-      playerId: player.id,
-      url: event.url,
-      title: event.title,
-      categories: event.categories,
-      links: event.links,
-    };
-
-    const completedSquares = game.board.squares.filter((square) =>
-      evaluateSquare(square as BoardSquare, pageVisitEvent),
-    );
-
-    if (game.mode === "LOCKOUT") {
-      const newlyClaimedSquares: typeof completedSquares = [];
-
-      for (const square of completedSquares) {
-        const existingClaim = await prisma.squareClaim.findUnique({
-          where: {
-            gameId_squareId: {
-              gameId,
-              squareId: square.id,
-            },
-          },
-          include: {
-            player: true,
-          },
-        });
-
-        if (existingClaim) {
-          const samePlayer = existingClaim.playerId === player.id;
-          const sameTeam =
-            existingClaim.player.teamId !== null &&
-            player.teamId !== null &&
-            existingClaim.player.teamId === player.teamId;
-
-          if (samePlayer || sameTeam) {
-            continue;
-          }
-
-          continue;
-        }
-
-        try {
-          await prisma.squareClaim.create({
-            data: {
-              gameId,
-              playerId: player.id,
-              squareId: square.id,
-              pageVisitEventId: visit.id,
-            },
-          });
-
-          newlyClaimedSquares.push(square);
-        } catch (err) {
-          console.error("Failed to create square claim:", err);
-        }
-      }
-
-      const claims = await prisma.squareClaim.findMany({
-        where: {
-          gameId,
-        },
-        include: {
-          player: true,
-        },
-      });
-
-      const claimedSquareIds = claims.map((claim) => claim.squareId);
-
-      const winningOwnerResult = getLockoutWinningOwnerResult(
-        claims,
-        game.board.squares,
-      );
-      const { winner, winningLine, winningLineType } =
-        buildLockoutWinningResult(winningOwnerResult);
-      const winningOwner = buildWinningOwner(
-        winningOwnerResult,
-        game.players,
-        game.teams,
-      );
-
-      if (winner) {
-        await prisma.game.update({
-          where: {
-            id: gameId,
-          },
-          data: {
-            status: "FINISHED",
-          },
-        });
-      }
-
-      const response = {
-        gameId,
-        playerId: player.id,
-        mode: game.mode,
-        status: winner ? "FINISHED" : game.status,
-        boardConfig: game.boardConfig,
-        playerCount: game.players.length,
-        players: buildPlayerSummaries(game.players),
-        teams: buildTeamSummaries(game.teams, game.players),
-        board: game.board,
-        completedSquares: newlyClaimedSquares,
-        completedSquareIds: claimedSquareIds,
-        winner,
-        winningOwner,
-        winningLine,
-        winningLineType,
-        squareClaims: buildSquareClaimSummaries(claims, game.teams),
-      };
-
-      broadcastToGame(gameId, {
-        type: "GAME_STATE_UPDATED",
-        data: response,
-      });
-
-      return response;
-    }
-
-    if (game.mode === "NORMAL") {
-      for (const square of completedSquares) {
-        await prisma.squareCompletion.upsert({
-          where: {
-            playerId_squareId: {
-              playerId: player.id,
-              squareId: square.id,
-            },
-          },
-          update: {},
-          create: {
-            gameId,
-            playerId: player.id,
-            squareId: square.id,
-            pageVisitEventId: visit.id,
-          },
-        });
-      }
-
-      const completions = await prisma.squareCompletion.findMany({
-        where: {
-          gameId,
-          playerId: player.id,
-        },
-      });
-
-      const completedSquareIds = completions.map(
-        (completion) => completion.squareId,
-      );
-
-      const completedPositions = game.board.squares
-        .filter((square) => completedSquareIds.includes(square.id))
-        .map((square) => square.position);
-
-      const { winner, winningLine, winningLineType } = buildWinningResult(
-        getWinningLineResult(completedPositions),
-      );
-
-      if (winner) {
-        await prisma.game.update({
-          where: {
-            id: gameId,
-          },
-          data: {
-            status: "FINISHED",
-          },
-        });
-      }
-
-      const response = {
-        gameId,
-        playerId: player.id,
-        mode: game.mode,
-        status: winner ? "FINISHED" : game.status,
-        boardConfig: game.boardConfig,
-        playerCount: game.players.length,
-        players: buildPlayerSummaries(game.players),
-        teams: buildTeamSummaries(game.teams, game.players),
-        board: game.board,
-        completedSquares,
-        completedSquareIds: completions.map(
-          (completion) => completion.squareId,
-        ),
-        winner,
-        winningLine,
-        winningLineType,
-      };
-
-      broadcastToGame(gameId, {
-        type: "GAME_STATE_UPDATED",
-        data: response,
-      });
-
-      return response;
-    }
-
-    return reply
-      .code(400)
-      .send({ error: `Unsupported game mode: ${game.mode}` });
+    }, { isolationLevel: "RepeatableRead" });
   });
 
-  async function buildGameState(gameId: string, playerId: string) {
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: {
-        board: {
-          include: {
-            squares: true,
-          },
-        },
-        players: true,
-        teams: true,
-      },
+  app.post("/:gameId/players", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const body = z.object({ displayName: displayName.optional() }).parse(request.body ?? {});
+    return mutateGame(gameId, async (tx, touch) => {
+      const game = await tx.game.findUniqueOrThrow({ where: { id: gameId }, include: { players: true } });
+      if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
+      if (game.players.filter(p => !p.leftAt).length >= 32) throw new GameError(409, "This game is full (32 players)");
+      const session = createPlayerSession();
+      await touch();
+      const player = await tx.player.create({ data: { gameId, displayName: body.displayName ?? `Player ${game.players.length + 1}`,
+        color: PLAYER_COLORS[game.players.length % PLAYER_COLORS.length], sessionTokenHash: session.sessionTokenHash } });
+      return { ...await buildGameState(tx, gameId, player.id), playerToken: session.playerToken };
     });
+  });
 
-    if (!game || !game.board) {
-      return null;
-    }
-
-    if (game.mode === "LOCKOUT") {
-      const claims = await prisma.squareClaim.findMany({
-        where: {
-          gameId,
-        },
-        include: {
-          player: true,
-        },
-      });
-
-      const claimedSquareIds = claims.map((claim) => claim.squareId);
-
-      const winningOwnerResult = getLockoutWinningOwnerResult(
-        claims,
-        game.board.squares,
-      );
-      const { winner, winningLine, winningLineType } =
-        buildLockoutWinningResult(winningOwnerResult);
-      const winningOwner = buildWinningOwner(
-        winningOwnerResult,
-        game.players,
-        game.teams,
-      );
-
-      return {
-        gameId,
-        playerId,
-        mode: game.mode,
-        status: game.status,
-        boardConfig: game.boardConfig,
-        playerCount: game.players.length,
-        players: buildPlayerSummaries(game.players),
-        teams: buildTeamSummaries(game.teams, game.players),
-        board: game.board,
-        completedSquareIds: claimedSquareIds,
-        winner,
-        winningOwner,
-        winningLine,
-        winningLineType,
-        squareClaims: buildSquareClaimSummaries(claims, game.teams),
-      };
-    }
-
-    const completions = await prisma.squareCompletion.findMany({
-      where: {
-        gameId,
-        playerId,
-      },
+  app.post("/:gameId/teams", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const body = playerBody.extend({ name: displayName }).parse(request.body);
+    return mutateGame(gameId, async (tx, touch) => {
+      await requirePlayer(tx, request, gameId, body.playerId);
+      const game = await tx.game.findUniqueOrThrow({ where: { id: gameId }, include: { teams: true } });
+      if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
+      if (game.teams.length >= 16) throw new GameError(409, "This game already has 16 teams");
+      if (game.teams.some(t => t.name.toLocaleLowerCase("en") === body.name.toLocaleLowerCase("en"))) throw new GameError(409, "A team with that name already exists");
+      await touch();
+      return tx.team.create({ data: { gameId, name: body.name, color: TEAM_COLORS[game.teams.length % TEAM_COLORS.length] } });
     });
+  });
 
-    const completedSquareIds = completions.map(
-      (completion) => completion.squareId,
-    );
-
-    const completedPositions = game.board.squares
-      .filter((square) => completedSquareIds.includes(square.id))
-      .map((square) => square.position);
-
-    const { winner, winningLine, winningLineType } = buildWinningResult(
-      getWinningLineResult(completedPositions),
-    );
-
-    return {
-      gameId,
-      playerId,
-      mode: game.mode,
-      status: game.status,
-      boardConfig: game.boardConfig,
-      playerCount: game.players.length,
-      players: buildPlayerSummaries(game.players),
-      teams: buildTeamSummaries(game.teams, game.players),
-      board: game.board,
-      completedSquareIds,
-      winner,
-      winningLine,
-      winningLineType,
-    };
+  async function changeTeam(request: Parameters<typeof requirePlayer>[1], leaving: boolean) {
+    const { gameId } = gameParams.parse(request.params);
+    const teamId = leaving ? null : teamParams.parse(request.params).teamId;
+    const { playerId } = playerBody.parse(request.body);
+    return mutateGame(gameId, async (tx, touch) => {
+      const player = await requirePlayer(tx, request, gameId, playerId);
+      const game = await tx.game.findUniqueOrThrow({ where: { id: gameId }, include: { players: { orderBy: { joinedAt: "asc" } } } });
+      if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
+      if (await tx.squareClaim.count({ where: { gameId, playerId } }) > 0) throw new GameError(409, "Cannot change teams after claiming squares");
+      const team = teamId ? await tx.team.findFirst({ where: { id: teamId, gameId } }) : null;
+      if (teamId && !team) throw new GameError(404, "Team not found");
+      if (leaving && !player.teamId) throw new GameError(409, "Player is not on a team");
+      await touch();
+      await tx.player.update({ where: { id: playerId }, data: { teamId, color: team?.color ?? PLAYER_COLORS[game.players.findIndex(p=>p.id===playerId) % PLAYER_COLORS.length] } });
+      return buildGameState(tx, gameId, playerId);
+    });
   }
+  app.post("/:gameId/teams/:teamId/join", request => changeTeam(request, false));
+  app.post("/:gameId/teams/leave", request => changeTeam(request, true));
+
+  app.post("/:gameId/events/page-visit", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const event = pageVisitSchema.parse(request.body);
+    return mutateGame(gameId, async (tx, touch) => {
+      const player = await requirePlayer(tx, request, gameId, event.playerId);
+      const game = await tx.game.findUniqueOrThrow({ where: { id: gameId }, include: gameInclude });
+      if (!game.board) throw new GameError(404, "Board not found");
+      if (game.status === "FINISHED") return buildGameState(tx, gameId, player.id);
+      if (game.status !== "ACTIVE") throw new GameError(409, "The host has not started this game");
+      await touch();
+      const visit = await tx.pageVisitEvent.create({ data: { gameId, ...event } });
+      const matched = game.board.squares.filter(square => evaluateSquare(square as BoardSquare, event));
+      let newlyCompleted: typeof matched = [];
+
+      if (game.mode === "LOCKOUT") {
+        const existing = await tx.squareClaim.findMany({ where: { gameId } });
+        const claimedIds = new Set(existing.map(c => c.squareId));
+        newlyCompleted = matched.filter(s => !claimedIds.has(s.id));
+        await tx.squareClaim.createMany({ data: newlyCompleted.map(square => ({ gameId, playerId: player.id, squareId: square.id, pageVisitEventId: visit.id })) });
+        const claims = await tx.squareClaim.findMany({ where: { gameId }, include: { player: true } });
+        const result = getLockoutWinningOwnerResult(claims, game.board.squares);
+        if (result) {
+          const [kind, id] = result.ownerKey.split(":");
+          await tx.game.update({ where: { id: gameId }, data: { status: "FINISHED", finishedAt: new Date(), endReason: "MAJORITY",
+            winnerPlayerId: kind === "player" ? id : null, winnerTeamId: kind === "team" ? id : null } });
+        }
+      } else {
+        const existing = await tx.squareCompletion.findMany({ where: { gameId, playerId: player.id } });
+        const completedIds = new Set(existing.map(c => c.squareId));
+        newlyCompleted = matched.filter(s => !completedIds.has(s.id));
+        await tx.squareCompletion.createMany({ data: newlyCompleted.map(square => ({ gameId, playerId: player.id, squareId: square.id, pageVisitEventId: visit.id })) });
+        for (const square of newlyCompleted) completedIds.add(square.id);
+        const result = getWinningLineResult(game.board.squares.filter(s => completedIds.has(s.id)).map(s => s.position));
+        if (result) await tx.game.update({ where: { id: gameId }, data: { status: "FINISHED", finishedAt: new Date(), endReason: "BINGO",
+          winnerPlayerId: player.id, winningLine: result.positions } });
+      }
+      return { ...await buildGameState(tx, gameId, player.id), completedSquares: newlyCompleted };
+    });
+  });
 }

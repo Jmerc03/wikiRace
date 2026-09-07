@@ -4,8 +4,11 @@ import { once } from "node:events";
 import { WebSocket } from "ws";
 import { buildApp } from "../../src/app.js";
 import { prisma } from "../../src/db/prisma.js";
+import { randomUUID } from "node:crypto";
 
 const app = buildApp();
+const tokens = new Map<string, string>();
+const auth = (playerId: string) => ({ authorization: `Bearer ${tokens.get(playerId)}` });
 let origin: string;
 before(async () => { origin = await app.listen({ port: 0, host: "127.0.0.1" }); });
 after(async () => { await app.close(); await prisma.$disconnect(); });
@@ -14,6 +17,7 @@ async function createGame(mode = "NORMAL") {
   const response = await app.inject({ method: "POST", url: "/games", payload: { mode, displayName: "Host" } });
   assert.equal(response.statusCode, 201, response.body);
   const game = response.json();
+  tokens.set(game.playerId, game.playerToken);
   for (const square of game.board.squares) {
     await prisma.boardSquare.update({ where: { id: square.id }, data: { type: "VISIT_ARTICLE", condition: { title: `Fixture ${square.position}` } } });
   }
@@ -22,17 +26,19 @@ async function createGame(mode = "NORMAL") {
 async function join(gameId: string, displayName = "Guest") {
   const response = await app.inject({ method: "POST", url: `/games/${gameId}/players`, payload: { displayName } });
   assert.equal(response.statusCode, 200, response.body);
-  return response.json();
+  const joined = response.json();
+  tokens.set(joined.playerId, joined.playerToken);
+  return joined;
 }
 async function visit(gameId: string, playerId: string, position: number) {
-  const response = await app.inject({ method: "POST", url: `/games/${gameId}/events/page-visit`, payload: {
+  const response = await app.inject({ method: "POST", url: `/games/${gameId}/events/page-visit`, headers: auth(playerId), payload: {
     playerId, title: `Fixture ${position}`, url: `https://en.wikipedia.org/wiki/Fixture_${position}`, categories: [], links: [],
   } });
   assert.equal(response.statusCode, 200, response.body);
   return response.json();
 }
 async function state(gameId: string, playerId: string) {
-  const response = await app.inject({ url: `/games/${gameId}/state?playerId=${playerId}` });
+  const response = await app.inject({ url: `/games/${gameId}/state?playerId=${playerId}`, headers: auth(playerId) });
   assert.equal(response.statusCode, 200, response.body);
   return response.json();
 }
@@ -79,10 +85,10 @@ test("Lockout first claims persist and a bingo does not finish a game", async ()
 
 test("Lockout teammates combine 13 claims into one persisted team winner", async () => {
   const host = await createGame("LOCKOUT"); const guest = await join(host.gameId);
-  const teamResponse = await app.inject({ method: "POST", url: `/games/${host.gameId}/teams`, payload: { name: "Blue" } });
+  const teamResponse = await app.inject({ method: "POST", url: `/games/${host.gameId}/teams`, headers: auth(host.playerId), payload: { playerId: host.playerId, name: "Blue" } });
   assert.equal(teamResponse.statusCode, 200); const team = teamResponse.json();
   for (const playerId of [host.playerId,guest.playerId]) {
-    const joined = await app.inject({ method: "POST", url: `/games/${host.gameId}/teams/${team.id}/join`, payload: { playerId } });
+    const joined = await app.inject({ method: "POST", url: `/games/${host.gameId}/teams/${team.id}/join`, headers: auth(playerId), payload: { playerId } });
     assert.equal(joined.statusCode, 200);
   }
   for (let i=0; i<13; i++) await visit(host.gameId, i%2 ? guest.playerId : host.playerId, i);
@@ -109,4 +115,90 @@ test("real WebSocket clients receive the committed page-visit update", async () 
     assert.equal(message.type, "GAME_STATE_UPDATED");
     assert.equal((await state(host.gameId, host.playerId)).completedSquareIds.length, 1);
   } finally { const closed=once(ws,"close"); ws.close(); await closed; }
+});
+
+test("invalid counts, payloads and non-article pages return 400 without writes", async () => {
+  for (const payload of [{mode:"INVALID"}, {displayName:" "}, {boardConfig:{vitalArticleTileCount:25,genericTileCount:25}}]) {
+    const response=await app.inject({method:"POST",url:"/games",payload});
+    assert.equal(response.statusCode,400,response.body);
+  }
+  const host=await createGame();
+  for (const url of ["https://example.org/wiki/Test", "https://en.wikipedia.org/wiki/Category:Science", "https://en.wikipedia.org/wiki/Main_Page", "https://en.wikipedia.org/w/index.php", "https://en.wikipedia.org.evil.example/wiki/Test"]) {
+    const response=await app.inject({method:"POST",url:`/games/${host.gameId}/events/page-visit`,headers:auth(host.playerId),payload:{playerId:host.playerId,title:"Fixture 0",url}});
+    assert.equal(response.statusCode,400,response.body);
+  }
+  assert.equal(await prisma.pageVisitEvent.count({where:{gameId:host.gameId}}),0);
+});
+
+test("unknown, forged, and foreign sessions cannot mutate or read player state", async () => {
+  const host=await createGame(); const other=await createGame();
+  const before=await prisma.player.count();
+  for (const [playerId,headers] of [[randomUUID(),auth(host.playerId)], [host.playerId,{}], [host.playerId,auth(other.playerId)], [other.playerId,auth(other.playerId)]] as const) {
+    const response=await app.inject({method:"POST",url:`/games/${host.gameId}/events/page-visit`,headers,payload:{playerId,title:"Fixture 0",url:"https://en.wikipedia.org/wiki/Fixture_0"}});
+    assert.equal(response.statusCode,401,response.body);
+  }
+  const unauthorized=await app.inject({url:`/games/${host.gameId}/state?playerId=${host.playerId}`});
+  assert.equal(unauthorized.statusCode,401);
+  assert.equal(await prisma.player.count(),before);
+  assert.equal(await prisma.pageVisitEvent.count({where:{gameId:host.gameId}}),0);
+});
+
+test("session hashes and tokens never appear in public game or ordinary state responses", async () => {
+  const host=await createGame(); const guest=await join(host.gameId);
+  const player=await prisma.player.findUniqueOrThrow({where:{id:host.playerId}});
+  for (const response of [(await app.inject({url:`/games/${host.gameId}`})).body, JSON.stringify(await state(host.gameId,guest.playerId))]) {
+    assert.ok(!response.includes("sessionTokenHash")); assert.ok(!response.includes("playerToken"));
+    assert.ok(!response.includes(player.sessionTokenHash!)); assert.ok(!response.includes(tokens.get(host.playerId)!));
+  }
+});
+
+test("a player's claims cannot transfer through a team change or foreign-game join", async () => {
+  const host=await createGame("LOCKOUT"); const foreign=await createGame("LOCKOUT");
+  const teamResponse=await app.inject({method:"POST",url:`/games/${host.gameId}/teams`,headers:auth(host.playerId),payload:{playerId:host.playerId,name:"Keepers"}});
+  const team=teamResponse.json();
+  const wrongGame=await app.inject({method:"POST",url:`/games/${host.gameId}/teams/${team.id}/join`,headers:auth(foreign.playerId),payload:{playerId:foreign.playerId}});
+  assert.equal(wrongGame.statusCode,401);
+  await visit(host.gameId,host.playerId,0);
+  const switched=await app.inject({method:"POST",url:`/games/${host.gameId}/teams/${team.id}/join`,headers:auth(host.playerId),payload:{playerId:host.playerId}});
+  assert.equal(switched.statusCode,409);
+  assert.equal((await state(host.gameId,host.playerId)).squareClaims[0].teamId,null);
+});
+
+test("simultaneous Lockout claim attempts yield one consistent owner", async () => {
+  const host=await createGame("LOCKOUT"); const guest=await join(host.gameId);
+  const results=await Promise.all([visit(host.gameId,host.playerId,0),visit(host.gameId,guest.playerId,0)]);
+  const claims=await prisma.squareClaim.findMany({where:{gameId:host.gameId}});
+  assert.equal(claims.length,1);
+  assert.ok([host.playerId,guest.playerId].includes(claims[0].playerId));
+  for (const result of results) assert.equal(result.squareClaims[0].playerId,claims[0].playerId);
+});
+
+test("simultaneous Normal bingos persist exactly one winner visible to every player", async () => {
+  const host=await createGame(); const guest=await join(host.gameId);
+  for (let i=0;i<4;i++) {await visit(host.gameId,host.playerId,i);await visit(host.gameId,guest.playerId,i);}
+  await Promise.all([visit(host.gameId,host.playerId,4),visit(host.gameId,guest.playerId,4)]);
+  const winner=await prisma.game.findUniqueOrThrow({where:{id:host.gameId}});
+  assert.equal(winner.status,"FINISHED"); assert.ok(winner.winnerPlayerId);
+  assert.equal(await prisma.squareCompletion.count({where:{gameId:host.gameId}}),9);
+  for (const id of [host.playerId,guest.playerId]) {
+    const current=await state(host.gameId,id);
+    assert.equal(current.winningOwner.id,winner.winnerPlayerId); assert.equal(current.winner,true);
+  }
+  const revision=winner.revision;
+  await visit(host.gameId,host.playerId,8);
+  assert.equal((await prisma.game.findUniqueOrThrow({where:{id:host.gameId}})).revision,revision);
+});
+
+test("a database failure rolls back the visit, claim, and revision together", async () => {
+  const host=await createGame("LOCKOUT");
+  // A real PostgreSQL constraint injects a failure after event creation.
+  await prisma.$executeRawUnsafe(`ALTER TABLE "SquareClaim" ADD CONSTRAINT wr_injected_failure CHECK ("playerId" <> '${host.playerId}')`);
+  try {
+    const response=await app.inject({method:"POST",url:`/games/${host.gameId}/events/page-visit`,headers:auth(host.playerId),payload:{playerId:host.playerId,title:"Fixture 0",url:"https://en.wikipedia.org/wiki/Fixture_0"}});
+    assert.equal(response.statusCode,500);
+    assert.equal(await prisma.pageVisitEvent.count({where:{gameId:host.gameId}}),0);
+    assert.equal(await prisma.squareClaim.count({where:{gameId:host.gameId}}),0);
+    assert.equal((await prisma.game.findUniqueOrThrow({where:{id:host.gameId}})).revision,0);
+  } finally { await prisma.$executeRawUnsafe('ALTER TABLE "SquareClaim" DROP CONSTRAINT wr_injected_failure'); }
+  assert.equal((await visit(host.gameId,host.playerId,0)).completedSquareIds.length,1);
 });

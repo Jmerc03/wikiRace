@@ -38,6 +38,14 @@ model Game {
   status    GameStatus @default(ACTIVE)
   boardConfig Json?
   createdAt DateTime   @default(now())
+  hostPlayerId String?
+  winnerPlayerId String?
+  winnerTeamId String?
+  winningLine Json?
+  startedAt DateTime?
+  finishedAt DateTime?
+  endReason String?
+  revision Int @default(0)
 
   board     Board?
   players   Player[]
@@ -52,12 +60,16 @@ model Player {
   displayName String
   color       String?
   joinedAt    DateTime @default(now())
+  sessionTokenHash String? @unique
+  leftAt DateTime?
 
   game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   team   Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
   claims SquareClaim[]
   visits      PageVisitEvent[]
   completions SquareCompletion[]
+
+  @@index([gameId, joinedAt])
 
 }
 
@@ -112,6 +124,8 @@ model PageVisitEvent {
   player      Player             @relation(fields: [playerId], references: [id], onDelete: Cascade)
   completions SquareCompletion[]
   claims SquareClaim[]
+
+  @@index([gameId, playerId])
 }
 
 model SquareCompletion {
@@ -127,6 +141,7 @@ model SquareCompletion {
   pageVisitEvent PageVisitEvent @relation(fields: [pageVisitEventId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, squareId])
+  @@index([gameId, playerId])
 }
 
 model SquareClaim {
