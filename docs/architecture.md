@@ -145,3 +145,34 @@ Ownership is derived from:
 SquareClaim.player.teamId
 
 No separate TeamClaim table currently exists.
+
+## JES 0.3.0 ownership and current interface
+
+The existing checkout is one JES Repository and one WikiRace System, with API,
+Extension, Game Engine, and Shared Contracts Subsystems. `.jes/repository.json`
+and `.jes/OWNERSHIP.md` declare explicit v2 ownership. Plans and bounded package
+records live in `project-management`; see `PROJECT_STATE.md` there for current
+evidence. JES operational records are accessed through its local API.
+
+The accepted cross-component behavior is in [GAME_CONTRACT.md](GAME_CONTRACT.md).
+Game creation grants one opaque player token; only its SHA-256 hash is stored.
+Authenticated player state and mutations require the matching bearer token.
+Public reads serialize explicit summaries and never database player rows.
+
+Game mutations lock the game row in PostgreSQL and atomically write visits,
+completions/claims, status, revision, and the final winner. Post-commit WebSocket
+messages invalidate client state. Each player fetches their own Normal progress
+through a consistent read transaction. Lockout retains exclusive ownership and
+13-square majority wins. Team changes are restricted to the waiting lobby, so
+the existing ownership derivation remains stable. Departed players are retained
+to preserve claims and winner attribution.
+
+The extension has one typed session/state owner, a serialized mutation queue,
+generation/revision checks for late async responses, bounded HTTP requests,
+WebSocket reconnect and heartbeat support, and a recovery alarm. One-time player
+tokens stay in extension local storage and authenticated requests, not popup
+state. The extension and API share response types and article-URL eligibility.
+Esbuild bundles script entry points; the build uses portable Node file APIs.
+
+The service still uses one API process for realtime rooms. A multi-process
+deployment needs shared pub/sub and is outside the current local qualification.

@@ -10,7 +10,9 @@ const databaseUrl = process.env.WIKIRACE_TEST_DATABASE_URL ?? "postgresql://wiki
 const schema = `wr_test_${Date.now()}_${randomBytes(4).toString("hex")}`;
 const url = new URL(databaseUrl);
 url.searchParams.set("schema", schema);
-const env = { ...process.env, DATABASE_URL: url.href, NODE_ENV: "test" };
+const browser = process.argv.includes("--browser");
+const env = { ...process.env, DATABASE_URL: url.href, NODE_ENV: "test",
+  PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH ?? `${root}.local/browsers` };
 const admin = new PrismaClient({ datasourceUrl: databaseUrl });
 let created = false;
 
@@ -25,7 +27,7 @@ try {
   created = true;
   console.log(`Isolated integration schema: ${schema}`);
   run([requireApi.resolve("prisma/build/index.js"), "migrate", "deploy"], `${root}apps/api`);
-  run(["--import", "tsx", "--test", "apps/api/test/integration/*.test.ts"]);
+  run(["--import", "tsx", "--test", browser ? "apps/api/test/browser/*.test.ts" : "apps/api/test/integration/*.test.ts"]);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

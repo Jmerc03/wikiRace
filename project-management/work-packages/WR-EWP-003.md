@@ -1,6 +1,6 @@
 # WR-EWP-003 r1 — Complete player lifecycle and resilient extension
 
-Status: In Progress. Phase 1A: EXECUTION. Owner: Codex. Date: 2026-09-07.
+Status: Done. Phase 1A: CLOSEOUT. Owner: Codex. Date: 2026-09-07.
 
 ## Objective and traceability
 
@@ -26,4 +26,10 @@ WR-DEC-005 approves exact r1 under the user's delegated authority, 2026-09-07. D
 
 ## Closeout
 
-Pending.
+Completed. Full build, 28 unit tests, 18 real database/WebSocket integration tests, and two actual Chromium extension workflows pass. Exact command logs are `.jes/local/ewp-003/final-{build,unit,integration,browser}.log`. Final browser screenshots and machine-readable evidence are retained under `.jes/local/ewp-003/browser/1788822120228`.
+
+Confirmed in actual loaded extensions: two-player Normal progress stays independent; browser-profile restart preserves identity and progress; an actual API stop/restart preserves sessions and reconnects; leaving updates membership; two players create/join a team and share a 13-square Lockout win; a five-square row does not win Lockout. Browser console errors: zero. Article content was deterministic fixture DOM under Wikipedia URLs; live Wikipedia availability is not implied.
+
+Changed: authenticated lobby/host/team/leave routes; retained player history; heartbeat/reconnect; shared wire types and article filter; typed extension state owner with async generation checks; portable bundled build; improved player/board UI and server settings; integration/browser tests; rules/setup/architecture documentation. The narrow typed WebSocket adapter preserves compatibility with this workspace's nested Fastify type resolution.
+
+Observations: service-worker restart and API outage must preserve credentials; raw actor-state broadcasts cannot be used by other players. Both are protected by executable browser tests. M4 owns spectator/stream views, supported local startup, packaging, and delivered-use evidence.

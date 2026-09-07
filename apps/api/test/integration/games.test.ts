@@ -13,7 +13,7 @@ let origin: string;
 before(async () => { origin = await app.listen({ port: 0, host: "127.0.0.1" }); });
 after(async () => { await app.close(); await prisma.$disconnect(); });
 
-async function createGame(mode = "NORMAL") {
+async function createGame(mode = "NORMAL", active = true) {
   const response = await app.inject({ method: "POST", url: "/games", payload: { mode, displayName: "Host" } });
   assert.equal(response.statusCode, 201, response.body);
   const game = response.json();
@@ -21,7 +21,13 @@ async function createGame(mode = "NORMAL") {
   for (const square of game.board.squares) {
     await prisma.boardSquare.update({ where: { id: square.id }, data: { type: "VISIT_ARTICLE", condition: { title: `Fixture ${square.position}` } } });
   }
-  return { gameId: game.id, playerId: game.players[0].id, game };
+  if (active) await start(game.id, game.playerId);
+  return { gameId: game.id, playerId: game.playerId, game };
+}
+async function start(gameId: string, playerId: string) {
+  const response = await app.inject({method:"POST",url:`/games/${gameId}/start`,headers:auth(playerId),payload:{playerId}});
+  assert.equal(response.statusCode,200,response.body);
+  return response.json();
 }
 async function join(gameId: string, displayName = "Guest") {
   const response = await app.inject({ method: "POST", url: `/games/${gameId}/players`, payload: { displayName } });
@@ -84,13 +90,14 @@ test("Lockout first claims persist and a bingo does not finish a game", async ()
 });
 
 test("Lockout teammates combine 13 claims into one persisted team winner", async () => {
-  const host = await createGame("LOCKOUT"); const guest = await join(host.gameId);
+  const host = await createGame("LOCKOUT", false); const guest = await join(host.gameId);
   const teamResponse = await app.inject({ method: "POST", url: `/games/${host.gameId}/teams`, headers: auth(host.playerId), payload: { playerId: host.playerId, name: "Blue" } });
   assert.equal(teamResponse.statusCode, 200); const team = teamResponse.json();
   for (const playerId of [host.playerId,guest.playerId]) {
     const joined = await app.inject({ method: "POST", url: `/games/${host.gameId}/teams/${team.id}/join`, headers: auth(playerId), payload: { playerId } });
     assert.equal(joined.statusCode, 200);
   }
+  await start(host.gameId,host.playerId);
   for (let i=0; i<13; i++) await visit(host.gameId, i%2 ? guest.playerId : host.playerId, i);
   for (const playerId of [host.playerId,guest.playerId]) {
     const result = await state(host.gameId, playerId);
@@ -153,11 +160,12 @@ test("session hashes and tokens never appear in public game or ordinary state re
 });
 
 test("a player's claims cannot transfer through a team change or foreign-game join", async () => {
-  const host=await createGame("LOCKOUT"); const foreign=await createGame("LOCKOUT");
+  const host=await createGame("LOCKOUT",false); const foreign=await createGame("LOCKOUT");
   const teamResponse=await app.inject({method:"POST",url:`/games/${host.gameId}/teams`,headers:auth(host.playerId),payload:{playerId:host.playerId,name:"Keepers"}});
   const team=teamResponse.json();
   const wrongGame=await app.inject({method:"POST",url:`/games/${host.gameId}/teams/${team.id}/join`,headers:auth(foreign.playerId),payload:{playerId:foreign.playerId}});
   assert.equal(wrongGame.statusCode,401);
+  await start(host.gameId,host.playerId);
   await visit(host.gameId,host.playerId,0);
   const switched=await app.inject({method:"POST",url:`/games/${host.gameId}/teams/${team.id}/join`,headers:auth(host.playerId),payload:{playerId:host.playerId}});
   assert.equal(switched.statusCode,409);
@@ -198,7 +206,93 @@ test("a database failure rolls back the visit, claim, and revision together", as
     assert.equal(response.statusCode,500);
     assert.equal(await prisma.pageVisitEvent.count({where:{gameId:host.gameId}}),0);
     assert.equal(await prisma.squareClaim.count({where:{gameId:host.gameId}}),0);
-    assert.equal((await prisma.game.findUniqueOrThrow({where:{id:host.gameId}})).revision,0);
+    assert.equal((await prisma.game.findUniqueOrThrow({where:{id:host.gameId}})).revision,1);
   } finally { await prisma.$executeRawUnsafe('ALTER TABLE "SquareClaim" DROP CONSTRAINT wr_injected_failure'); }
   assert.equal((await visit(host.gameId,host.playerId,0)).completedSquareIds.length,1);
+});
+
+test("waiting lobbies do not score and only the host can start or end them", async () => {
+  const host=await createGame("NORMAL",false); const guest=await join(host.gameId);
+  const waiting=await state(host.gameId,guest.playerId);
+  assert.equal(waiting.status,"WAITING"); assert.equal(waiting.startedAt,null);
+  const early=await app.inject({method:"POST",url:`/games/${host.gameId}/events/page-visit`,headers:auth(guest.playerId),payload:{playerId:guest.playerId,title:"Fixture 0",url:"https://en.wikipedia.org/wiki/Fixture_0"}});
+  assert.equal(early.statusCode,409);
+  for(const operation of ["start","end"]) {
+    const rejected=await app.inject({method:"POST",url:`/games/${host.gameId}/${operation}`,headers:auth(guest.playerId),payload:{playerId:guest.playerId}});
+    assert.equal(rejected.statusCode,403);
+  }
+  const active=await start(host.gameId,host.playerId);
+  assert.equal(active.status,"ACTIVE"); assert.ok(active.startedAt);
+  const duplicate=await start(host.gameId,host.playerId);
+  assert.equal(duplicate.revision,active.revision);
+  const ended=await app.inject({method:"POST",url:`/games/${host.gameId}/end`,headers:auth(host.playerId),payload:{playerId:host.playerId}});
+  assert.equal(ended.json().status,"FINISHED"); assert.equal(ended.json().winner,false);
+  assert.equal(ended.json().endReason,"HOST_ENDED");
+  const late=await app.inject({method:"POST",url:`/games/${host.gameId}/players`,payload:{displayName:"Too late"}});
+  assert.equal(late.statusCode,409);
+});
+
+test("team create/join/leave works in a lobby and membership locks for all players at start", async () => {
+  const host=await createGame("LOCKOUT",false); const guest=await join(host.gameId);
+  const create=await app.inject({method:"POST",url:`/games/${host.gameId}/teams`,headers:auth(host.playerId),payload:{playerId:host.playerId,name:"Explorers"}});
+  assert.equal(create.statusCode,200); const team=create.json();
+  for(const playerId of [host.playerId,guest.playerId]) {
+    const joined=await app.inject({method:"POST",url:`/games/${host.gameId}/teams/${team.id}/join`,headers:auth(playerId),payload:{playerId}});
+    assert.equal(joined.statusCode,200);
+  }
+  const left=await app.inject({method:"POST",url:`/games/${host.gameId}/teams/leave`,headers:auth(guest.playerId),payload:{playerId:guest.playerId}});
+  assert.equal(left.statusCode,200);
+  assert.equal(left.json().teams[0].players.length,1);
+  await start(host.gameId,host.playerId);
+  for(const operation of [`teams/${team.id}/join`,"teams/leave","teams"]) {
+    const locked=await app.inject({method:"POST",url:`/games/${host.gameId}/${operation}`,headers:auth(guest.playerId),payload:{playerId:guest.playerId,name:"Late"}});
+    assert.equal(locked.statusCode,409,locked.body);
+  }
+});
+
+test("leaving preserves claims, transfers host authority, and revokes player operations", async () => {
+  const host=await createGame("LOCKOUT"); const guest=await join(host.gameId);
+  await visit(host.gameId,host.playerId,0);
+  const leave=await app.inject({method:"POST",url:`/games/${host.gameId}/players/${host.playerId}/leave`,headers:auth(host.playerId),payload:{}});
+  assert.equal(leave.statusCode,200);
+  const current=await state(host.gameId,guest.playerId);
+  assert.equal(current.hostPlayerId,guest.playerId); assert.equal(current.playerCount,1);
+  assert.equal(current.squareClaims.length,1); assert.equal(current.squareClaims[0].playerId,host.playerId);
+  assert.ok(current.players.find((p:any)=>p.id===host.playerId).leftAt);
+  const invalid=await app.inject({url:`/games/${host.gameId}/state?playerId=${host.playerId}`,headers:auth(host.playerId)});
+  assert.equal(invalid.statusCode,401);
+  const again=await app.inject({method:"POST",url:`/games/${host.gameId}/players/${host.playerId}/leave`,headers:auth(host.playerId),payload:{}});
+  assert.equal(again.statusCode,200);
+  const ended=await app.inject({method:"POST",url:`/games/${host.gameId}/end`,headers:auth(guest.playerId),payload:{playerId:guest.playerId}});
+  assert.equal(ended.statusCode,200);
+});
+
+test("the last player leaving ends the lobby and simultaneous leaves are consistent", async () => {
+  const host=await createGame("NORMAL",false); const guest=await join(host.gameId);
+  const results=await Promise.all([host.playerId,guest.playerId].map(playerId=>app.inject({method:"POST",url:`/games/${host.gameId}/players/${playerId}/leave`,headers:auth(playerId),payload:{}})));
+  for(const result of results) assert.equal(result.statusCode,200);
+  const game=await prisma.game.findUniqueOrThrow({where:{id:host.gameId},include:{players:true}});
+  assert.equal(game.status,"FINISHED"); assert.equal(game.endReason,"EMPTY"); assert.equal(game.hostPlayerId,null);
+  assert.ok(game.players.every(player=>player.leftAt));
+});
+
+test("reconnected WebSocket clients see lobby membership changes without private progress", async () => {
+  const host=await createGame("NORMAL",false);
+  const ws=new WebSocket(`${origin.replace("http:","ws:")}/ws/${host.gameId}`);
+  await once(ws,"open");
+  try {
+    const update=new Promise<any>((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error("Lobby broadcast timeout")),3000);
+      ws.on("message",data=>{const msg=JSON.parse(data.toString());if(msg.type==="GAME_STATE_UPDATED"){clearTimeout(timer);resolve(msg);}});
+    });
+    await join(host.gameId);
+    const message=await update;
+    assert.equal(message.type,"GAME_STATE_UPDATED");
+    assert.equal(message.data,undefined);
+    assert.equal((await state(host.gameId,host.playerId)).playerCount,2);
+  } finally {const closed=once(ws,"close");ws.close();await closed;}
+  const missing=new WebSocket(`${origin.replace("http:","ws:")}/ws/${randomUUID()}`);
+  missing.on("error",()=>{});
+  const [,response]=await once(missing,"unexpected-response");
+  assert.equal(response.statusCode,404); response.resume(); missing.terminate();
 });

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { generateBoard, evaluateSquare, getWinningLineResult } from "@bingo/game-engine";
-import type { BoardSquare } from "@bingo/shared";
+import { isArticleUrl, type BoardSquare } from "@bingo/shared";
 import { prisma } from "../db/prisma.js";
 import { GameError } from "../game-errors.js";
 import { createPlayerSession, requirePlayer } from "../services/game-auth.js";
@@ -29,16 +29,8 @@ const playerBody = z.object({ playerId: z.uuid() });
 const gameParams = z.object({ gameId: z.uuid() });
 const teamParams = gameParams.extend({ teamId: z.uuid() });
 
-export function isWikipediaArticle(value: string) {
-  try {
-    const url = new URL(value);
-    if (url.origin !== "https://en.wikipedia.org" || url.username || url.password || !url.pathname.startsWith("/wiki/")) return false;
-    const title = decodeURIComponent(url.pathname.slice(6)).replaceAll("_", " ");
-    return title.trim().length > 0 && title !== "Main Page" && !/^(?:Special|Talk|User(?: talk)?|Wikipedia(?: talk)?|File(?: talk)?|Media|MediaWiki(?: talk)?|Template(?: talk)?|Help(?: talk)?|Category(?: talk)?|Portal(?: talk)?|Draft(?: talk)?|Module(?: talk)?|TimedText|Book):/i.test(title);
-  } catch { return false; }
-}
 const pageVisitSchema = playerBody.extend({
-  url: z.string().max(2048).url().refine(isWikipediaArticle, "Only English Wikipedia article pages count"),
+  url: z.string().max(2048).url().refine(isArticleUrl, "Only English Wikipedia article pages count"),
   title: z.string().trim().min(1).max(512),
   categories: z.array(z.string().max(512)).max(500).default([]),
   links: z.array(z.string().max(2048)).max(5000).default([]),
@@ -56,7 +48,7 @@ export async function gameRoutes(app: FastifyInstance) {
     const playerId = randomUUID();
     const state = await prisma.$transaction(async tx => {
       const game = await tx.game.create({ data: {
-        mode: body.mode, status: "ACTIVE", startedAt: new Date(), hostPlayerId: playerId,
+        mode: body.mode, status: "WAITING", hostPlayerId: playerId,
         boardConfig: body.boardConfig,
         board: { create: { size: board.size, squares: { create: board.squares.map(square => ({
           position: square.position, type: square.type, label: square.label,
@@ -114,7 +106,7 @@ export async function gameRoutes(app: FastifyInstance) {
     return mutateGame(gameId, async (tx, touch) => {
       await requirePlayer(tx, request, gameId, body.playerId);
       const game = await tx.game.findUniqueOrThrow({ where: { id: gameId }, include: { teams: true } });
-      if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
+      if (game.status !== "WAITING") throw new GameError(409, "Teams can only be created in the lobby");
       if (game.teams.length >= 16) throw new GameError(409, "This game already has 16 teams");
       if (game.teams.some(t => t.name.toLocaleLowerCase("en") === body.name.toLocaleLowerCase("en"))) throw new GameError(409, "A team with that name already exists");
       await touch();
@@ -129,7 +121,7 @@ export async function gameRoutes(app: FastifyInstance) {
     return mutateGame(gameId, async (tx, touch) => {
       const player = await requirePlayer(tx, request, gameId, playerId);
       const game = await tx.game.findUniqueOrThrow({ where: { id: gameId }, include: { players: { orderBy: { joinedAt: "asc" } } } });
-      if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
+      if (game.status !== "WAITING") throw new GameError(409, "Teams are locked once the match starts");
       if (await tx.squareClaim.count({ where: { gameId, playerId } }) > 0) throw new GameError(409, "Cannot change teams after claiming squares");
       const team = teamId ? await tx.team.findFirst({ where: { id: teamId, gameId } }) : null;
       if (teamId && !team) throw new GameError(404, "Team not found");
@@ -141,6 +133,55 @@ export async function gameRoutes(app: FastifyInstance) {
   }
   app.post("/:gameId/teams/:teamId/join", request => changeTeam(request, false));
   app.post("/:gameId/teams/leave", request => changeTeam(request, true));
+
+  app.post("/:gameId/start", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const { playerId } = playerBody.parse(request.body);
+    return mutateGame(gameId, async (tx, touch) => {
+      await requirePlayer(tx, request, gameId, playerId);
+      const game = await tx.game.findUniqueOrThrow({ where: { id: gameId } });
+      if (game.hostPlayerId !== playerId) throw new GameError(403, "Only the host can start the match");
+      if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
+      if (game.status === "WAITING") {
+        await touch();
+        await tx.game.update({ where: { id: gameId }, data: { status: "ACTIVE", startedAt: new Date() } });
+      }
+      return buildGameState(tx, gameId, playerId);
+    });
+  });
+
+  app.post("/:gameId/end", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const { playerId } = playerBody.parse(request.body);
+    return mutateGame(gameId, async (tx, touch) => {
+      await requirePlayer(tx, request, gameId, playerId);
+      const game = await tx.game.findUniqueOrThrow({ where: { id: gameId } });
+      if (game.hostPlayerId !== playerId) throw new GameError(403, "Only the host can end the match");
+      if (game.status !== "FINISHED") {
+        await touch();
+        await tx.game.update({ where: { id: gameId }, data: { status: "FINISHED", finishedAt: new Date(), endReason: "HOST_ENDED" } });
+      }
+      return buildGameState(tx, gameId, playerId);
+    });
+  });
+
+  app.post("/:gameId/players/:playerId/leave", async request => {
+    const { gameId, playerId } = gameParams.extend({ playerId: z.uuid() }).parse(request.params);
+    return mutateGame(gameId, async (tx, touch) => {
+      const player = await requirePlayer(tx, request, gameId, playerId, true);
+      if (!player.leftAt) {
+        await touch();
+        await tx.player.update({ where: { id: playerId }, data: { leftAt: new Date() } });
+        const game = await tx.game.findUniqueOrThrow({ where: { id: gameId } });
+        const remaining = await tx.player.findMany({ where: { gameId, leftAt: null }, orderBy: [{ joinedAt: "asc" }, { id: "asc" }] });
+        await tx.game.update({ where: { id: gameId }, data: {
+          ...(game.hostPlayerId === playerId ? { hostPlayerId: remaining[0]?.id ?? null } : {}),
+          ...(!remaining.length && game.status !== "FINISHED" ? { status: "FINISHED", finishedAt: new Date(), endReason: "EMPTY" } : {}),
+        } });
+      }
+      return { gameId, playerId, left: true };
+    });
+  });
 
   app.post("/:gameId/events/page-visit", async request => {
     const { gameId } = gameParams.parse(request.params);

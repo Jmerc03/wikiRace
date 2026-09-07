@@ -1,606 +1,247 @@
-let gameId: string | null = null;
-let playerId: string | null = null;
-let playerToken: string | null = null;
-let playerName: string | null = null;
-let currentBoard: any = null;
-let completedSquareIds = new Set<string>();
+import type { GameStateResponse, PlayerSessionResponse } from "@bingo/shared";
+import type { ExtensionState, ConnectionStatus } from "./client-types.js";
+import { isArticleUrl, normalizeApiOrigin } from "./wikipedia.js";
+
+type Session = { gameId: string; playerId: string; playerToken: string };
+let session: Session | null = null;
+let state: GameStateResponse | null = null;
+let apiOrigin = "http://localhost:4000";
+let connection: ConnectionStatus = "offline";
+let lastError: string | undefined;
+let invalidSession = false;
+let generation = 0;
 let ws: WebSocket | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+let retryAttempt = 0;
+let syncFlight: { generation: number; again: boolean; promise: Promise<ExtensionState> } | null = null;
+let mutationQueue: Promise<unknown> = Promise.resolve();
 
-let currentMode: string | null = null;
-let currentStatus: string | null = null;
-let currentBoardConfig: unknown = null;
-let currentPlayerCount: number | null = null;
-let currentPlayers: BackgroundPlayerSummary[] = [];
-let currentTeams: BackgroundTeamSummary[] = [];
-
-let currentSquareClaims: unknown[] = [];
-let currentWinner = false;
-let currentWinningOwner: BackgroundWinningOwner | null = null;
-let currentWinningLine: number[] | null = null;
-let currentWinningLineType: string | null = null;
-
-type BackgroundPlayerSummary = {
-  id: string;
-  displayName: string;
-  color?: string | null;
-  teamId?: string | null;
-};
-
-type BackgroundTeamSummary = {
-  id: string;
-  name: string;
-  color: string;
-  players?: BackgroundPlayerSummary[];
-};
-
-type BackgroundWinningOwner = {
-  ownerKey: string;
-  type: "TEAM" | "PLAYER";
-  id: string;
-  name: string;
-  color?: string | null;
-};
-
-type SavedGameState = {
-  gameId?: string;
-  playerId?: string;
-  playerToken?: string;
-};
-
-async function loadSavedGameState() {
-  const saved = (await chrome.storage.local.get([
-    "gameId",
-    "playerId",
-    "playerToken",
-  ])) as SavedGameState;
-
-  gameId = saved.gameId ?? null;
-  playerId = saved.playerId ?? null;
-  playerToken = saved.playerToken ?? null;
-}
-
-chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
-  if (message.type === "START_GAME") {
-    void startGame(message.mode, message.boardConfig, message.displayName).then(
-      sendResponse,
-    );
-    return true;
+const ready = chrome.storage.local.get(["gameId", "playerId", "playerToken", "apiOrigin"]).then(saved => {
+  if (typeof saved.apiOrigin === "string") {
+    try { apiOrigin = normalizeApiOrigin(saved.apiOrigin); } catch { /* Retain safe default for invalid old settings. */ }
   }
-
-  if (message.type === "SYNC_GAME_STATE") {
-    void syncGameState().then(sendResponse);
-    return true;
+  if (typeof saved.gameId === "string" && typeof saved.playerId === "string") {
+    session = { gameId: saved.gameId, playerId: saved.playerId, playerToken: typeof saved.playerToken === "string" ? saved.playerToken : "" };
+    if (!session.playerToken) { invalidSession = true; lastError = "This older session has no private token. Forget it and join again."; }
   }
-
-  if (message.type === "GET_GAME_STATE") {
-    void syncGameState().then(sendResponse);
-    return true;
-  }
-
-  if (message.type === "JOIN_GAME") {
-    void joinGame(message.gameId, message.displayName).then(sendResponse);
-    return true;
-  }
-
-  if (message.type === "CLEAR_GAME") {
-    void clearGame().then(sendResponse);
-    return true;
-  }
-
-  if (message.type === "PAGE_VISIT") {
-    void sendPageVisit(message.data);
-    return false;
-  }
-
-  if (message.type === "CREATE_TEAM") {
-    void createTeam(message.name).then(sendResponse);
-    return true;
-  }
-
-  if (message.type === "JOIN_TEAM") {
-    void joinTeam(message.teamId).then(sendResponse);
-    return true;
-  }
-
-  if (message.type === "LEAVE_TEAM") {
-    void leaveTeam().then(sendResponse);
-    return true;
-  }
-
-  return false;
 });
 
-async function startGame(
-  mode = "NORMAL",
-  boardConfig?: unknown,
-  displayName?: string,
-) {
-  const res = await fetch("http://localhost:4000/games", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
-    body: JSON.stringify({
-      mode,
-      boardConfig,
-      displayName,
-    }),
-  });
-
-  const game = await res.json();
-
-  gameId = game.id;
-  currentBoard = game.board;
-  playerId = game.playerId ?? game.players?.[0]?.id ?? null;
-  playerToken = game.playerToken ?? null;
-  playerName = game.players?.[0]?.displayName ?? null;
-  completedSquareIds = new Set<string>();
-  currentMode = game.mode ?? null;
-  currentStatus = game.status ?? null;
-  currentBoardConfig = game.boardConfig ?? null;
-  currentPlayerCount = game.players?.length ?? null;
-  currentPlayers = (game.players ?? []) as BackgroundPlayerSummary[];
-  currentTeams = (game.teams ?? []) as BackgroundTeamSummary[];
-  currentSquareClaims = [];
-  currentWinner = game.winner ?? false;
-  currentWinningOwner = game.winningOwner ?? null;
-  currentWinningLine = game.winningLine ?? null;
-  currentWinningLineType = game.winningLineType ?? null;
-
-  await chrome.storage.local.set({
-    gameId,
-    playerId,
-    playerToken,
-  });
-
-  if (gameId) {
-    connectWebSocket(gameId);
-  }
-
-  console.log("Game started:", game);
-
-  await sendCurrentTabPageVisit();
-
-  return {
-    gameId,
-    playerId,
-    playerName,
-    playerCount: currentPlayerCount,
-    players: currentPlayers,
-    teams: currentTeams,
-    mode: currentMode,
-    status: currentStatus,
-    boardConfig: currentBoardConfig,
-    board: currentBoard,
-    completedSquareIds: Array.from(completedSquareIds),
-    squareClaims: currentSquareClaims,
-    winner: currentWinner,
-    winningOwner: currentWinningOwner,
-    winningLine: currentWinningLine,
-    winningLineType: currentWinningLineType,
-  };
+class ApiError extends Error {
+  constructor(message: string, public status = 0) { super(message); }
 }
-
-async function syncGameState() {
-  if (!gameId || !playerId) {
-    await loadSavedGameState();
-  }
-
-  if (!gameId || !playerId) {
-    currentBoard = null;
-    completedSquareIds = new Set<string>();
-    currentMode = null;
-    currentStatus = null;
-    currentBoardConfig = null;
-    currentPlayerCount = null;
-    currentPlayers = [];
-    currentSquareClaims = [];
-    currentWinner = false;
-    currentWinningOwner = null;
-    currentWinningLine = null;
-    currentWinningLineType = null;
-
-    return {
-      gameId: null,
-      playerId: null,
-      board: null,
-      completedSquareIds: [],
-      squareClaims: [],
-      winningOwner: null,
-      winningLine: null,
-      winningLineType: null,
-    };
-  }
-
-  const res = await fetch(
-    `http://localhost:4000/games/${gameId}/state?playerId=${playerId}`,
-    { headers: { Authorization: `Bearer ${playerToken ?? ""}` } },
-  );
-
-  const state = await res.json();
-
-  if (!res.ok) {
-    gameId = null;
-    playerId = null;
-    currentBoard = null;
-    currentMode = null;
-    currentStatus = null;
-    currentBoardConfig = null;
-    currentPlayerCount = null;
-    currentPlayers = [];
-    completedSquareIds = new Set<string>();
-    currentSquareClaims = [];
-    currentWinner = false;
-    currentWinningOwner = null;
-    currentWinningLine = null;
-    currentWinningLineType = null;
-    await chrome.storage.local.clear();
-
-    return {
-      gameId: null,
-      playerId: null,
-      board: null,
-      completedSquareIds: [],
-      squareClaims: [],
-      error: state.error ?? "Failed to load game state",
-      winningOwner: null,
-      winningLine: null,
-      winningLineType: null,
-    };
-  }
-
-  currentBoard = state.board;
-  completedSquareIds = new Set<string>(state.completedSquareIds ?? []);
-  currentMode = state.mode ?? null;
-  currentStatus = state.status ?? null;
-  currentBoardConfig = state.boardConfig ?? null;
-  currentPlayerCount = state.playerCount ?? null;
-  currentPlayers = (state.players ?? []) as BackgroundPlayerSummary[];
-  currentTeams = (state.teams ?? []) as BackgroundTeamSummary[];
-  playerName =
-    currentPlayers.find((player) => player.id === playerId)?.displayName ??
-    playerName;
-  currentSquareClaims = state.squareClaims ?? [];
-  currentWinner = state.winner ?? false;
-  currentWinningOwner = state.winningOwner ?? null;
-  currentWinningLine = state.winningLine ?? null;
-  currentWinningLineType = state.winningLineType ?? null;
-
-  if (gameId) {
-    connectWebSocket(gameId);
-  }
-
-  return {
-    gameId,
-    playerId,
-    mode: currentMode,
-    status: currentStatus,
-    boardConfig: currentBoardConfig,
-    playerCount: currentPlayerCount,
-    playerName,
-    players: currentPlayers,
-    teams: currentTeams,
-    board: currentBoard,
-    completedSquareIds: Array.from(completedSquareIds),
-    squareClaims: currentSquareClaims,
-    winner: currentWinner,
-    winningOwner: currentWinningOwner,
-    winningLine: currentWinningLine,
-    winningLineType: currentWinningLineType,
-  };
+function snapshot(): ExtensionState {
+  return { ...(state ?? {}), gameId: session?.gameId ?? null, playerId: session?.playerId ?? null,
+    board: state?.board ?? null, completedSquareIds: state?.completedSquareIds ?? [],
+    apiOrigin, connection, error: lastError, invalidSession };
 }
-
-async function joinGame(joinGameId: string, displayName?: string) {
-  const res = await fetch(`http://localhost:4000/games/${joinGameId}/players`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
-    body: JSON.stringify({ displayName }),
-  });
-
-  const state = await res.json();
-
-  if (!res.ok) {
-    return {
-      gameId: null,
-      playerId: null,
-      playerName: null,
-      playerCount: null,
-      board: null,
-      completedSquareIds: [],
-      squareClaims: [],
-      winner: false,
-      winningOwner: null,
-      winningLine: null,
-      winningLineType: null,
-      error: state.error ?? "Failed to join game",
-    };
-  }
-
-  gameId = state.gameId;
-  playerId = state.playerId;
-  playerToken = state.playerToken ?? null;
-  playerName = state.playerName ?? null;
-  currentBoard = state.board;
-  completedSquareIds = new Set<string>(state.completedSquareIds ?? []);
-  currentMode = state.mode ?? null;
-  currentStatus = state.status ?? null;
-  currentBoardConfig = state.boardConfig ?? null;
-  currentPlayerCount = state.playerCount ?? null;
-  currentPlayers = (state.players ?? []) as BackgroundPlayerSummary[];
-  currentTeams = (state.teams ?? []) as BackgroundTeamSummary[];
-  currentSquareClaims = state.squareClaims ?? [];
-  currentWinner = state.winner ?? false;
-  currentWinningOwner = state.winningOwner ?? null;
-  currentWinningLine = state.winningLine ?? null;
-  currentWinningLineType = state.winningLineType ?? null;
-
-  await chrome.storage.local.set({
-    gameId,
-    playerId,
-    playerToken,
-  });
-
-  if (gameId) {
-    connectWebSocket(gameId);
-  }
-
-  return {
-    gameId,
-    playerId,
-    playerName,
-    playerCount: currentPlayerCount,
-    players: currentPlayers,
-    teams: currentTeams,
-    mode: currentMode,
-    status: currentStatus,
-    boardConfig: currentBoardConfig,
-    board: currentBoard,
-    completedSquareIds: Array.from(completedSquareIds),
-    squareClaims: currentSquareClaims,
-    winner: currentWinner,
-    winningOwner: currentWinningOwner,
-    winningLine: currentWinningLine,
-    winningLineType: currentWinningLineType,
-  };
+async function notifyPopup() {
+  try { await chrome.runtime.sendMessage({ type: "GAME_STATE_UPDATED" }); } catch { /* Popup is closed. */ }
 }
-
-async function createTeam(name: string) {
-  if (!gameId) {
-    await loadSavedGameState();
-  }
-
-  if (!gameId) {
-    return { error: "No active game." };
-  }
-
-  const res = await fetch(`http://localhost:4000/games/${gameId}/teams`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
-    body: JSON.stringify({ name, playerId }),
-  });
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    return { error: result.error ?? "Failed to create team." };
-  }
-
-  return syncGameState();
+function reportError(error: unknown) {
+  lastError = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+  if (error instanceof ApiError && [401,404].includes(error.status)) invalidSession = true;
+  if (!(error instanceof ApiError) || error.status === 0 || error.status >= 500) connection = "offline";
+  void notifyPopup();
+  return snapshot();
 }
-
-async function joinTeam(teamId: string) {
-  if (!gameId || !playerId) {
-    await loadSavedGameState();
-  }
-
-  if (!gameId || !playerId) {
-    return { error: "No active game/player." };
-  }
-
-  const res = await fetch(
-    `http://localhost:4000/games/${gameId}/teams/${teamId}/join`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
-      body: JSON.stringify({ playerId }),
-    },
-  );
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    return { error: result.error ?? "Failed to join team." };
-  }
-
-  return syncGameState();
-}
-
-async function leaveTeam() {
-  if (!gameId || !playerId) {
-    await loadSavedGameState();
-  }
-
-  if (!gameId || !playerId) {
-    return { error: "No active game/player." };
-  }
-
-  const res = await fetch(`http://localhost:4000/games/${gameId}/teams/leave`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
-    body: JSON.stringify({ playerId }),
-  });
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    return { error: result.error ?? "Failed to leave team." };
-  }
-
-  return syncGameState();
-}
-
-async function sendPageVisit(data: unknown) {
-  if (!gameId || !playerId) {
-    await loadSavedGameState();
-  }
-
-  if (!gameId || !playerId) return;
-
-  const res = await fetch(
-    `http://localhost:4000/games/${gameId}/events/page-visit`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(playerToken ? { Authorization: `Bearer ${playerToken}` } : {}) },
-      body: JSON.stringify({
-        playerId,
-        ...(data as object),
-      }),
-    },
-  );
-
-  const result = await res.json();
-
-  if (result.board) {
-    currentBoard = result.board;
-  }
-
-  currentMode = result.mode ?? currentMode;
-  currentStatus = result.status ?? currentStatus;
-  currentBoardConfig = result.boardConfig ?? currentBoardConfig;
-  currentPlayerCount = result.playerCount ?? currentPlayerCount;
-  currentPlayers = (result.players ??
-    currentPlayers) as BackgroundPlayerSummary[];
-  currentTeams = (result.teams ?? currentTeams) as BackgroundTeamSummary[];
-  playerName =
-    currentPlayers.find((player) => player.id === playerId)?.displayName ??
-    playerName;
-  currentSquareClaims = result.squareClaims ?? currentSquareClaims;
-  currentWinner = result.winner ?? false;
-  currentWinningOwner = result.winningOwner ?? null;
-  currentWinningLine = result.winningLine ?? null;
-  currentWinningLineType = result.winningLineType ?? null;
-
-  for (const square of result.completedSquares ?? []) {
-    completedSquareIds.add(square.id);
-  }
-
+async function request<T>(path: string, body?: unknown, identity: Session | null = session): Promise<T> {
+  let response: Response;
   try {
-    await chrome.runtime.sendMessage({
-      type: "GAME_STATE_UPDATED",
+    response = await fetch(`${apiOrigin}${path}`, {
+      method: body === undefined ? "GET" : "POST",
+      headers: { "Content-Type": "application/json", ...(identity?.playerToken ? { Authorization: `Bearer ${identity.playerToken}` } : {}) },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      signal: AbortSignal.timeout(10000),
     });
   } catch {
-    // No popup is currently open to receive the update.
+    throw new ApiError("Cannot reach the game server. Your session is saved; check the server address and retry.");
   }
-
-  console.log("Page visit result:", result);
-}
-
-async function clearGame() {
-  if (ws) {
-    ws.onclose = null;
-    ws.onerror = null;
-    ws.onmessage = null;
-    ws.close();
-    ws = null;
+  let result: any;
+  try { result = await response.json(); } catch { throw new ApiError("The server returned an unreadable response.", response.status); }
+  if (!response.ok) {
+    const details = result.details?.map((item: any) => item.message).join("; ");
+    throw new ApiError(details || result.error || `Request failed (${response.status})`, response.status);
   }
-
-  gameId = null;
-  playerId = null;
-  playerToken = null;
-  currentBoard = null;
-  completedSquareIds = new Set<string>();
-  currentMode = null;
-  currentStatus = null;
-  currentBoardConfig = null;
-  currentPlayerCount = null;
-  currentPlayers = [];
-  currentTeams = [];
-  currentSquareClaims = [];
-  currentWinner = false;
-  currentWinningOwner = null;
-  currentWinningLine = null;
-  currentWinningLineType = null;
-
-  await chrome.storage.local.remove(["gameId", "playerId", "playerToken"]);
-  await chrome.storage.local.clear();
-
-  return {
-    gameId: null,
-    playerId: null,
-    playerName: null,
-    playerCount: null,
-    players: currentPlayers,
-    teams: currentTeams,
-    board: null,
-    completedSquareIds: [],
-    squareClaims: [],
-    winner: false,
-    winningOwner: null,
-    winningLine: null,
-    winningLineType: null,
-  };
+  return result as T;
 }
-
-async function sendCurrentTabPageVisit() {
-  if (!gameId) return;
-
-  const [tab] = await chrome.tabs.query({
-    active: true,
-    currentWindow: true,
-  });
-
-  if (!tab.id || !tab.url?.includes("wikipedia.org")) {
-    console.log("Active tab is not a Wikipedia page.");
+function applyState(next: GameStateResponse, expectedGeneration: number) {
+  if (expectedGeneration !== generation || next.gameId !== session?.gameId) return;
+  if (state && next.revision < state.revision) return;
+  state = next;
+  lastError = undefined;
+  invalidSession = false;
+}
+async function syncGameState(): Promise<ExtensionState> {
+  await ready;
+  if (!session || invalidSession) return snapshot();
+  if (syncFlight?.generation === generation) { syncFlight.again = true; return syncFlight.promise; }
+  const expectedGeneration = generation;
+  const identity = session;
+  const flight = { generation: expectedGeneration, again: false, promise: Promise.resolve(snapshot()) };
+  flight.promise = (async () => {
+    do {
+      flight.again = false;
+      const next = await request<GameStateResponse>(`/games/${identity.gameId}/state?playerId=${identity.playerId}`, undefined, identity);
+      applyState(next, expectedGeneration);
+    } while (flight.again && generation === expectedGeneration);
+    if (generation === expectedGeneration) connectWebSocket();
+    return snapshot();
+  })().catch(error => generation === expectedGeneration ? reportError(error) : snapshot()).finally(() => { if (syncFlight === flight) syncFlight = null; });
+  syncFlight = flight;
+  return flight.promise;
+}
+function disconnectWebSocket() {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = undefined;
+  if (ws) { const old = ws; ws = null; old.onclose = null; old.onmessage = null; old.onerror = null; old.close(); }
+  connection = "offline";
+}
+function connectWebSocket() {
+  if (!session || invalidSession) return;
+  const url = `${apiOrigin.replace(/^http/, "ws")}/ws/${session.gameId}`;
+  if (ws?.url === url && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    if (ws.readyState === WebSocket.OPEN) connection = "live";
     return;
   }
-
-  try {
-    const pageData = await chrome.tabs.sendMessage(tab.id, {
-      type: "GET_PAGE_DATA",
-    });
-
-    await sendPageVisit(pageData);
-  } catch (err) {
-    console.log(
-      "Could not get page data from tab. Reload the Wikipedia page and try again.",
-      err,
-    );
-  }
-}
-
-function connectWebSocket(activeGameId: string) {
-  if (ws?.url === `ws://localhost:4000/ws/${activeGameId}` && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
-  if (ws) {
-    ws.close();
-  }
-
-  ws = new WebSocket(`ws://localhost:4000/ws/${activeGameId}`);
-
-  ws.onopen = () => {
-    console.log("WebSocket connected");
+  disconnectWebSocket();
+  const expectedGeneration = generation;
+  const socket = new WebSocket(url);
+  ws = socket;
+  connection = retryAttempt ? "reconnecting" : "connecting";
+  socket.onopen = () => {
+    if (ws !== socket) return;
+    connection = "live";
+    retryAttempt = 0;
+    void syncGameState().then(notifyPopup);
   };
-
-  ws.onmessage = async (event) => {
-    const message = JSON.parse(event.data);
-
-    if (message.type !== "GAME_STATE_UPDATED") {
-      return;
-    }
-
-    await syncGameState();
-
+  socket.onmessage = event => {
+    if (ws !== socket || generation !== expectedGeneration) return;
     try {
-      await chrome.runtime.sendMessage({
-        type: "GAME_STATE_UPDATED",
-      });
-    } catch {
-      // Popup is closed.
-    }
+      const message = JSON.parse(event.data);
+      if (message.type === "GAME_STATE_UPDATED") void syncGameState().then(notifyPopup);
+    } catch { /* An invalid realtime message must not destroy a saved session. */ }
   };
-
-  ws.onclose = () => {
-    console.log("WebSocket disconnected");
-  };
-
-  ws.onerror = (err) => {
-    console.error("WebSocket error:", err);
+  socket.onerror = () => socket.close();
+  socket.onclose = () => {
+    if (ws !== socket) return;
+    ws = null;
+    connection = "reconnecting";
+    void notifyPopup();
+    const delay = Math.min(15000, 500 * 2 ** Math.min(retryAttempt++, 5));
+    reconnectTimer = setTimeout(() => {
+      if (generation === expectedGeneration && session && !invalidSession) {
+        connectWebSocket();
+        void syncGameState();
+      }
+    }, delay);
   };
 }
+async function installSession(result: PlayerSessionResponse) {
+  if (!result.gameId || !result.playerId || !result.playerToken || !result.board) throw new ApiError("The server did not return a complete player session.");
+  generation++;
+  disconnectWebSocket();
+  session = { gameId: result.gameId, playerId: result.playerId, playerToken: result.playerToken };
+  // Keep the one-time token only in session storage, never in state sent to UI.
+  const { playerToken: _token, ...publicState } = result;
+  state = publicState;
+  lastError = undefined;
+  invalidSession = false;
+  await chrome.storage.local.set(session);
+  connectWebSocket();
+  return snapshot();
+}
+async function forgetSession() {
+  generation++;
+  disconnectWebSocket();
+  session = null;
+  state = null;
+  lastError = undefined;
+  invalidSession = false;
+  retryAttempt = 0;
+  await chrome.storage.local.remove(["gameId", "playerId", "playerToken"]);
+  return snapshot();
+}
+async function sendCurrentTabPageVisit() {
+  if (!session || state?.status !== "ACTIVE") return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id || !tab.url || !isArticleUrl(tab.url)) return;
+  try { await sendPageVisit(await chrome.tabs.sendMessage(tab.id, { type: "GET_PAGE_DATA" })); }
+  catch { /* The page may predate extension loading; a reload attaches the content script. */ }
+}
+async function sendPageVisit(data: any) {
+  await ready;
+  if (!session || invalidSession || !data || typeof data.url !== "string" || !isArticleUrl(data.url)) return snapshot();
+  if (!state) await syncGameState();
+  if (state?.status !== "ACTIVE") return snapshot();
+  const identity = session;
+  const expectedGeneration = generation;
+  try {
+    const next = await request<GameStateResponse>(`/games/${identity.gameId}/events/page-visit`, { ...data, playerId: identity.playerId }, identity);
+    applyState(next, expectedGeneration);
+    await notifyPopup();
+    return snapshot();
+  } catch (error) { return generation === expectedGeneration ? reportError(error) : snapshot(); }
+}
+async function handleMutation(message: any): Promise<ExtensionState> {
+  await ready;
+  if (message.type === "FORGET_GAME") return forgetSession();
+  if (message.type === "SET_API_ORIGIN") {
+    if (session) throw new Error("Leave your current game before changing servers.");
+    const candidate = normalizeApiOrigin(message.apiOrigin);
+    if (!await chrome.permissions.contains({ origins: [`${candidate}/*`] })) throw new Error("Grant access to this server before saving it.");
+    apiOrigin = candidate;
+    await chrome.storage.local.set({ apiOrigin });
+    lastError = undefined;
+    return snapshot();
+  }
+  if (message.type === "START_GAME" || message.type === "JOIN_GAME") {
+    if (session) throw new Error("Leave your current game before creating or joining another.");
+    const result = message.type === "START_GAME"
+      ? await request<PlayerSessionResponse>("/games", { mode: message.mode, boardConfig: message.boardConfig, displayName: message.displayName }, null)
+      : await request<PlayerSessionResponse>(`/games/${encodeURIComponent(String(message.gameId).trim())}/players`, { displayName: message.displayName }, null);
+    return installSession(result);
+  }
+  if (!session) throw new Error("Create or join a game first.");
+  if (message.type === "CLEAR_GAME" || message.type === "LEAVE_GAME") {
+    await request(`/games/${session.gameId}/players/${session.playerId}/leave`, {});
+    return forgetSession();
+  }
+  if (invalidSession) throw new Error("Forget this unavailable session and join again.");
+  const expectedGeneration = generation;
+  const playerId = session.playerId;
+  const base = `/games/${session.gameId}`;
+  switch (message.type) {
+    case "START_MATCH": applyState(await request<GameStateResponse>(`${base}/start`, { playerId }), expectedGeneration); await sendCurrentTabPageVisit(); break;
+    case "END_MATCH": applyState(await request<GameStateResponse>(`${base}/end`, { playerId }), expectedGeneration); break;
+    case "CREATE_TEAM": await request(`${base}/teams`, { playerId, name: message.name }); break;
+    case "JOIN_TEAM": await request(`${base}/teams/${encodeURIComponent(message.teamId)}/join`, { playerId }); break;
+    case "LEAVE_TEAM": await request(`${base}/teams/leave`, { playerId }); break;
+    default: throw new Error("Unknown game action.");
+  }
+  return syncGameState();
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "GAME_STATE_UPDATED") return false;
+  if (message.type === "PAGE_VISIT") {
+    // Only our Wikipedia content script may submit automatic page observations.
+    if (!sender.tab || !sender.url || !isArticleUrl(sender.url)) return false;
+    void sendPageVisit(message.data).then(sendResponse);
+    return true;
+  }
+  // Content scripts are not allowed to create games, change identity or invoke
+  // host controls. Only extension pages can issue those commands.
+  if (sender.tab && !sender.url?.startsWith(chrome.runtime.getURL(""))) return false;
+  if (message.type === "GET_GAME_STATE") { void ready.then(() => snapshot()).then(sendResponse); return true; }
+  if (message.type === "SYNC_GAME_STATE") { void syncGameState().then(sendResponse); return true; }
+  mutationQueue = mutationQueue.then(() => handleMutation(message)).catch(reportError);
+  void mutationQueue.then(sendResponse);
+  return true;
+});
+chrome.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === "wikirace-recover") void ready.then(async () => {
+    if (session && !invalidSession) { await syncGameState(); connectWebSocket(); }
+  });
+});
+void chrome.alarms.create("wikirace-recover", { periodInMinutes: 1 });
+void ready.then(() => { if (session && !invalidSession) void syncGameState(); });

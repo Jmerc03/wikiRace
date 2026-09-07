@@ -10,19 +10,23 @@
     "build:shared": "npm run --workspace=@bingo/shared build",
     "build:game-engine": "npm run build:shared && npm run --workspace=@bingo/game-engine build",
     "build:api": "npm run build:game-engine && npm run --workspace=api build",
-    "build:extension": "npm run --workspace=extension build",
+    "build:extension": "npm run build:shared && npm run --workspace=extension build",
     "dev:api": "npm run build:game-engine && npm run --workspace=api dev",
     "prisma:generate": "npm run --workspace=api prisma:generate",
     "prisma:validate": "npm run --workspace=api prisma:validate",
     "prisma:migrate:dev": "npm run --workspace=api prisma:migrate:dev --",
     "prisma:studio": "npm run --workspace=api prisma:studio",
-    "test": "npm run test:game-engine && npm run test:api",
+    "test": "npm run test:game-engine && npm run test:api && npm run test:extension",
     "test:game-engine": "npm run --workspace=@bingo/game-engine test",
     "test:api": "npm run build:game-engine && npm run --workspace=api test",
     "test:integration": "npm run build:api && node scripts/test-integration.mjs",
+    "test:browser": "npm run build && node scripts/test-integration.mjs --browser",
+    "test:extension": "npm run build:shared && npm run --workspace=extension test",
+    "browser:install": "node scripts/browser-install.mjs",
     "prisma:migrate:deploy": "npm run --workspace=api prisma:migrate:deploy"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^25.6.0",
     "tsx": "^4.21.0"
   }

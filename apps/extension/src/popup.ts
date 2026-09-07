@@ -1,87 +1,19 @@
-type BoardSquare = {
-  id: string;
-  position: number;
-  label: string;
-};
-
-type PlayerSummary = {
-  id: string;
-  displayName: string;
-  color?: string | null;
-  teamId?: string | null;
-};
-
-type TeamSummary = {
-  id: string;
-  name: string;
-  color: string;
-  players?: {
-    id: string;
-    displayName: string;
-    color?: string | null;
-  }[];
-};
-
-type GameState = {
-  gameId: string | null;
-  playerId?: string | null;
-  playerName?: string | null;
-  mode?: string;
-  status?: string;
-  error?: string;
-  playerCount?: number;
-  players?: PlayerSummary[];
-  teams?: TeamSummary[];
-  winner?: boolean;
-  winningOwner?: WinningOwner | null;
-  winningLine?: number[] | null;
-  winningLineType?: "ROW" | "COLUMN" | "DIAGONAL" | null;
-  boardConfig?: {
-    difficulty?: string;
-  };
-  board: {
-    squares: BoardSquare[];
-  } | null;
-  completedSquareIds: string[];
-  squareClaims?: SquareClaim[];
-};
-
-type WinningOwner = {
-  ownerKey: string;
-  type: "TEAM" | "PLAYER";
-  id: string;
-  name: string;
-  color?: string | null;
-};
-
-type SquareClaim = {
-  squareId: string;
-  playerId: string;
-  playerName: string;
-  playerColor?: string | null;
-  teamId?: string | null;
-  teamName?: string | null;
-  teamColor?: string | null;
-  claimedAt: string;
-};
+import type { PlayerSummary, TeamSummary } from "@bingo/shared";
+import type { ExtensionState as GameState } from "./client-types.js";
+import { normalizeApiOrigin } from "./wikipedia.js";
 
 const gameModeSelect = document.getElementById("game-mode");
 const playerNameInput = document.getElementById("player-name");
-
 const difficultySelect = document.getElementById("difficulty");
-
 const startButton = document.getElementById("start");
 const refreshButton = document.getElementById("refresh");
 const endGameButton = document.getElementById("end-game");
 const copyGameIdButton = document.getElementById("copy-game-id");
-
 const joinGameInput = document.getElementById("join-game-id");
 const joinGameBtn = document.getElementById("join-game-btn");
-
 const statusEl = document.getElementById("status");
 const progressEl = document.getElementById("progress");
 const gameInfoEl = document.getElementById("game-info");
-
 const teamNameInput = document.getElementById("team-name");
 const createTeamBtn = document.getElementById("create-team-btn");
 const teamSelect = document.getElementById("team-select");
@@ -90,147 +22,96 @@ const leaveTeamBtn = document.getElementById("leave-team-btn");
 const teamSection = document.getElementById("team-section");
 const currentTeamEl = document.getElementById("current-team");
 const teamRostersEl = document.getElementById("team-rosters");
-
 const boardEl = document.getElementById("board");
+let latest: GameState | undefined;
+let busy = false;
 
-if (!(joinGameBtn instanceof HTMLButtonElement)) {
-  throw new Error("join-game-btn not found or wrong type");
-}
-
-joinGameBtn.addEventListener("click", async () => {
-  if (!(joinGameInput instanceof HTMLInputElement)) return;
-
-  const displayName =
-    playerNameInput instanceof HTMLInputElement && playerNameInput.value.trim()
-      ? playerNameInput.value.trim()
-      : undefined;
-
-  const gameId = joinGameInput.value.trim();
-
-  if (!gameId) return;
-
-  const state = await chrome.runtime.sendMessage({
-    displayName,
-    type: "JOIN_GAME",
-    gameId,
-  });
-
-  renderState(state);
-});
-
-startButton?.addEventListener("click", async () => {
-  const displayName =
-    playerNameInput instanceof HTMLInputElement && playerNameInput.value.trim()
-      ? playerNameInput.value.trim()
-      : undefined;
-  const mode =
-    gameModeSelect instanceof HTMLSelectElement
-      ? gameModeSelect.value
-      : "NORMAL";
-
-  const difficulty =
-    difficultySelect instanceof HTMLSelectElement
-      ? difficultySelect.value
-      : "MIXED";
-
-  const state = await chrome.runtime.sendMessage({
-    displayName,
-    type: "START_GAME",
-    mode,
-    boardConfig: {
-      difficulty,
-      vitalArticleTileCount: 15,
-      genericTileCount: 10,
-      maxTilesPerTopic: 3,
-    },
-  });
-  renderState(state);
-});
-
-refreshButton?.addEventListener("click", async () => {
-  await syncAndRenderState();
-});
-
-endGameButton?.addEventListener("click", async () => {
-  const state = await chrome.runtime.sendMessage({
-    type: "CLEAR_GAME",
-  });
-
-  renderState(state);
-});
-
-copyGameIdButton?.addEventListener("click", async () => {
-  const state = await chrome.runtime.sendMessage({ type: "GET_GAME_STATE" });
-
-  if (!state?.gameId) {
-    if (statusEl) statusEl.textContent = "No active game to copy.";
-    return;
+function nameValue() { return playerNameInput instanceof HTMLInputElement ? playerNameInput.value.trim() || undefined : undefined; }
+function valueOf(element: HTMLElement | null) { return element instanceof HTMLInputElement || element instanceof HTMLSelectElement ? element.value.trim() : ""; }
+function showError(error: unknown) { if (statusEl) { statusEl.textContent = error instanceof Error ? error.message : "Unable to contact the extension. Reload it and retry."; statusEl.classList.add("error-status"); } }
+async function action(message: object) {
+  if (busy) return;
+  busy = true;
+  document.body.setAttribute("aria-busy", "true");
+  document.querySelectorAll<HTMLButtonElement>("button").forEach(button => { button.disabled = true; });
+  try {
+    const result = await chrome.runtime.sendMessage(message);
+    if (!result) throw new Error("The extension did not respond. Reload it and retry.");
+    latest = result;
+  } catch (error) { showError(error); }
+  finally {
+    busy = false;
+    document.body.removeAttribute("aria-busy");
+    document.querySelectorAll<HTMLButtonElement>("button").forEach(button => { button.disabled = false; });
+    if (latest) renderState(latest);
   }
-
-  await navigator.clipboard.writeText(state.gameId);
-
-  if (statusEl) {
-    statusEl.textContent = "Game ID copied.";
-  }
-});
-
-createTeamBtn?.addEventListener("click", async () => {
-  if (!(teamNameInput instanceof HTMLInputElement)) return;
-
-  const name = teamNameInput.value.trim();
-  if (!name) return;
-
-  const state = await chrome.runtime.sendMessage({
-    type: "CREATE_TEAM",
-    name,
-  });
-
-  renderState(state);
-});
-
-joinTeamBtn?.addEventListener("click", async () => {
-  if (!(teamSelect instanceof HTMLSelectElement)) return;
-
-  const teamId = teamSelect.value;
-  if (!teamId) return;
-
-  const state = await chrome.runtime.sendMessage({
-    type: "JOIN_TEAM",
-    teamId,
-  });
-
-  renderState(state);
-});
-
-leaveTeamBtn?.addEventListener("click", async () => {
-  const state = await chrome.runtime.sendMessage({
-    type: "LEAVE_TEAM",
-  });
-
-  renderState(state);
-});
-
-void loadExistingState();
-
-async function loadExistingState() {
-  await syncAndRenderState();
 }
-
-async function syncAndRenderState() {
-  const state = await chrome.runtime.sendMessage({ type: "SYNC_GAME_STATE" });
-  renderState(state);
-}
+startButton?.addEventListener("click", () => void action({type:"START_GAME",displayName:nameValue(),mode:valueOf(gameModeSelect),boardConfig:{difficulty:valueOf(difficultySelect),vitalArticleTileCount:15,genericTileCount:10,maxTilesPerTopic:3}}));
+joinGameBtn?.addEventListener("click", () => { const gameId=valueOf(joinGameInput); if(gameId) void action({type:"JOIN_GAME",gameId,displayName:nameValue()}); else showError(new Error("Enter a game ID to join.")); });
+refreshButton?.addEventListener("click", () => void action({type:"SYNC_GAME_STATE"}));
+endGameButton?.addEventListener("click", () => void action({type:"LEAVE_GAME"}));
+document.getElementById("start-match")?.addEventListener("click", () => void action({type:"START_MATCH"}));
+document.getElementById("host-end")?.addEventListener("click", () => void action({type:"END_MATCH"}));
+document.getElementById("forget-game")?.addEventListener("click", () => void action({type:"FORGET_GAME"}));
+createTeamBtn?.addEventListener("click", () => { const name=valueOf(teamNameInput); if(name) void action({type:"CREATE_TEAM",name}); else showError(new Error("Enter a team name.")); });
+joinTeamBtn?.addEventListener("click", () => { const teamId=valueOf(teamSelect); if(teamId) void action({type:"JOIN_TEAM",teamId}); });
+leaveTeamBtn?.addEventListener("click", () => void action({type:"LEAVE_TEAM"}));
+copyGameIdButton?.addEventListener("click", () => {
+  if (latest?.gameId) void navigator.clipboard.writeText(latest.gameId).then(() => {if(statusEl) statusEl.textContent="Game ID copied.";}).catch(showError);
+});
+document.getElementById("open-board")?.addEventListener("click", () => void chrome.tabs.create({url:chrome.runtime.getURL("popup.html?view=board")}));
+document.getElementById("save-server")?.addEventListener("click", async () => {
+  try {
+    const apiOrigin=normalizeApiOrigin(valueOf(document.getElementById("api-origin")));
+    const permitted=await chrome.permissions.request({origins:[`${apiOrigin}/*`]});
+    if (!permitted) throw new Error("Server access was not granted.");
+    await action({type:"SET_API_ORIGIN",apiOrigin});
+  } catch(error) {showError(error);}
+});
+if (new URLSearchParams(location.search).get("view") === "board") document.body.classList.add("full-view");
+chrome.runtime.onMessage.addListener(message => {
+  if(message.type === "GAME_STATE_UPDATED") void chrome.runtime.sendMessage({type:"GET_GAME_STATE"}).then(result=>{latest=result; if(!busy) renderState(result);}).catch(showError);
+});
+void action({type:"SYNC_GAME_STATE"});
 
 function renderState(state: GameState) {
   if (!statusEl || !boardEl) return;
-
-  if (state?.error) {
-    statusEl.textContent = state.error;
-    return;
+  if (!state) { showError(new Error("No state was returned by the extension.")); return; }
+  latest = state;
+  const hasSession = Boolean(state.gameId);
+  const isHost = state.hostPlayerId === state.playerId;
+  const setHidden = (id: string, hidden: boolean) => { const el=document.getElementById(id); if(el) el.hidden=hidden; };
+  setHidden("start-match", !(hasSession && isHost && state.status === "WAITING"));
+  setHidden("host-end", !(hasSession && isHost && state.status !== "FINISHED"));
+  setHidden("forget-game", !(hasSession && (state.error || state.invalidSession)));
+  setHidden("lobby-hint", state.status !== "WAITING");
+  setHidden("setup-fields", hasSession);
+  setHidden("join-section", hasSession);
+  setHidden("team-controls", state.status !== "WAITING");
+  setHidden("match-details", !hasSession);
+  const playerRoster=document.getElementById("player-roster");
+  if(playerRoster) {
+    playerRoster.replaceChildren();
+    for(const player of state.players ?? []) {
+      const chip=document.createElement("span");
+      chip.className=`player-chip${player.id===state.playerId ? " you" : ""}${player.leftAt ? " departed" : ""}`;
+      chip.textContent=`${player.displayName}${player.id===state.playerId ? " (you)" : ""}${player.isHost ? " · host" : ""}${player.leftAt ? " · left" : ""} · ${player.score ?? 0}`;
+      playerRoster.appendChild(chip);
+    }
   }
+  const connectionEl = document.getElementById("connection");
+  if (connectionEl) connectionEl.textContent = `${state.connection === "live" ? "Live updates connected" : state.connection === "reconnecting" ? "Reconnecting…" : state.connection === "connecting" ? "Connecting…" : "Offline"} · ${state.apiOrigin}`;
+  const apiInput=document.getElementById("api-origin");
+  if(apiInput instanceof HTMLInputElement) { if(document.activeElement!==apiInput) apiInput.value=state.apiOrigin; apiInput.disabled=hasSession; }
+  const saveServer=document.getElementById("save-server");
+  if(saveServer instanceof HTMLButtonElement) saveServer.disabled=hasSession;
+  if(joinGameBtn instanceof HTMLButtonElement) joinGameBtn.disabled=hasSession;
+  if(joinGameInput instanceof HTMLInputElement) joinGameInput.disabled=hasSession;
+  if(playerNameInput instanceof HTMLInputElement) playerNameInput.disabled=hasSession;
+  statusEl.classList.toggle("error-status", Boolean(state.error));
 
   if (!state?.gameId || !state.board) {
-    statusEl.textContent = "No game started.";
+    statusEl.textContent = state.error ?? (hasSession ? "Restoring your game…" : "Create a lobby or join a game to begin.");
     statusEl.classList.remove("winner-status");
 
     if (gameInfoEl) {
@@ -263,11 +144,11 @@ function renderState(state: GameState) {
     if (progressEl) progressEl.textContent = "";
 
     if (startButton instanceof HTMLElement)
-      startButton.style.display = "inline-block";
+      startButton.style.display = hasSession ? "none" : "inline-block";
     if (endGameButton instanceof HTMLElement)
-      endGameButton.style.display = "none";
+      endGameButton.style.display = hasSession ? "inline-block" : "none";
     if (refreshButton instanceof HTMLElement)
-      refreshButton.style.display = "none";
+      refreshButton.style.display = hasSession ? "inline-block" : "none";
 
     boardEl.innerHTML = "";
     return;
@@ -275,9 +156,11 @@ function renderState(state: GameState) {
 
   const winnerMessage = getWinnerMessage(state);
 
-  statusEl.textContent = winnerMessage
+  statusEl.textContent = state.error ?? (winnerMessage
     ? `${winnerMessage}.`
-    : `Game active: ${state.gameId}`;
+    : state.status === "WAITING" ? (isHost ? "Lobby ready. Start when everyone has joined." : "Waiting for the host to start.")
+      : state.status === "FINISHED" ? "Match ended. Leave to create or join another game."
+      : "Match active — explore Wikipedia to complete your board.");
   statusEl.classList.toggle("winner-status", Boolean(winnerMessage));
 
   const statusText =
@@ -285,7 +168,7 @@ function renderState(state: GameState) {
       ? winnerMessage
       : state.winner
         ? `BINGO${state.winningLineType ? ` (${formatWinningLineType(state.winningLineType)})` : ""}`
-        : "In progress";
+        : state.status === "WAITING" ? "Waiting in lobby" : state.status === "FINISHED" ? "Ended without a winner" : "In progress";
 
   const currentPlayer = state.players?.find(
     (player) => player.id === state.playerId,
@@ -293,10 +176,10 @@ function renderState(state: GameState) {
   const currentTeam = state.teams?.find(
     (team) => team.id === currentPlayer?.teamId,
   );
-  const gameFinished = state.status === "FINISHED";
+  const gameFinished = state.status !== "WAITING";
 
   if (teamSection instanceof HTMLElement) {
-    teamSection.hidden = false;
+    teamSection.hidden = state.mode !== "LOCKOUT" || (state.status !== "WAITING" && !state.teams?.length);
   }
 
   if (teamSelect instanceof HTMLSelectElement) {
@@ -369,7 +252,10 @@ function renderState(state: GameState) {
   const totalCount = state.board.squares.length;
 
   if (progressEl) {
-    progressEl.textContent = `Progress: ${completedCount}/${totalCount}`;
+    const yourClaims = (state.squareClaims ?? []).filter(claim => currentPlayer?.teamId ? claim.teamId === currentPlayer.teamId : claim.playerId === state.playerId).length;
+    progressEl.textContent = state.mode === "LOCKOUT"
+      ? `${currentTeam ? "Your team" : "You"}: ${yourClaims}/13 to win · Board: ${completedCount}/${totalCount} claimed`
+      : `Your progress: ${completedCount}/${totalCount} · Complete a row, column, or diagonal to win`;
   }
 
   const completed = new Set(state.completedSquareIds);
@@ -442,7 +328,7 @@ function getWinnerMessage(state: GameState) {
     return `${state.winningOwner.name} won by majority`;
   }
 
-  return "BINGO! Game won";
+  return `${state.winningOwner?.name ?? "A player"} won by bingo`;
 }
 
 function renderCurrentTeam(
@@ -583,9 +469,3 @@ function formatWinningLineType(type: "ROW" | "COLUMN" | "DIAGONAL") {
   if (type === "COLUMN") return "column";
   return "diagonal";
 }
-
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === "GAME_STATE_UPDATED") {
-    void syncAndRenderState();
-  }
-});

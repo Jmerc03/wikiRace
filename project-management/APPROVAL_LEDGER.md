@@ -15,5 +15,6 @@ This explicit delegation takes precedence over skill defaults that would request
 | WR-DEC-003 | WR-EWP-001 r1 | Execution approved: baseline, JES adoption, persistence characterization | Codex, delegated owner; 2026-09-07 |
 | WR-DEC-004 | WR-EWP-002 r1 | Execution approved: transactional match integrity, identity, valid boards, and persisted winner | Codex, delegated owner; 2026-09-07 |
 | WR-DEC-005 | WR-EWP-003 r1 | Execution approved: lobby/host/team/leave lifecycle and resilient extension | Codex, delegated owner; 2026-09-07 |
+| WR-DEC-006 | WR-EWP-004 r1 | Execution approved: read-only spectator/stream views, local startup, packaging and integrated delivery review | Codex, delegated owner; 2026-09-07 |
 
 New package approvals are recorded before their execution. Package completion and product acceptance depend on evidence, not delegation alone.

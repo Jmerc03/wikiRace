@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { getWinningLineResult } from "@bingo/game-engine";
+import type { GameStateResponse, BoardGenerationConfig } from "@bingo/shared";
 import { buildPlayerSummaries, buildTeamSummaries, buildSquareClaimSummaries } from "../routes/games.helpers.js";
 
 export const gameInclude = {
@@ -8,7 +9,7 @@ export const gameInclude = {
   teams: { orderBy: [{ createdAt: "asc" as const }, { id: "asc" as const }] },
 } satisfies Prisma.GameInclude;
 
-export async function buildGameState(db: Prisma.TransactionClient, gameId: string, playerId: string | null) {
+export async function buildGameState(db: Prisma.TransactionClient, gameId: string, playerId: string | null): Promise<GameStateResponse | null> {
   const game = await db.game.findUnique({ where: { id: gameId }, include: gameInclude });
   if (!game?.board) return null;
   const claims = game.mode === "LOCKOUT" ? await db.squareClaim.findMany({
@@ -18,7 +19,7 @@ export async function buildGameState(db: Prisma.TransactionClient, gameId: strin
     where: { gameId }, orderBy: { completedAt: "asc" },
   }) : [];
   const players = buildPlayerSummaries(game.players).map((player, index) => ({ ...player,
-    leftAt: game.players[index].leftAt,
+    leftAt: game.players[index].leftAt?.toISOString() ?? null,
     isHost: player.id === game.hostPlayerId,
     score: game.mode === "NORMAL"
       ? completions.filter(c => c.playerId === player.id).length
@@ -36,12 +37,14 @@ export async function buildGameState(db: Prisma.TransactionClient, gameId: strin
   return {
     gameId, playerId, playerName: players.find(p => p.id === playerId)?.displayName ?? null,
     mode: game.mode, status: game.status, revision: game.revision,
-    boardConfig: game.boardConfig, board: game.board, hostPlayerId: game.hostPlayerId,
-    startedAt: game.startedAt, finishedAt: game.finishedAt, endReason: game.endReason,
+    boardConfig: game.boardConfig as unknown as BoardGenerationConfig | null,
+    board: { ...game.board, squares: game.board.squares.map(square => ({ ...square, condition: square.condition as Record<string, unknown> })) },
+    hostPlayerId: game.hostPlayerId,
+    startedAt: game.startedAt?.toISOString() ?? null, finishedAt: game.finishedAt?.toISOString() ?? null, endReason: game.endReason,
     playerCount: activePlayers.length, players,
     teams: buildTeamSummaries(game.teams, activePlayers),
     completedSquareIds: game.mode === "LOCKOUT" ? claims.map(c => c.squareId) : completions.filter(c=>c.playerId === playerId).map(c=>c.squareId),
-    squareClaims: buildSquareClaimSummaries(claims, game.teams),
+    squareClaims: buildSquareClaimSummaries(claims, game.teams).map(claim => ({ ...claim, claimedAt: claim.claimedAt.toISOString() })),
     winner: winningOwner !== null, winningOwner, winningLine,
     winningLineType: winningLine ? getWinningLineResult(winningLine)?.type ?? null : null,
   };

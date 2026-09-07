@@ -1,10 +1,12 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WikiRace</title>
     <style>
       body {
-        width: 400px;
+        width: 540px;
         margin: 0;
         padding: 14px;
         color: #212529;
@@ -19,6 +21,24 @@
       p {
         margin-top: 0;
       }
+
+      [hidden] { display: none !important; }
+      body.full-view { width: min(100%, 1100px); margin: 0 auto; padding: 24px; }
+      body.full-view #board { gap: 10px; }
+      body.full-view .square { min-height: 110px; font-size: 14px; }
+      button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid #4c6ef5; outline-offset: 2px; }
+      #status.error-status { color: #c92a2a; }
+      #connection { font-size: 11px; color: #495057; }
+      #server-settings { margin-top: 16px; font-size: 12px; }
+      #server-settings summary { cursor: pointer; }
+      #match-details { margin-top: 16px; font-size: 12px; }
+      #match-details summary { cursor: pointer; }
+      #team-section { margin-top: 16px; }
+      #player-roster { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+      .player-chip { border:1px solid #dee2e6; border-radius:20px; padding:6px 10px; font-size:12px; background:#fff; }
+      .player-chip.departed { opacity:.55; }
+      .player-chip.you { border-color:#4c6ef5; }
+      .hint { color: #6c757d; font-size: 12px; line-height: 1.5; }
 
       h2 {
         margin-bottom: 12px;
@@ -267,9 +287,9 @@
     </style>
   </head>
   <body>
-    <h2>Wikipedia Bingo</h2>
+    <h2>WikiRace <span style="font-weight:400;font-size:13px;color:#6c757d">Wikipedia Bingo</span></h2>
 
-    <div class="control-grid">
+    <div class="control-grid" id="setup-fields">
       <label for="player-name">Name</label>
       <input id="player-name" type="text" placeholder="Player name" />
 
@@ -288,48 +308,69 @@
     </div>
 
     <div class="secondary-actions">
-      <button id="start">Start Game</button>
+      <button id="start">Create Lobby</button>
       <button id="refresh">Refresh Board</button>
       <button id="end-game">Leave Game</button>
       <button id="copy-game-id">Copy Game ID</button>
+      <button id="start-match" hidden>Start Match</button>
+      <button id="host-end" class="danger-action" hidden>End Match</button>
+      <button id="open-board">Open Full Board</button>
+      <button id="forget-game" class="danger-action" hidden>Forget Local Session</button>
     </div>
 
+    <section id="join-section">
     <hr />
-
     <h3>Join Game</h3>
 
     <div class="action-row">
-      <input id="join-game-id" type="text" placeholder="Enter Game ID" />
+      <input id="join-game-id" type="text" placeholder="Enter Game ID" aria-label="Game ID" />
       <button id="join-game-btn">Join Game</button>
     </div>
-
-    <hr />
+    </section>
 
     <section id="team-section" hidden>
       <h3>Teams</h3>
       <div id="current-team" class="current-team"></div>
 
+      <div id="team-controls">
       <div class="action-row">
-        <input id="team-name" type="text" placeholder="Team name" />
+        <input id="team-name" type="text" placeholder="Team name" maxlength="40" aria-label="Team name" />
         <button id="create-team-btn">Create Team</button>
       </div>
 
       <div class="action-row">
-        <select id="team-select"></select>
+        <select id="team-select" aria-label="Team to join"></select>
         <button id="join-team-btn">Join Team</button>
         <button id="leave-team-btn" class="danger-action" hidden>
           Leave Team
         </button>
       </div>
+      </div>
 
       <div id="team-rosters" class="team-rosters"></div>
     </section>
 
-    <p id="status">No game started.</p>
+    <p id="status" role="status" aria-live="polite">No game started.</p>
+    <p id="connection"></p>
+    <p id="lobby-hint" class="hint" hidden>Share your game ID, choose teams, then have the host start the match. Only article pages visited during play count.</p>
     <p id="progress"></p>
-    <div id="game-info"></div>
+    <div id="player-roster" aria-label="Players"></div>
 
     <div id="board"></div>
+
+    <details id="match-details" hidden>
+      <summary>Match details</summary>
+      <div id="game-info"></div>
+    </details>
+
+    <details id="server-settings">
+      <summary>Server settings</summary>
+      <div class="action-row">
+        <input id="api-origin" type="url" value="http://localhost:4000" aria-label="Game server address" />
+        <button id="save-server">Save Server</button>
+      </div>
+      <p class="hint">All players use the same server. Leave your game before changing this address.</p>
+    </details>
 
     <script src="popup.js"></script>
   </body>

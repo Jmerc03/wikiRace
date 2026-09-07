@@ -12,7 +12,7 @@ export function buildApp() {
     logger: process.env.NODE_ENV !== "test",
   });
 
-  app.register(websocket);
+  app.register(websocket, { options: { maxPayload: 4096 } });
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {

@@ -95,6 +95,23 @@ Reload extension:
 - Load `apps/extension/dist` if the extension is not installed
 - Click Reload
 
+Open the extension, enter a player name, and **Create Lobby**. Share the game ID
+with another player using the same server. In Lockout, create/join teams while
+waiting. The host selects **Start Match**. Browse English Wikipedia articles to
+score; **Open Full Board** keeps the board in a normal browser tab. **Leave Game**
+updates membership, while **End Match** is a host action affecting everyone.
+
+The extension retains game identity across restart and server outages. Refresh
+after restoring the server. **Forget Local Session** explicitly abandons local
+credentials when a session is unavailable; it does not tell an unreachable
+server that the player left. Server preferences survive either leave action.
+
+To connect to another backend, leave the current game, open **Server settings**,
+enter its HTTP(S) origin, and select **Save Server**. Chrome asks for access to
+that specific origin. The default local origin is `http://localhost:4000`.
+Wikipedia access and loopback hosts are declared permissions; remote hosts are
+optional permissions requested through this user action.
+
 ---
 
 ## Game Engine
@@ -121,6 +138,19 @@ Run one test suite:
 npm run test:game-engine
 npm run test:api
 ```
+
+Install isolated Chromium tooling and run actual extension tests:
+
+```bash
+npm run browser:install
+npm run test:browser
+```
+
+These tests use real installed extension profiles, PostgreSQL, HTTP and
+WebSockets, with deterministic Wikipedia DOM fixtures. Browser profile and API
+restart are exercised. Fixture navigation is not a claim of live Wikipedia
+availability. Chromium binaries live in ignored `.local/browsers`; test database
+isolation is the same as the API integration runner.
 
 Database-backed tests run with `npm run test:integration`. They create a unique
 `wr_test_*` schema, apply checked-in migrations, exercise actual API and

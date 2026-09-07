@@ -1,41 +1,40 @@
-import type { WebSocket } from "ws";
-
+import { WebSocket } from "ws";
 const gameConnections = new Map<string, Set<WebSocket>>();
 
 export function addGameConnection(gameId: string, socket: WebSocket) {
-  if (!gameConnections.has(gameId)) {
-    gameConnections.set(gameId, new Set());
-  }
-
-  gameConnections.get(gameId)!.add(socket);
-
-  socket.on("close", () => {
-    removeGameConnection(gameId, socket);
-  });
+  const connections = gameConnections.get(gameId) ?? new Set<WebSocket>();
+  if (connections.size >= 256) { socket.close(1013, "This game has too many viewers"); return false; }
+  connections.add(socket);
+  gameConnections.set(gameId, connections);
+  let alive = true;
+  socket.on("pong", () => { alive = true; });
+  socket.on("error", () => { socket.terminate(); });
+  const heartbeat = setInterval(() => {
+    if (!alive) { socket.terminate(); return; }
+    alive = false;
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.ping();
+      socket.send(JSON.stringify({ type: "HEARTBEAT" }));
+    }
+  }, 20000);
+  heartbeat.unref();
+  socket.on("close", () => { clearInterval(heartbeat); removeGameConnection(gameId, socket); });
+  return true;
 }
-
 export function removeGameConnection(gameId: string, socket: WebSocket) {
   const connections = gameConnections.get(gameId);
-
   if (!connections) return;
-
   connections.delete(socket);
-
-  if (connections.size === 0) {
-    gameConnections.delete(gameId);
-  }
+  if (!connections.size) gameConnections.delete(gameId);
 }
-
 export function broadcastToGame(gameId: string, message: unknown) {
   const connections = gameConnections.get(gameId);
-
   if (!connections) return;
-
   const payload = JSON.stringify(message);
-
   for (const socket of connections) {
-    if (socket.readyState === socket.OPEN) {
-      socket.send(payload);
+    if (socket.readyState === WebSocket.OPEN) {
+      try { socket.send(payload, error => { if (error) socket.terminate(); }); }
+      catch { socket.terminate(); }
     }
   }
 }
