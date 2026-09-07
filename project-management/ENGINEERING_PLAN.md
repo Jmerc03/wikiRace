@@ -1,7 +1,7 @@
-# WikiRace engineering plan v1.0
+# WikiRace engineering plan v1.1
 
 Owner: Codex, delegated Systems Architect/project operator. Updated: 2026-09-07.
-Proposal: [v1.0](../PROJECT_PROPOSAL.md), WR-DEC-001. Planning authority and acceptance: WR-DEC-002. Review: Accepted. JES 0.3.0, POS v0.3.0-dev, EO v0.3-dev.
+Proposal: [v1.1](../PROJECT_PROPOSAL.md), WR-DEC-009. Planning authority and acceptance: WR-DEC-002; v1.1 refinement accepted by WR-DEC-009. Review: Accepted. JES 0.3.0, POS v0.3.0-dev, EO v0.3-dev.
 
 ## Engineering objective and outputs
 
@@ -54,3 +54,7 @@ Codex owns planning decisions, implementation, local software operation/testing,
 ## First package and review
 
 WR-EWP-001 establishes the baseline and persistence tests before transactional or interface refactoring. No blocking product decisions. Plan reviewed for scope, ownership, dependencies, validation feasibility, and preserved Normal/Lockout separation. Accepted by Codex as delegated owner, 2026-09-07.
+
+## v1.1 qualification refinement
+
+WR-EWP-005 implements an explicit draw when all 25 Lockout squares are claimed without a 13-square owner. Persist `BOARD_EXHAUSTED` with no winner and expose the same result to player/spectator clients. No Normal rule or majority threshold changes. Migration recovery retires unusable prototype sessions while preserving history and allows one new authenticated host to resume unfinished games.

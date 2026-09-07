@@ -25,3 +25,7 @@ Extension restart restores the game/player/token and configured API origin. Asyn
 ## Spectators and operation
 
 Spectator routes are read-only and never create players. Normal mode displays per-player scores and selectable progress; Lockout displays ownership. A stream view hides controls and uses a transparent background for an OBS browser source. The same API process serves the pages. Public internet deployment and multi-process realtime are outside the initial qualification.
+
+## v1.1 edge-case refinement (WR-DEC-009)
+
+A Lockout board with all 25 squares claimed and no majority finishes with `endReason: BOARD_EXHAUSTED`, `winner: false`, and no winning owner or line. Later visits cannot mutate it. This is a draw, not a plurality win. Normal bingo and the 13-square Lockout threshold are unchanged. Legacy finished games without stored outcomes use `LEGACY_UNKNOWN` and do not invent a host-end decision.

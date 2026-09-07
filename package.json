@@ -28,7 +28,11 @@
     "local:start": "node scripts/local.mjs start",
     "local:stop": "node scripts/local.mjs stop",
     "local:status": "node scripts/local.mjs status",
-    "prisma:migrate:deploy": "npm run --workspace=api prisma:migrate:deploy"
+    "prisma:migrate:deploy": "npm run --workspace=api prisma:migrate:deploy",
+    "test:live": "npm run build && node scripts/test-integration.mjs --qualification=live",
+    "test:endurance": "npm run build && node scripts/test-integration.mjs --qualification=endurance",
+    "test:upgrade": "node scripts/test-integration.mjs --qualification=upgrade",
+    "test:live:generated": "npm run build && node scripts/test-integration.mjs --qualification=live-generated"
   },
   "engines": {
     "node": ">=22.12"

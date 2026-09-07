@@ -20,4 +20,6 @@ This explicit delegation takes precedence over skill defaults that would request
 | WR-DEC-007 | WR-EWP-004 closeout | Local milestone evidence accepted; continue live and endurance qualification | Codex, delegated owner; 2026-09-07 |
 | WR-DEC-008 | WR-EWP-005 r1 | Execution approved: actual Wikipedia, endurance, upgrade and recovery edge-case qualification within proposal v1.0 | Codex, delegated owner; 2026-09-07 |
 
+| WR-DEC-009 | PROJECT_PROPOSAL.md v1.1, ENGINEERING_PLAN.md v1.1, WR-EWP-005 r2 | Approved and execution authorized: exhausted Lockout boards end as draws; preserve the 13-square threshold and Normal bingo rules | Codex, delegated owner; 2026-09-07 |
+
 New package approvals are recorded before their execution. Package completion and product acceptance depend on evidence, not delegation alone.

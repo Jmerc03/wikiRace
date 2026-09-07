@@ -11,11 +11,11 @@
 
 ## Proposal Version
 
-Version 1.0. No earlier formal proposal exists in the inspected checkout. Existing product documents and implementation are preserved as the input baseline.
+Version 1.1. Version 1.0 was approved by WR-DEC-001. This refinement explicitly ends an exhausted Lockout board as a draw when no owner reaches 13; all other scope remains unchanged. Existing product documents and implementation are preserved as the input baseline.
 
 ## Status
 
-Approved. Phase 1A: PROPOSAL_APPROVED. Decision WR-DEC-001.
+Approved. Phase 1A: PROPOSAL_APPROVED. Decision WR-DEC-009 (v1.1); original v1.0 decision WR-DEC-001.
 
 ## Project Idea
 
@@ -35,7 +35,7 @@ A low-friction social game whose progress is clear to players and stream audienc
 
 - PR-001: Create and join named multiplayer games with a valid 25-square board and understandable objectives.
 - PR-002: Normal mode preserves independent progress; the first player with a row, column, or diagonal wins. Everyone sees the same final winner.
-- PR-003: Lockout preserves exclusive first ownership; individual players or teams win with 13 squares. Ownership cannot be stolen or changed by switching teams after play starts.
+- PR-003: Lockout preserves exclusive first ownership; individual players or teams win with 13 squares. Ownership cannot be stolen or changed by switching teams after play starts. If all 25 squares are claimed without a majority, the match ends as a draw.
 - PR-004: Players can form/join/leave teams before play, use a waiting lobby, start/end a match as host, and leave a game without corrupting its history.
 - PR-005: Navigation updates everyone promptly. Reload, reconnect, temporary backend failure, and extension restart preserve recoverable sessions and show useful status.
 - PR-006: A read-only spectator view and a stream-friendly browser view show the board, roster, scores, match state, and winner.
@@ -83,11 +83,11 @@ First establish the baseline and real persistence tests, then protect match inte
 - Date/evaluator: 2026-09-07, Codex.
 - Result: complete enough for this bounded local-product phase; no conflicting win rules.
 - Owner refinement: use existing product intent and roadmap, prioritize reliable play over future social features.
-- Required revisions: none at approval. Future changed intent uses a new version.
+- Version 1.1 refinement: three-or-more-owner Lockout can exhaust the board without 13 claims for any owner. Explicit draw termination removes an otherwise unrecoverable active match; accepted by WR-DEC-009.
 
 ## Approval Record
 
-- Decision: Approved, WR-DEC-001, 2026-09-07.
+- Decision: Approved, WR-DEC-009 (v1.1), 2026-09-07. Original approval WR-DEC-001 (v1.0).
 - Approver: Codex acting under Jaxson Mercer's explicit project-owner delegation in this task, not a claimed new human approval.
 - Conditions: scope and evidence boundaries above; preserve existing work; stop at the stated reset cutoff.
 - Rationale: the user expressly authorized editing/approving the proposal and plan, creating milestones/EWPs, and executing/testing them to make the product functional.

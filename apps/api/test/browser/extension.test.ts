@@ -153,3 +153,23 @@ test("two extension profiles form a team and finish Lockout by majority", {timeo
     await rm(hostProfile,{recursive:true,force:true});await rm(guestProfile,{recursive:true,force:true});
   }
 });
+
+test("an exhausted three-player Lockout board shows the same draw in extension and spectator",{timeout:60000},async()=>{
+  const profile=await mkdtemp(resolve(".local/wr-draw-"));let host:PlayerBrowser|undefined;
+  try{
+    host=await launch(profile);await configure(host);await host.popup.locator("#game-mode").selectOption("LOCKOUT");await host.popup.locator("#start").click();await expect(host.popup.locator("#status")).toContainText("Lobby ready");
+    const initial=await snapshot(host);const squares=await prisma.boardSquare.findMany({where:{board:{gameId:initial.gameId}}});
+    for(const square of squares)await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",label:`Visit Fixture ${square.position}`,condition:{title:`Fixture ${square.position}`}}});
+    const others=[];for(const displayName of ["Second owner","Third owner"]){const response=await app.inject({method:"POST",url:`/games/${initial.gameId}/players`,payload:{displayName}});assert.equal(response.statusCode,200);others.push(response.json());}
+    await host.popup.locator("#start-match").click();const article=await host.context.newPage();
+    for(let position=0;position<25;position++){
+      if(position%3===0)await article.goto(`https://en.wikipedia.org/wiki/Fixture_${position}`);
+      else{const player=others[position%3-1];const response=await app.inject({method:"POST",url:`/games/${initial.gameId}/events/page-visit`,headers:{authorization:`Bearer ${player.playerToken}`},payload:{playerId:player.playerId,title:`Fixture ${position}`,url:`https://en.wikipedia.org/wiki/Fixture_${position}`}});assert.equal(response.statusCode,200);}
+      await expect.poll(async()=>(await snapshot(host!)).squareClaims.length).toBe(position+1);
+    }
+    await expect(host.popup.locator("#status")).toContainText("Draw!");assert.equal((await snapshot(host)).winner,false);
+    const viewer=await host.context.newPage();await viewer.goto(`${origin}/spectate/${initial.gameId}`);await expect(viewer.locator("#notice")).toContainText("Draw!");await expect(viewer.locator(".tile.completed")).toHaveCount(25);
+    await host.popup.screenshot({path:resolve(output,"lockout-draw-extension.png"),fullPage:true});await viewer.screenshot({path:resolve(output,"lockout-draw-spectator.png"),fullPage:true});
+    await writeFile(resolve(output,"draw-result.json"),JSON.stringify({passed:true,profile:"actual extension/content script plus two API players; synthetic Wikipedia DOM; real PostgreSQL/WebSockets",claimedSquares:25,scores:[9,8,8],winner:null,endReason:"BOARD_EXHAUSTED",extensionSpectatorAgreement:true},null,2));
+  }finally{await host?.context.close();await rm(profile,{recursive:true,force:true});}
+});

@@ -47,7 +47,7 @@ First owner (player or team) to claim a majority of the board.
 
 On a 5x5 board, majority is 13 squares.
 
-Bingo rows, columns, and diagonals do not determine Lockout wins.
+Bingo rows, columns, and diagonals do not determine Lockout wins. If all 25 squares are claimed and no player or team has 13, the match ends as a draw. This can occur with three or more owners.
 
 ---
 

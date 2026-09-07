@@ -11,6 +11,8 @@ const schema = `wr_test_${Date.now()}_${randomBytes(4).toString("hex")}`;
 const url = new URL(databaseUrl);
 url.searchParams.set("schema", schema);
 const browser = process.argv.includes("--browser");
+const qualification = process.argv.find(arg => arg.startsWith("--qualification="))?.split("=")[1];
+if (qualification && !["live", "live-generated", "endurance", "upgrade"].includes(qualification)) throw new Error("Unknown qualification profile");
 const env = { ...process.env, DATABASE_URL: url.href, NODE_ENV: "test",
   PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH ?? `${root}.local/browsers` };
 const admin = new PrismaClient({ datasourceUrl: databaseUrl });
@@ -27,7 +29,8 @@ try {
   created = true;
   console.log(`Isolated integration schema: ${schema}`);
   run([requireApi.resolve("prisma/build/index.js"), "migrate", "deploy"], `${root}apps/api`);
-  run(["--import", "tsx", "--test", browser ? "apps/api/test/browser/*.test.ts" : "apps/api/test/integration/*.test.ts"]);
+  const tests = qualification ? `apps/api/test/qualification/${qualification}.test.ts` : browser ? "apps/api/test/browser/*.test.ts" : "apps/api/test/integration/*.test.ts";
+  run(["--import", "tsx", "--test", tests]);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

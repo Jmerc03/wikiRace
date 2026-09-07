@@ -98,7 +98,7 @@ PowerShell sets the same value with `$env:DATABASE_URL = 'postgresql://wikirace@
 
 To author a new migration, use `npm run prisma:migrate:dev -- --name migration_name`. Apply checked-in migrations with `prisma:migrate:deploy`; do not use a database reset for normal upgrades.
 
-The September 7 additive migration preserves existing games, players, visits and claims, and adds session hashes and stable host/winner fields. Legacy player records cannot recover private tokens from public IDs: explicitly join a new session. Historical records remain available. Prisma CLI stays at 6.19.3; the root development dependency ensures npm applies the reviewed `deepmerge-ts` security override across workspace links. See [dependency review](DEPENDENCIES.md).
+The September 7 additive migration preserves existing games, players, visits and claims, and adds session hashes and stable host/winner fields. Legacy player records cannot recover private tokens from public IDs: explicitly join a new session. The follow-up recovery migration retires tokenless memberships, preserves all historical visits/claims, and leaves unfinished games resumable: the first authenticated join becomes host when no usable host remains. An old finished game without stored winner evidence displays that limitation explicitly. Apply both checked-in migrations with the deploy command above. Historical records remain available. Prisma CLI stays at 6.19.3; the root development dependency ensures npm applies the reviewed `deepmerge-ts` security override across workspace links. See [dependency review](DEPENDENCIES.md).
 
 ## Automated evidence
 
@@ -107,11 +107,17 @@ npm test
 npm run test:integration
 npm run browser:install
 npm run test:browser
+npm run test:live
+npm run test:live:generated
+npm run test:upgrade
+npm run test:endurance
 ```
 
 Each integration/browser run creates a random `wr_test_*` PostgreSQL schema, applies migrations, executes actual HTTP/WebSocket/browser work, and removes only that schema. Set `WIKIRACE_TEST_DATABASE_URL` to use an explicitly chosen test database; default is the dedicated local instance. A missing database fails the suite rather than skipping it.
 
 Chromium binaries live under ignored `.local/browsers`. The deterministic browser suite loads actual extension profiles and uses synthetic Wikipedia article DOM. It verifies two-player Normal isolation, Lockout teams/majority, saved-profile resume, API stop/restart, live spectators, safe name rendering and overlay transparency. It does not assert live Wikipedia availability by itself.
+
+`test:live` contacts real Wikipedia without response substitution. `test:live:generated` wins unmodified randomly generated Normal and Lockout boards via real article navigation; external site availability can cause a failure independent of the local service. `test:upgrade` uses native `psql` to exercise the original prototype schema and current migrations in a separate disposable schema. `test:endurance` defaults to five minutes; set `WIKIRACE_ENDURANCE_SECONDS` from 90 through 3600 for a bounded longer run. It closes the extension popup, keeps a spectator open, sends modest periodic local events, restarts its test API once, and verifies preserved identity and consistent state. The upgrade and endurance profiles leave the operator API/database running.
 
 `node scripts/verify-local.mjs` exercises idempotent managed start/stop, a full API/database restart, preserved sessions/boards, and restores the original game count. It stops only the dedicated local stack; do not run it concurrently with other WikiRace tests or active play.
 

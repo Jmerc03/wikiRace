@@ -59,6 +59,19 @@ test("create/join persists a valid board, names, and distinct player identities"
   assert.equal((await state(host.gameId, host.playerId)).playerCount, 2);
 });
 
+test("concurrent joins to a migrated game elect exactly one usable host", async () => {
+  const host=await createGame("NORMAL",false);
+  await prisma.player.update({where:{id:host.playerId},data:{sessionTokenHash:null,leftAt:new Date()}});
+  await prisma.game.update({where:{id:host.gameId},data:{hostPlayerId:null}});
+  const [first,second]=await Promise.all([join(host.gameId,"Recovered host"),join(host.gameId,"Recovered guest")]);
+  const recovered=await prisma.game.findUniqueOrThrow({where:{id:host.gameId}});
+  assert.ok([first.playerId,second.playerId].includes(recovered.hostPlayerId));
+  assert.equal((await state(host.gameId,first.playerId)).playerCount,2);
+  assert.equal((await state(host.gameId,second.playerId)).hostPlayerId,recovered.hostPlayerId);
+  await start(host.gameId,recovered.hostPlayerId!);
+  assert.equal(await prisma.player.count({where:{gameId:host.gameId}}),3,"Historical player remains stored");
+});
+
 test("Normal progress persists independently and duplicate visits do not duplicate completions", async () => {
   const host = await createGame(); const guest = await join(host.gameId);
   await visit(host.gameId, host.playerId, 0); await visit(host.gameId, host.playerId, 0);
@@ -87,6 +100,19 @@ test("Lockout first claims persist and a bingo does not finish a game", async ()
   assert.equal(current.winner, false); assert.equal(current.status, "ACTIVE");
   assert.equal(current.squareClaims.length, 5);
   assert.equal(current.squareClaims[0].playerId, host.playerId);
+});
+
+test("a three-owner Lockout board ends as an immutable draw without a majority", async () => {
+  const host=await createGame("LOCKOUT");const second=await join(host.gameId);const third=await join(host.gameId);
+  const players=[host.playerId,second.playerId,third.playerId];
+  for(let position=0;position<25;position++)await visit(host.gameId,players[position%3],position);
+  const game=await prisma.game.findUniqueOrThrow({where:{id:host.gameId}});
+  assert.equal(game.status,"FINISHED");assert.equal(game.endReason,"BOARD_EXHAUSTED");assert.ok(game.finishedAt);
+  for(const playerId of players){const view=await state(host.gameId,playerId);assert.equal(view.winner,false);assert.equal(view.winningOwner,null);assert.equal(view.winningLine,null);assert.equal(view.squareClaims.length,25);}
+  await visit(host.gameId,host.playerId,0);
+  assert.equal(await prisma.pageVisitEvent.count({where:{gameId:host.gameId}}),25);
+  assert.equal((await prisma.game.findUniqueOrThrow({where:{id:host.gameId}})).revision,game.revision);
+  assert.equal((await app.inject({method:"POST",url:`/games/${host.gameId}/players`,payload:{displayName:"Late"}})).statusCode,409);
 });
 
 test("Lockout teammates combine 13 claims into one persisted team winner", async () => {

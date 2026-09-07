@@ -96,6 +96,9 @@ export async function gameRoutes(app: FastifyInstance) {
       await touch();
       const player = await tx.player.create({ data: { gameId, displayName: body.displayName ?? `Player ${game.players.length + 1}`,
         color: PLAYER_COLORS[game.players.length % PLAYER_COLORS.length], sessionTokenHash: session.sessionTokenHash } });
+      // A migrated game can retain history without an authenticated host.
+      // The first new member becomes host while the row lock serializes joins.
+      if (!game.hostPlayerId) await tx.game.update({ where: { id: gameId }, data: { hostPlayerId: player.id } });
       return { ...await buildGameState(tx, gameId, player.id), playerToken: session.playerToken };
     });
   });
@@ -208,6 +211,8 @@ export async function gameRoutes(app: FastifyInstance) {
           const [kind, id] = result.ownerKey.split(":");
           await tx.game.update({ where: { id: gameId }, data: { status: "FINISHED", finishedAt: new Date(), endReason: "MAJORITY",
             winnerPlayerId: kind === "player" ? id : null, winnerTeamId: kind === "team" ? id : null } });
+        } else if (claims.length === game.board.squares.length) {
+          await tx.game.update({ where: { id: gameId }, data: { status: "FINISHED", finishedAt: new Date(), endReason: "BOARD_EXHAUSTED" } });
         }
       } else {
         const existing = await tx.squareCompletion.findMany({ where: { gameId, playerId: player.id } });

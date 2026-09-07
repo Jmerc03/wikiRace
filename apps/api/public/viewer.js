@@ -32,7 +32,7 @@ function render(state) {
   follow.replaceChildren(...state.players.map(player=>{const option=element('option','',player.displayName+(player.leftAt?' (left)':''));option.value=player.id;return option;}));
   follow.value=state.playerId ?? oldValue;
   if(state.winner) notice(`${state.winningOwner.name} won ${state.mode==='LOCKOUT'?'by majority':'by bingo'}!`);
-  else if(state.status==='FINISHED') notice(state.endReason==='EMPTY'?'Everyone has left this match.':'The host ended the match. No winner was declared.');
+  else if(state.status==='FINISHED') notice(state.endReason==='BOARD_EXHAUSTED'?'Draw! The board is full and no owner reached 13 squares.':state.endReason==='LEGACY_UNKNOWN'?'This older match has no recorded final winner.':state.endReason==='EMPTY'?'Everyone has left this match.':'The host ended the match. No winner was declared.');
   else if(state.status==='WAITING') notice('The lobby is open. Players choose their teams before the host starts.');
   else notice('');
   const scoreboard=$('scoreboard'); scoreboard.replaceChildren();

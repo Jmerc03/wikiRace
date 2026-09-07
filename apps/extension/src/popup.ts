@@ -162,7 +162,7 @@ function renderState(state: GameState) {
   statusEl.textContent = state.error ?? (winnerMessage
     ? `${winnerMessage}.`
     : state.status === "WAITING" ? (isHost ? "Lobby ready. Start when everyone has joined." : "Waiting for the host to start.")
-      : state.status === "FINISHED" ? "Match ended. Leave to create or join another game."
+      : state.status === "FINISHED" ? (state.endReason === "BOARD_EXHAUSTED" ? "Draw! The board is full and no owner reached 13 squares." : "Match ended. Leave to create or join another game.")
       : "Match active — explore Wikipedia to complete your board.");
   statusEl.classList.toggle("winner-status", Boolean(winnerMessage));
 
@@ -171,7 +171,7 @@ function renderState(state: GameState) {
       ? winnerMessage
       : state.winner
         ? `BINGO${state.winningLineType ? ` (${formatWinningLineType(state.winningLineType)})` : ""}`
-        : state.status === "WAITING" ? "Waiting in lobby" : state.status === "FINISHED" ? "Ended without a winner" : "In progress";
+        : state.status === "WAITING" ? "Waiting in lobby" : state.status === "FINISHED" ? (state.endReason === "BOARD_EXHAUSTED" ? "Draw — board exhausted" : state.endReason === "LEGACY_UNKNOWN" ? "Older match: winner not recorded" : "Ended without a winner") : "In progress";
 
   const currentPlayer = state.players?.find(
     (player) => player.id === state.playerId,
