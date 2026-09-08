@@ -32,7 +32,9 @@
     "test:live": "npm run build && node scripts/test-integration.mjs --qualification=live",
     "test:endurance": "npm run build && node scripts/test-integration.mjs --qualification=endurance",
     "test:upgrade": "node scripts/test-integration.mjs --qualification=upgrade",
-    "test:live:generated": "npm run build && node scripts/test-integration.mjs --qualification=live-generated"
+    "test:live:generated": "npm run build && node scripts/test-integration.mjs --qualification=live-generated",
+    "test:worker": "npm run build && node scripts/test-integration.mjs --qualification=worker",
+    "test:package": "npm run build:extension && node scripts/verify-package.mjs"
   },
   "engines": {
     "node": ">=22.12"

@@ -75,3 +75,23 @@ test("operator landing, extension archive, unavailable game and Lockout winner v
     await expect(page.locator("#match-title")).toContainText("unavailable");
   }finally{await browser.close();}
 });
+
+test("full rosters and long labels remain readable in the fixed OBS viewport and mobile spectator",{timeout:60000},async()=>{
+  const {host}=await fixture();
+  for(let i=2;i<32;i++){const response=await app.inject({method:"POST",url:`/games/${host.gameId}/players`,payload:{displayName:`Player ${i} with a deliberately long name`}});assert.equal(response.statusCode,200);}
+  await visit(host,0);
+  const longLabel="Visit International Covenant on Economic, Social and Cultural Rights";
+  await prisma.boardSquare.updateMany({where:{board:{gameId:host.gameId}},data:{label:longLabel}});
+  const browser=await chromium.launch({channel:"chromium",headless:true});const page=await browser.newPage({viewport:{width:1280,height:900}});
+  try{
+    await page.goto(`${origin}/overlay/${host.gameId}`);await expect(page.locator(".tile")).toHaveCount(25);
+    const clipped=await page.locator(".tile").evaluateAll(tiles=>tiles.some(tile=>{
+      const box=tile.getBoundingClientRect();
+      return [...tile.querySelectorAll(".tile-label,.tile-owner")].some(text=>{const rect=text.getBoundingClientRect();return rect.top<box.top+18||rect.bottom>box.bottom-4;});
+    }));assert.equal(clipped,false,"Objective and ownership text must fit below the tile number and inside each OBS tile");
+    await page.screenshot({path:resolve(output,"full-roster-overlay.png"),omitBackground:true});
+    await page.setViewportSize({width:390,height:844});await page.goto(`${origin}/spectate/${host.gameId}`);await expect(page.locator(".score-card")).toHaveCount(32);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,"Mobile spectator must not scroll horizontally");
+    await page.screenshot({path:resolve(output,"mobile-spectator.png"),fullPage:true});
+  }finally{await browser.close();}
+});

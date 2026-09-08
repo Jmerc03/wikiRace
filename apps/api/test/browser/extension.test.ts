@@ -173,3 +173,19 @@ test("an exhausted three-player Lockout board shows the same draw in extension a
     await writeFile(resolve(output,"draw-result.json"),JSON.stringify({passed:true,profile:"actual extension/content script plus two API players; synthetic Wikipedia DOM; real PostgreSQL/WebSockets",claimedSquares:25,scores:[9,8,8],winner:null,endReason:"BOARD_EXHAUSTED",extensionSpectatorAgreement:true},null,2));
   }finally{await host?.context.close();await rm(profile,{recursive:true,force:true});}
 });
+
+test("a Normal winner is named for everyone while each extension keeps its own progress and highlights",{timeout:60000},async()=>{
+  const profiles=[await mkdtemp(resolve(".local/wr-normal-winner-")),await mkdtemp(resolve(".local/wr-normal-observer-"))];let host:PlayerBrowser|undefined;let guest:PlayerBrowser|undefined;
+  try{
+    host=await launch(profiles[0]);guest=await launch(profiles[1]);await configure(host);await configure(guest);
+    await host.popup.locator("#player-name").fill("Normal champion");await host.popup.locator("#start").click();await expect(host.popup.locator("#status")).toContainText("Lobby ready");const initial=await snapshot(host);
+    const squares=await prisma.boardSquare.findMany({where:{board:{gameId:initial.gameId}}});for(const square of squares)await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",label:`Visit Fixture ${square.position}`,condition:{title:`Fixture ${square.position}`}}});
+    await guest.popup.locator("#player-name").fill("Independent racer");await guest.popup.locator("#join-game-id").fill(initial.gameId);await guest.popup.locator("#join-game-btn").click();await expect(guest.popup.locator("#status")).toContainText("Waiting for the host");
+    await host.popup.locator("#start-match").click();const ownArticle=await guest.context.newPage();await ownArticle.goto("https://en.wikipedia.org/wiki/Fixture_10");await expect(guest.popup.locator("#progress")).toContainText("Your progress: 1/25");
+    const article=await host.context.newPage();for(let i=0;i<5;i++){await article.goto(`https://en.wikipedia.org/wiki/Fixture_${i}`);await expect.poll(async()=>(await snapshot(host!)).completedSquareIds.length).toBe(i+1);}
+    for(const player of [host,guest])await expect(player.popup.locator("#status")).toContainText("Normal champion won by bingo");
+    await expect(host.popup.locator(".winning-square")).toHaveCount(5);await expect(guest.popup.locator(".winning-square")).toHaveCount(0);await expect(guest.popup.locator(".square.completed")).toHaveCount(1);
+    await guest.popup.screenshot({path:resolve(output,"normal-other-winner-own-progress.png"),fullPage:true});
+    await writeFile(resolve(output,"normal-winner-result.json"),JSON.stringify({passed:true,profile:"two actual extension profiles and content scripts; deterministic article DOM; actual API/PostgreSQL/WebSockets",namedGlobalWinner:true,guestOwnCompletions:1,guestWinningHighlights:0,hostWinningHighlights:5},null,2));
+  }finally{await host?.context.close();await guest?.context.close();for(const profile of profiles)await rm(profile,{recursive:true,force:true});}
+});

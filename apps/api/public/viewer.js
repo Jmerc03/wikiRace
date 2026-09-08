@@ -35,9 +35,16 @@ function render(state) {
   else if(state.status==='FINISHED') notice(state.endReason==='BOARD_EXHAUSTED'?'Draw! The board is full and no owner reached 13 squares.':state.endReason==='LEGACY_UNKNOWN'?'This older match has no recorded final winner.':state.endReason==='EMPTY'?'Everyone has left this match.':'The host ended the match. No winner was declared.');
   else if(state.status==='WAITING') notice('The lobby is open. Players choose their teams before the host starts.');
   else notice('');
+  const ranked=scores(state).sort((a,b)=>b.score-a.score || a.name.localeCompare(b.name));
+  const visible=overlay?ranked.slice(0,32):ranked;
+  const followed=ranked.find(score=>score.id===state.playerId);
+  if(overlay&&followed&&!visible.includes(followed))visible[visible.length-1]=followed;
+  document.body.classList.toggle('dense-roster',overlay&&visible.length>8);
+  $('overlay-summary').hidden=!overlay||ranked.length<=visible.length;
+  $('overlay-summary').textContent=`Showing ${visible.length} of ${ranked.length} scores, including the followed player. Full roster in spectator view.`;
   const scoreboard=$('scoreboard'); scoreboard.replaceChildren();
-  for(const score of scores(state).sort((a,b)=>b.score-a.score || a.name.localeCompare(b.name))) {
-    const card=element('div','score-card'+(score.id===state.playerId?' selected':''));
+  for(const score of visible) {
+    const card=element('div','score-card'+(score.id===state.playerId?' selected':''));card.title=score.name;
     const swatch=element('span','score-swatch');swatch.style.backgroundColor=score.color || '#4c7860';
     const label=element('div');label.append(element('div','score-name',score.name),element('div','score-detail',score.detail));
     card.append(swatch,label,element('span','score-number',String(score.score)));scoreboard.append(card);

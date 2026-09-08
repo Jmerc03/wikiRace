@@ -72,6 +72,18 @@ test("concurrent joins to a migrated game elect exactly one usable host", async 
   assert.equal(await prisma.player.count({where:{gameId:host.gameId}}),3,"Historical player remains stored");
 });
 
+test("concurrent lobby joins enforce the 32-player limit and release a departed slot", async () => {
+  const host=await createGame("LOCKOUT",false);
+  const results=await Promise.all(Array.from({length:40},(_,index)=>app.inject({method:"POST",url:`/games/${host.gameId}/players`,payload:{displayName:`Capacity player ${index}`}})));
+  const admitted=results.filter(r=>r.statusCode===200);const refused=results.filter(r=>r.statusCode===409);
+  assert.equal(admitted.length,31);assert.equal(refused.length,9);assert.equal(await prisma.player.count({where:{gameId:host.gameId,leftAt:null}}),32);
+  const leaving=admitted[0].json();tokens.set(leaving.playerId,leaving.playerToken);
+  const response=await app.inject({method:"POST",url:`/games/${host.gameId}/players/${leaving.playerId}/leave`,headers:auth(leaving.playerId),payload:{}});assert.equal(response.statusCode,200);
+  await join(host.gameId,"Replacement player");
+  assert.equal((await state(host.gameId,host.playerId)).playerCount,32);
+  assert.equal(await prisma.player.count({where:{gameId:host.gameId}}),33,"The departed history remains retained");
+});
+
 test("Normal progress persists independently and duplicate visits do not duplicate completions", async () => {
   const host = await createGame(); const guest = await join(host.gameId);
   await visit(host.gameId, host.playerId, 0); await visit(host.gameId, host.playerId, 0);

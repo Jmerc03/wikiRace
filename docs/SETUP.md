@@ -63,7 +63,7 @@ To change the backend, leave the current game and use **Server settings**. Enter
 
 Open `/spectate/<game-id>` or select **Watch / Stream** in the extension. Spectators do not become players. Normal mode can follow any player's progress; Lockout shows exclusive ownership and team/player totals.
 
-Select **Copy OBS link**, add a Browser Source in OBS, and paste the URL. Use width 1280 and height 900. `/overlay/<game-id>` has a transparent page background and hides interaction controls. An optional `?playerId=<id>` selects Normal progress. Browser rendering/transparency is tested; actual capture inside OBS is a separate operator check.
+Select **Copy OBS link**, add a Browser Source in OBS, and paste the URL. Use width 1280 and height 900. `/overlay/<game-id>` has a transparent page background and hides interaction controls. An optional `?playerId=<id>` selects Normal progress. Large overlay rosters use compact names; hover to see the full name. If historical ownership exceeds 32 entries, the overlay shows 32 scores including the followed player and labels that limit; the spectator page retains the full roster. Browser rendering/transparency is tested; actual capture inside OBS is a separate operator check.
 
 ## Development and migrations
 
@@ -110,12 +110,16 @@ npm run test:browser
 npm run test:live
 npm run test:live:generated
 npm run test:upgrade
+npm run test:worker
+npm run test:package
 npm run test:endurance
 ```
 
 Each integration/browser run creates a random `wr_test_*` PostgreSQL schema, applies migrations, executes actual HTTP/WebSocket/browser work, and removes only that schema. Set `WIKIRACE_TEST_DATABASE_URL` to use an explicitly chosen test database; default is the dedicated local instance. A missing database fails the suite rather than skipping it.
 
 Chromium binaries live under ignored `.local/browsers`. The deterministic browser suite loads actual extension profiles and uses synthetic Wikipedia article DOM. It verifies two-player Normal isolation, Lockout teams/majority, saved-profile resume, API stop/restart, live spectators, safe name rendering and overlay transparency. It does not assert live Wikipedia availability by itself.
+
+`test:worker` forcibly stops the isolated extension service worker and verifies alarm-driven recovery with no popup or content-script wakeup. `test:package` verifies identical ZIP hashes across three time zones.
 
 `test:live` contacts real Wikipedia without response substitution. `test:live:generated` wins unmodified randomly generated Normal and Lockout boards via real article navigation; external site availability can cause a failure independent of the local service. `test:upgrade` uses native `psql` to exercise the original prototype schema and current migrations in a separate disposable schema. `test:endurance` defaults to five minutes; set `WIKIRACE_ENDURANCE_SECONDS` from 90 through 3600 for a bounded longer run. It closes the extension popup, keeps a spectator open, sends modest periodic local events, restarts its test API once, and verifies preserved identity and consistent state. The upgrade and endurance profiles leave the operator API/database running.
 

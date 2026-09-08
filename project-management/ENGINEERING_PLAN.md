@@ -1,7 +1,7 @@
-# WikiRace engineering plan v1.1
+# WikiRace engineering plan v1.2
 
 Owner: Codex, delegated Systems Architect/project operator. Updated: 2026-09-07.
-Proposal: [v1.1](../PROJECT_PROPOSAL.md), WR-DEC-009. Planning authority and acceptance: WR-DEC-002; v1.1 refinement accepted by WR-DEC-009. Review: Accepted. JES 0.3.0, POS v0.3.0-dev, EO v0.3-dev.
+Proposal: [v1.1](../PROJECT_PROPOSAL.md), WR-DEC-009. Planning authority and acceptance: WR-DEC-002; v1.1 refinement accepted by WR-DEC-009; v1.2 recovery qualification accepted by WR-DEC-010. Review: Accepted. JES 0.3.0, POS v0.3.0-dev, EO v0.3-dev.
 
 ## Engineering objective and outputs
 
@@ -35,6 +35,7 @@ Consequential cross-component behavior is specified in [GAME_CONTRACT.md](../doc
 | M2 Match integrity | Valid boards, validation errors, isolated identity, atomic claims/wins, stable winner | WR-EWP-002 | Done |
 | M3 Complete player experience | Lobby/host/team lifecycle, leave/resume, configurable backend, resilient extension | WR-EWP-003 | Done |
 | M4 Watch and operate | Spectator/stream pages, documented clean startup, integrated browser/API evidence, delivered-use review | WR-EWP-004 | Done |
+| M5 Extended qualification | Real Wikipedia, idle/restart, upgrade/draw edges, backup/restore, repeated-session cleanup and final local delivered-use decision | WR-EWP-005, WR-EWP-006 | Active |
 
 ## Validation readiness and dependencies
 

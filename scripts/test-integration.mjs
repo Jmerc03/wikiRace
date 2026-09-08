@@ -12,7 +12,7 @@ const url = new URL(databaseUrl);
 url.searchParams.set("schema", schema);
 const browser = process.argv.includes("--browser");
 const qualification = process.argv.find(arg => arg.startsWith("--qualification="))?.split("=")[1];
-if (qualification && !["live", "live-generated", "endurance", "upgrade"].includes(qualification)) throw new Error("Unknown qualification profile");
+if (qualification && !["live", "live-generated", "endurance", "upgrade", "worker"].includes(qualification)) throw new Error("Unknown qualification profile");
 const env = { ...process.env, DATABASE_URL: url.href, NODE_ENV: "test",
   PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH ?? `${root}.local/browsers` };
 const admin = new PrismaClient({ datasourceUrl: databaseUrl });

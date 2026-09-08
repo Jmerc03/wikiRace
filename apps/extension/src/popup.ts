@@ -262,7 +262,7 @@ function renderState(state: GameState) {
   }
 
   const completed = new Set(state.completedSquareIds);
-  const winningPositions = new Set(state.winningLine ?? []);
+  const winningPositions = new Set(state.mode === "NORMAL" && state.winningOwner?.id === state.playerId ? state.winningLine ?? [] : []);
 
   boardEl.innerHTML = "";
 
