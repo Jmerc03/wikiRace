@@ -46,3 +46,5 @@ On 2026-09-08 UTC the user said “ok you may continue for another 2 hours”, c
 | WR-DEC-019 | ENGINEERING_PLAN.md v1.4 and WR-EWP-008 r1 | Plan Accepted and execution approved: explicit invitations, validated cross-origin join, opt-in trusted-network binding with loopback default, and actual local-interface/operator rollback qualification under PR-001/005/007 | Codex, delegated owner; 2026-09-08 UTC |
 
 | WR-DEC-020 | ENGINEERING_PLAN.md v1.5 and WR-EWP-009 r1 | Plan Accepted and execution approved: unresponsive-database recovery, declared minimum Node runtime checks and bounded multi-room operation, with exact configuration/evidence | Codex, delegated owner; 2026-09-08 UTC |
+
+| WR-DEC-021 | WR-EWP-008 r1 closeout | Accepted: shared invitation parsing, explicit cross-origin join and permission boundaries, 33/30/11 checks, same-host private-interface HTTP/WebSocket and original-profile rollback | Codex, delegated owner; 2026-09-08 UTC |

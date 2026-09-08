@@ -1,6 +1,6 @@
 # WR-EWP-008 r1 — Explicit invitations and trusted-network operation
 
-Status: In Progress. Phase 1A: VERIFICATION. Owner: Codex. Date: 2026-09-08 UTC.
+Status: Done. Phase 1A: CLOSEOUT. Owner: Codex. Date: 2026-09-08 UTC.
 
 ## Objective and authority
 
@@ -22,4 +22,11 @@ Shared parser edge cases; API route/private-data checks; actual two-origin Chrom
 
 ## Closeout
 
-Pending.
+Accepted by delegated-owner WR-DEC-021, 2026-09-08 UTC. Implementation source: `e301c9728e3da6ff502fdf87352dd120c87c4c48`.
+
+- `.jes/local/ewp-008/unit-02.log`: 33 unit cases passed, including four shared invitation tests and both API/extension consumers. `integration-02.log`: 30 PostgreSQL/WebSocket cases passed. `browser-04.log`: 11 actual Chromium workflows passed, including explicit two-origin join, actual ungranted-origin rejection, injected permission refusal, no enrollment on paste/web read, existing-session protection, missing/finished invitations and clipboard fallback. Required cases were not skipped.
+- `browser/1788831717947` retains inspected desktop/mobile invitation views; the final browser run also captures the improved full-width mobile input. Initial browser attempts exposed test-only clipboard-read permission and hidden-heading selector issues, plus a transpiled helper in injected clipboard code; their logs are retained rather than represented as product failures.
+- `network/1788831730956/result.json` and `checks.json`: managed API bound explicitly to 0.0.0.0 on a new port/database, actual HTTP and WebSocket operation through this Mac’s private IPv4 interface, PostgreSQL listen_addresses remained 127.0.0.1, running binding change was rejected, original game count/profile restored and temporary database removed. The delivered service remains loopback/ready.
+- Full build and deterministic extension 1.3.0 package verification passed. Shared parsing is served to web clients and bundled into the extension; private admission/session keys never enter invitation URLs.
+
+Same-host private-interface evidence does not prove another machine, firewall path or public service. Native Windows, Docker and actual OBS remain separate profiles. Documentation provides explicit opt-in/rollback commands. M6 acceptance waits for WR-EWP-009 operational qualification.

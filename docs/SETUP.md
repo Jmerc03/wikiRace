@@ -175,3 +175,9 @@ Do not run the managed native API and container API on port 4000 at the same tim
 ## JES
 
 The project uses JES 0.3.0 with one repository/System and four explicit Subsystem owners. Planning, exact package decisions and closeouts are repository-owned in `project-management`; local Core has the registered project/owner graph. Reports/receipts and test logs live in ignored `.jes/local` and `.jes/reports`. No synthetic Execution or human Approval objects are created for this manually initiated Codex task.
+
+## Database response deadlines
+
+The API applies Prisma v6 PostgreSQL defaults of 3 seconds for connection establishment, 5 seconds for pool acquisition, and 5 seconds for an individual query response. These prevent an established but unresponsive connection from leaving readiness indefinitely pending. Explicit `connect_timeout`, `pool_timeout` or `socket_timeout` values in `DATABASE_URL` take precedence; zero can disable the corresponding timeout and is outside the bounded-default claim. Other URL options and the chosen schema remain intact. Invalid timeout values fail startup without echoing connection credentials.
+
+The isolated fault qualification pauses the database response path, verifies process liveness, a 503 readiness response in approximately five seconds, rollback of an interrupted host action, and successful same-identity retry after restoring traffic. It does not stop the operator database. Reference: [Prisma v6 PostgreSQL connection options](https://docs.prisma.io/docs/orm/v6/overview/databases/postgresql).

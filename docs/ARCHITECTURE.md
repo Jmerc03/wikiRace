@@ -195,3 +195,5 @@ from built assets with fixed entry timestamps and excludes source maps.
 ## Recoverable lobby entry
 
 Current clients persist a private random admission key before create/join. The API serializes that key in PostgreSQL before any game lock and binds it to the normalized request using nullable Player admission metadata. Exact retries recover the same membership and current state without new revision/broadcasts. Pending intent is separate from installed player state and survives browser restart. See GAME_CONTRACT.md v1.2 for protocol, compatibility and explicit abandonment behavior.
+
+The API normalizes its PostgreSQL URL with bounded connect/pool/query defaults before creating Prisma. Explicit operator values are preserved. An isolated established-connection stall test verifies liveness, bounded readiness failure, transaction rollback and restoration; see WR-EWP-009 for the measured profile.
