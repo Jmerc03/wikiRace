@@ -57,3 +57,13 @@ Captured 2026-09-07 during WR-EWP-005 VERIFICATION. Author: Codex under the user
 - Deferred owner/trigger: project operator when selecting off-machine storage or another host/runtime profile. Open questions: none required for capture.
 - Recommendation, unaccepted: retain complete operator restoration and rollback checks, separately from successful archive creation.
 - JES Draft ID: `JES-OBS-MANUAL-20260908-WR-RESTORE`. Exact input/outbox/receipt: `.jes/local/observation-inputs/WR-OBS-2026-004.json` and `.jes/reports/WR-OBS-2026-004.json`. Capture does not create or approve an improvement proposal. Delivery was recorded and read back as captured Draft in `.jes/local/coordination/1788827457367366000`.
+
+## WR-OBS-2026-005
+
+- Date: 2026-09-08 UTC. Source: WR-EWP-007, `2c45db7` (full revision in the exact outbox).
+- Category: admission_transport_recovery. Route: project_local_engineering.
+- Facts: the initial committed-response-loss regression had no identity recovery; Chromium also automatically retried one POST in the revised fault harness. The final case dropped four committed responses and recovered the exact create/join identities after browser restart, with unchanged player counts and revisions.
+- Evidence: `.jes/local/ewp-007/admission-before.log`, `browser-02.log`, `browser-03.log`, and `browser/1788830772299/result.json`; 30 integration and 10 Chromium cases passed.
+- Assumption: measured native Mac/PostgreSQL/Chromium profile. Deferred owner/trigger: project operator when another browser/runtime/network profile is selected. No blocking open question for capture.
+- Recommendation, unaccepted: keep stored admission, acknowledgement receipt and automatic transport retries separate in recovery tests.
+- JES Draft ID: `JES-OBS-MANUAL-20260908-WR-ADMISSION`; exact input `.jes/local/observation-inputs/WR-OBS-2026-005.json`, outbox/recorded receipt `.jes/reports/WR-OBS-2026-005.json`. Capture is state-neutral and grants no process or scope approval.

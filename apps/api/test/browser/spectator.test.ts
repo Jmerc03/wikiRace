@@ -62,7 +62,7 @@ test("operator landing, extension archive, unavailable game and Lockout winner v
   const browser=await chromium.launch({channel:"chromium",headless:true});const page=await browser.newPage({viewport:{width:1280,height:900}});
   try{
     await page.goto(origin);await expect(page.locator("#connection")).toHaveText("Server ready");
-    await expect(page.locator("#home h1")).toContainText("A race through");
+    await expect(page.getByRole("heading",{name:"A race through knowledge."})).toContainText("A race through");
     await page.screenshot({path:resolve(output,"operator-home.png"),fullPage:true});
     const archive=await app.inject({url:"/downloads/wikirace-extension.zip"});assert.equal(archive.statusCode,200,archive.body.slice(0,100));
     const files=unzipSync(archive.rawPayload);assert.deepEqual(Object.keys(files).sort(),["background.js","content.js","manifest.json","popup.html","popup.js"]);

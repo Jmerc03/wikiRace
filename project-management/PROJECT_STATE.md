@@ -3,7 +3,7 @@
 Updated: 2026-09-08 UTC (September 7 local). Operator: Codex under Jaxson Mercer's explicit delegation.
 
 - Product baseline: PROJECT_PROPOSAL.md v1.2, Approved (WR-DEC-015); v1.1 remains accepted historical local use.
-- Engineering plan: ENGINEERING_PLAN.md v1.3, Accepted (WR-DEC-016); M6 continuation active.
+- Engineering plan: ENGINEERING_PLAN.md v1.5, Accepted (WR-DEC-020); M6 continuation active.
 - JES: installed plugin 0.3.0; local Core healthy, `0009_monorepo_authority`; Project `JES-PROJECT-WIKIRACE`, System `JES-SYSTEM-WIKIRACE`, Repository `JES-REPO-WIKIRACE`, four Subsystems registered and read back through API.
 - Metadata: `jes-repository.v2`; exact ownership review in `.jes/OWNERSHIP.md`; registration requests/receipts in `.jes/local/registration`.
 - Standards: POS v0.3.0-dev and EO v0.3-dev working standards, each with v0.2 latest release. JES's 0.3.0 does not imply a POS/EO release.
@@ -17,7 +17,8 @@ Updated: 2026-09-08 UTC (September 7 local). Operator: Codex under Jaxson Mercer
 - Prior delivery: local delivered use Accepted by WR-DEC-013; all five milestones and six EWPs Done. Final clean-install implementation checkpoint `3490cfe0ae6704d8e1fb595dd7c008cbc64eb470`: build, 29 unit, 24 PostgreSQL/WebSocket and eight Chromium cases pass without required skips; zero dependency findings, valid Prisma schema, all eight migrations applied, deterministic package verified. Native API is running/ready with the original profile. Four captured JES observations remain Drafts. Repository-only execution records are authoritative; no synthetic Core Execution or Approval objects. See DELIVERY_ACCEPTANCE.md and evidence/QUALIFICATION_INDEX.json.
 - Local database: dedicated PostgreSQL on `127.0.0.1:55432`, database/user `wikirace`, data in `.local/postgres`. Pre-existing databases outside this dedicated profile were untouched; no database reset was used. Integration runs remove only their random schemas, and restore qualification removes only its newly created temporary databases.
 - Qualification limit: deterministic fixtures and real Wikipedia navigation have separate passing Chromium evidence with actual HTTP/WebSockets/PostgreSQL. Native Windows, OBS application capture, and public deployment remain unqualified. Spectator and native local startup/recovery have separate passing M4 evidence.
-- Current: WR-EWP-007 r1 approved by WR-DEC-017 for recoverable admission; M6 invitations follow after that dependency. Source at continuation: `1f501ae7bfc376e023e2c715a279943986e7b2c2`, clean.
+- WR-EWP-007 r1: Done, WR-DEC-018. Recoverable admission passed 29 unit/30 integration/10 Chromium checks and actual operator upgrade.
+- Current: WR-EWP-008 r1 approved by WR-DEC-019 for invitations and opt-in trusted-network binding; M6 active. Invitation checks passed 33 unit/30 integration/11 browser cases plus same-host private-interface/operator rollback. WR-EWP-009 begins bounded database/runtime/load qualification. Five Draft observations captured. Source at continuation: `1f501ae7bfc376e023e2c715a279943986e7b2c2`, clean.
 - Cutoff: extended by the user for two hours; 2026-09-08 03:10:09 UTC. Continue bounded implementation and verification until that point.
 
 Repository records remain authoritative for delegated approvals and actual work. No Core Execution records or human-attributed approvals are fabricated to represent this manually initiated Codex task.

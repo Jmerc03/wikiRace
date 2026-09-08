@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 import { createConnection } from "node:net";
+import { networkInterfaces } from "node:os";
 
 const root=fileURLToPath(new URL("../",import.meta.url));
 const local=resolve(root,".local");
@@ -26,21 +27,27 @@ function available(binary){const result=spawnSync(binary,["--version"],{stdio:"i
 async function occupied(port){return new Promise(done=>{const socket=createConnection({host:"127.0.0.1",port});socket.setTimeout(700);socket.once("connect",()=>{socket.destroy();done(true);});socket.once("error",()=>{socket.destroy();done(false);});socket.once("timeout",()=>{socket.destroy();done(false);});});}
 async function health(origin){try{const response=await fetch(`${origin}/health`,{signal:AbortSignal.timeout(1200)});return response.ok?await response.json():null;}catch{return null;}}
 async function ready(origin){try{return (await fetch(`${origin}/ready`,{signal:AbortSignal.timeout(3000)})).ok;}catch{return false;}}
-function configurationKey(config){return createHash("sha256").update(JSON.stringify([config.dbMode,config.dbPort,config.port,config.databaseUrl])).digest("hex");}
+function configurationKey(config){return createHash("sha256").update(JSON.stringify([config.dbMode,config.dbPort,config.port,config.databaseUrl,...((config.apiHost??"127.0.0.1")==="127.0.0.1"?[]:[config.apiHost])])).digest("hex");}
 async function loadConfig(){const config=await json(configPath);if(!config)throw new Error("Run npm run setup:local first.");return config;}
 function origin(config){return `http://127.0.0.1:${config.port}`;}
+function connectionAddresses(config){
+  if((config.apiHost??"127.0.0.1")!=="0.0.0.0")return [];
+  return [...new Set(Object.values(networkInterfaces()).flat().filter(item=>item&&!item.internal&&item.family==="IPv4"&&/^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(item.address)).map(item=>`http://${item.address}:${config.port}`))];
+}
 async function setup(){
   await mkdir(local,{recursive:true});
   const saved=await json(configPath);
   const dbPort=Number(process.env.WIKIRACE_DB_PORT ?? saved?.dbPort ?? 55432);
   const port=Number(process.env.WIKIRACE_API_PORT ?? saved?.port ?? 4000);
+  const apiHost=process.env.WIKIRACE_API_HOST ?? saved?.apiHost ?? "127.0.0.1";
+  if(!["127.0.0.1","0.0.0.0"].includes(apiHost))throw new Error("WIKIRACE_API_HOST must be 127.0.0.1 (this computer) or 0.0.0.0 (trusted network).");
   const databaseName=process.env.WIKIRACE_DATABASE_NAME ?? saved?.databaseName ?? (saved?.databaseUrl ? new URL(saved.databaseUrl).pathname.slice(1) : "wikirace");
   if(databaseName.length>63 || !/^wikirace(?:_[a-z0-9]+)*$/.test(databaseName))throw new Error("Use wikirace or a lowercase wikirace_ database name with letters, digits and underscores (maximum 63 characters).");
   if(![dbPort,port].every(value=>Number.isInteger(value)&&value>1023&&value<65536))throw new Error("Choose ports from 1024 through 65535.");
   const dbMode=process.env.WIKIRACE_DB_MODE ?? saved?.dbMode ?? (available("pg_ctl")?"native":"docker");
   const owner=await json(ownerPath);
-  const changingProfile=saved&&(dbMode!==saved.dbMode||dbPort!==saved.dbPort||port!==saved.port||databaseName!==new URL(saved.databaseUrl).pathname.slice(1));
-  if(changingProfile&&owner&&(await health(owner.origin))?.instanceId===owner.instanceId)throw new Error("Stop the managed API with npm run local:stop before changing its database or ports. The current profile was preserved.");
+  const changingProfile=saved&&(dbMode!==saved.dbMode||dbPort!==saved.dbPort||port!==saved.port||apiHost!==(saved.apiHost??"127.0.0.1")||databaseName!==new URL(saved.databaseUrl).pathname.slice(1));
+  if(changingProfile&&owner&&(await health(owner.origin))?.instanceId===owner.instanceId)throw new Error("Stop the managed API with npm run local:stop before changing its database, ports or network binding. The current profile was preserved.");
   if(dbMode==="native"){
     if(!["pg_ctl","initdb","psql","createdb"].every(available))throw new Error("PostgreSQL command-line tools must be on PATH, or select WIKIRACE_DB_MODE=docker.");
     try{await access(resolve(data,"PG_VERSION"));}catch{await mkdir(data,{recursive:true});run("initdb",["-D",data,"-U","wikirace","--auth=trust","--no-locale","--encoding=UTF8"]);}
@@ -59,7 +66,7 @@ async function setup(){
     if(!available("docker"))throw new Error("Install PostgreSQL tools or start Docker Desktop, then retry.");
     run("docker",["compose","-f","compose.local.yml","up","-d","--wait","postgres"]);
   }else throw new Error("WIKIRACE_DB_MODE must be native or docker.");
-  const config={dbMode,dbPort,port,databaseName,databaseUrl:`postgresql://wikirace@127.0.0.1:${dbPort}/${databaseName}`};
+  const config={dbMode,dbPort,port,apiHost,databaseName,databaseUrl:`postgresql://wikirace@127.0.0.1:${dbPort}/${databaseName}`};
   const env={...process.env,DATABASE_URL:config.databaseUrl};
   for(const args of [["generate"],["migrate","deploy"]])run(process.execPath,[requireApi.resolve("prisma/build/index.js"),...args],{cwd:resolve(root,"apps/api"),env});
   await writeFile(configPath,JSON.stringify(config,null,2)+"\n",{mode:0o600});
@@ -85,7 +92,7 @@ async function start(){
   }
   const server=resolve(root,"apps/api/dist/server.js");await access(server);
   const instanceId=randomUUID();const log=openSync(resolve(local,"api.log"),"a");
-  const child=spawn(process.execPath,[server,`--wikirace-instance=${instanceId}`],{cwd:resolve(root,"apps/api"),detached:true,stdio:["ignore",log,log],env:{...process.env,DATABASE_URL:config.databaseUrl,HOST:"127.0.0.1",PORT:String(config.port),WIKIRACE_INSTANCE_ID:instanceId}});
+  const child=spawn(process.execPath,[server,`--wikirace-instance=${instanceId}`],{cwd:resolve(root,"apps/api"),detached:true,stdio:["ignore",log,log],env:{...process.env,DATABASE_URL:config.databaseUrl,HOST:config.apiHost??"127.0.0.1",PORT:String(config.port),WIKIRACE_INSTANCE_ID:instanceId}});
   closeSync(log);
   child.on("error",error=>{console.error(error.message);process.exitCode=1;});child.unref();
   await writeFile(ownerPath,JSON.stringify({pid:child.pid,instanceId,origin:url,configurationKey:configurationKey(config),startedAt:new Date().toISOString()},null,2)+"\n");
@@ -93,7 +100,8 @@ async function start(){
     if((await health(url))?.instanceId===instanceId){
       const ready=await fetch(`${url}/ready`,{signal:AbortSignal.timeout(3000)});
       if(!ready.ok)throw new Error(`API started but database is unavailable. See ${resolve(local,"api.log")}`);
-      console.log(`WikiRace ready: ${url}\nAPI PID: ${child.pid}\nLoad extension: ${resolve(root,"apps/extension/dist")}`);return;
+      console.log(`WikiRace ready: ${url}\nAPI PID: ${child.pid}\nLoad extension: ${resolve(root,"apps/extension/dist")}`);
+      if(connectionAddresses(config).length)console.log(`Trusted-network address candidates (other computers must be able to reach one): ${connectionAddresses(config).join(", ")}`);return;
     }
     await sleep(200);
   }
@@ -121,6 +129,6 @@ async function stop(){
     else run("docker",["compose","-f","compose.local.yml","stop","postgres"]);
   }
 }
-async function status(){const config=await loadConfig();const owner=await json(ownerPath);const result=await health(origin(config));const running=Boolean(owner&&result?.instanceId===owner.instanceId);console.log(JSON.stringify({origin:origin(config),running,ready:running&&await ready(origin(config)),profileMatches:running&&(!owner.configurationKey||owner.configurationKey===configurationKey(config)),pid:owner?.pid??null,dbMode:config.dbMode,dbPort:config.dbPort,databaseName:new URL(config.databaseUrl).pathname.slice(1)},null,2));}
+async function status(){const config=await loadConfig();const owner=await json(ownerPath);const result=await health(origin(config));const running=Boolean(owner&&result?.instanceId===owner.instanceId);console.log(JSON.stringify({origin:origin(config),running,ready:running&&await ready(origin(config)),profileMatches:running&&(!owner.configurationKey||owner.configurationKey===configurationKey(config)),pid:owner?.pid??null,apiHost:config.apiHost??"127.0.0.1",connectionAddresses:connectionAddresses(config),dbMode:config.dbMode,dbPort:config.dbPort,databaseName:new URL(config.databaseUrl).pathname.slice(1)},null,2));}
 try{if(command==="setup")await setup();else if(command==="start")await start();else if(command==="stop")await stop();else if(command==="status")await status();else throw new Error("Use setup, start, stop, or status.");}
 catch(error){console.error(error.message);process.exitCode=1;}

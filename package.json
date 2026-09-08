@@ -16,7 +16,7 @@
     "prisma:validate": "npm run --workspace=api prisma:validate",
     "prisma:migrate:dev": "npm run --workspace=api prisma:migrate:dev --",
     "prisma:studio": "npm run --workspace=api prisma:studio",
-    "test": "npm run test:game-engine && npm run test:api && npm run test:extension",
+    "test": "npm run test:shared && npm run test:game-engine && npm run test:api && npm run test:extension",
     "test:game-engine": "npm run --workspace=@bingo/game-engine test",
     "test:api": "npm run build:game-engine && npm run --workspace=api test",
     "test:integration": "npm run build:api && node scripts/test-integration.mjs",
@@ -37,7 +37,8 @@
     "test:package": "npm run build:extension && node scripts/verify-package.mjs",
     "local:backup": "node scripts/backup-local.mjs",
     "test:backup": "npm run build:api && node scripts/test-integration.mjs --qualification=backup",
-    "test:sessions": "npm run build:api && node scripts/test-integration.mjs --qualification=sessions"
+    "test:sessions": "npm run build:api && node scripts/test-integration.mjs --qualification=sessions",
+    "test:shared": "npm run --workspace=@bingo/shared test"
   },
   "engines": {
     "node": ">=22.12"

@@ -2,3 +2,6 @@
 :root.overlay-root{background:transparent}
 
 .overlay.dense-roster .scoreboard{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));flex:none}.overlay.dense-roster .score-card{min-width:0;padding:5px 8px;gap:6px}.overlay.dense-roster .score-card>div{min-width:0;flex:1}.overlay.dense-roster .score-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.overlay.dense-roster .score-detail{display:none}.overlay.dense-roster .score-swatch{height:22px}.overlay.dense-roster .tile{gap:6px;padding:20px 10px 8px}.overlay.dense-roster .tile-label{font-size:13px}.overlay-summary{font-size:11px;color:#213d2b;background:#fffefaeb;padding:6px 10px;margin:0 0 8px;border-radius:6px}
+
+#invitation{margin:32px 0 24px}#invitation h1{font-size:clamp(30px,4vw,48px);letter-spacing:-1.5px;margin-bottom:18px}#invite-feedback{margin-top:10px}#copy-fallback{width:100%;margin-bottom:16px}.button:disabled{opacity:.5;cursor:default}
+@media(max-width:760px){#invitation .input-row input{flex-basis:100%}}

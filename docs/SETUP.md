@@ -61,6 +61,31 @@ The extension retains identity and progress across browser restarts and server o
 
 To change the backend, leave the current game and use **Server settings**. Enter an HTTP(S) origin without a path or credentials and select **Save Server**. Chrome requests access to that exact origin. The default is `http://localhost:4000`. English Wikipedia and loopback hosts are declared permissions; other hosts use optional permissions. All players need network access to the same chosen backend. Public hosting and TLS termination are operator deployment decisions outside the local evidence profile.
 
+## Invitations and a trusted local network
+
+Select **Copy Invitation** in the extension. A player can paste that complete link into **Join Game**; it identifies both the server and game. A bare game ID uses the currently selected server. Joining remains an explicit click, and Chrome requests access if the new server needs permission. Opening an invitation page shows installation/join instructions and never enrolls a player. Existing or pending sessions must be resolved before selecting another server.
+
+The default loopback address works only on the host computer. To make the API available on a trusted local network, stop the managed API and deliberately select network binding:
+
+```bash
+npm run local:stop
+WIKIRACE_API_HOST=0.0.0.0 npm run setup:local
+npm run local:start
+npm run local:status
+```
+
+Status lists private IPv4 address candidates observed on the host, for example `http://192.168.x.x:4000`. Use a reachable candidate in each extension’s Server settings before creating/joining. Then copied invitations use that selected network address. The candidate list is not proof that another computer can reach the host; both computers need network access to it. This does not configure firewalls, routers, TLS or public hosting. PostgreSQL stays on loopback.
+
+Return to the default local binding with:
+
+```bash
+npm run local:stop
+WIKIRACE_API_HOST=127.0.0.1 npm run setup:local
+npm run local:start
+```
+
+Binding changes while the managed API is running are rejected before changing the saved profile. `node scripts/verify-network.mjs` qualifies this Mac’s private interface using a new temporary database and port, verifies HTTP/WebSocket operation and loopback database binding, then restores the original profile and removes its temporary database. It briefly stops the managed API and must run alone, without other operator restart/restore checks. It does not establish second-machine or public-network qualification.
+
 ## Spectators and OBS
 
 Open `/spectate/<game-id>` or select **Watch / Stream** in the extension. Spectators do not become players. Normal mode can follow any player's progress; Lockout shows exclusive ownership and team/player totals.

@@ -240,6 +240,12 @@ async function handleMutation(message: any): Promise<ExtensionState> {
   }
   if (message.type === "START_GAME" || message.type === "JOIN_GAME") {
     if (session) throw new Error("Leave your current game before creating or joining another.");
+    if (message.type === "JOIN_GAME" && message.apiOrigin !== undefined) {
+      const candidate = normalizeApiOrigin(message.apiOrigin);
+      if (!await chrome.permissions.contains({ origins: [`${candidate}/*`] })) throw new Error("Grant access to this invitation’s server before joining.");
+      await chrome.storage.local.set({ apiOrigin: candidate });
+      apiOrigin = candidate;
+    }
     const kind = message.type === "START_GAME" ? "create" : "join";
     const gameId = kind === "join" ? String(message.gameId).trim() : undefined;
     const key = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");

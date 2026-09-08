@@ -39,3 +39,9 @@ A database transaction takes a key advisory lock before a game row lock. Identic
 The extension persists the key, exact request and origin before contact. A transport/timeout/unreadable/5xx failure retains that pending intent. Retry uses the same request after browser/worker restart; conflicting entry/server changes are blocked. Definitive 400/401/403/404/409 rejection clears the pending intent. Explicitly forgetting it may abandon a committed membership and is confirmed in the UI. Success saves the complete identity and clears pending intent together. `/ready` advertises `recoverable-admission-v1`; a server lacking that capability receives no admission POST from the current extension.
 
 Apply the nullable `20260908011800_recoverable_admission` migration with `npm run prisma:migrate:deploy` and the selected `DATABASE_URL`, then restart the API and reload the extension. Existing records and session hashes remain unchanged.
+
+## Invitation and connection selection (WR-EWP-008)
+
+Shared invitation parsing accepts a game UUID or `http(s)://host[:port]/join/<gameId>`. Spectator links may carry one valid public `playerId` selection; joining ignores that selection. Credentials, fragments, unrelated paths and query data are rejected. Generated invitations contain only origin and game ID. Pasting has no side effects; an explicit Join action requests origin permission, then the background owner checks permission again and selects the origin only with no existing/pending session. Web invitation/spectator reads never enroll.
+
+The managed API defaults to loopback. An explicit persisted `WIKIRACE_API_HOST=0.0.0.0` selects trusted-network binding while PostgreSQL remains loopback-only. Changing this setting requires stopping the owned API. Private-interface candidate addresses are observations, not remote reachability claims.

@@ -14,9 +14,18 @@
   </header>
   <main>
     <section id="home" hidden>
-      <div class="hero"><p class="eyebrow">A LITTLE CURIOSITY. A LOT OF COMPETITION.</p><h1>A race through<br><em>knowledge.</em></h1><p class="hero-copy">Follow your curiosity across Wikipedia. Complete a bingo line, or claim the board with your team. Every article is a new move.</p></div>
+      <section id="invitation" class="panel" hidden>
+        <p class="eyebrow">YOU’RE INVITED</p><h1 id="invite-title">Join the race.</h1>
+        <p id="invite-details" role="status">Checking the lobby…</p>
+        <label for="invite-url">Invitation link</label>
+        <div class="input-row"><input id="invite-url" readonly><button id="copy-invitation" class="button primary">Copy invitation</button></div>
+        <p id="invite-feedback" class="small" role="status"></p>
+        <p>Open the WikiRace extension, enter your name, paste this link into <strong>Join Game</strong>, then select <strong>Join Game</strong>. This page does not add you as a player.</p>
+        <a id="invite-watch" class="button" href="/">Watch this match</a>
+      </section>
+      <div class="hero" id="home-hero"><p class="eyebrow">A LITTLE CURIOSITY. A LOT OF COMPETITION.</p><h1>A race through<br><em>knowledge.</em></h1><p class="hero-copy">Follow your curiosity across Wikipedia. Complete a bingo line, or claim the board with your team. Every article is a new move.</p></div>
       <div class="home-grid">
-        <section class="panel install-panel"><p class="eyebrow">01 / JOIN THE RACE</p><h2>Your browser is the game.</h2><p>Install the Chrome extension to create a lobby or join friends.</p><a class="button primary" href="/downloads/wikirace-extension.zip">Download extension <span aria-hidden="true">↗</span></a><ol><li>Unzip the download.</li><li>Open <code>chrome://extensions</code> and enable Developer mode.</li><li>Select <strong>Load unpacked</strong> and choose the unzipped folder.</li></ol><p class="small">In the extension’s Server settings, use <code id="server-origin"></code>. Everyone in a game connects to the same server.</p></section>
+        <section class="panel install-panel"><p class="eyebrow">01 / JOIN THE RACE</p><h2>Your browser is the game.</h2><p>Install the Chrome extension to create a lobby or join friends.</p><a class="button primary" href="/downloads/wikirace-extension.zip">Download extension <span aria-hidden="true">↗</span></a><ol><li>Unzip the download.</li><li>Open <code>chrome://extensions</code> and enable Developer mode.</li><li>Select <strong>Load unpacked</strong> and choose the unzipped folder.</li></ol><p class="small">In the extension’s Server settings, use <code id="server-origin"></code>. Everyone in a game connects to the same server.</p><p id="connection-hint" class="small"></p></section>
         <section class="panel"><p class="eyebrow">02 / WATCH IT UNFOLD</p><h2>Take a front-row seat.</h2><p>Follow a match live. No extension needed to watch.</p><form id="watch-form"><label for="game-id">Game ID or spectator link</label><div class="input-row"><input id="game-id" autocomplete="off" placeholder="Paste a game ID" required><button class="button primary" type="submit">Watch game</button></div><p id="form-error" class="error" role="alert"></p></form><div class="mode-notes"><p><strong>Normal</strong><br>Independent boards. First bingo wins.</p><p><strong>Lockout</strong><br>First claim owns the square. 13 wins.</p></div></section>
       </div>
     </section>
@@ -24,6 +33,7 @@
       <div class="match-heading"><div><p class="eyebrow" id="mode-label">LIVE MATCH</p><h1 id="match-title">Loading the board…</h1><p id="match-subtitle" class="muted"></p></div><div class="viewer-tools"><label id="follow-label" for="follow-player">Follow player</label><select id="follow-player"></select><button id="copy-link" class="button">Copy spectator link</button><button id="copy-overlay" class="button">Copy OBS link</button></div></div>
       <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
       <div id="scoreboard" class="scoreboard" aria-label="Scores"></div>
+      <input id="copy-fallback" aria-label="Link to copy" readonly hidden>
       <p id="overlay-summary" class="overlay-summary" hidden></p>
       <div class="board-wrap"><div id="board" class="board" role="list" aria-label="Game board"></div></div>
       <p class="viewer-footnote" id="view-note">Spectating only · Updates appear automatically.</p>

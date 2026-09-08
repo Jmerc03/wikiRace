@@ -1,4 +1,4 @@
-import type { PlayerSummary, TeamSummary } from "@bingo/shared";
+import { parseGameInvitation, gameInvitationUrl, isLocalOnlyOrigin, type PlayerSummary, type TeamSummary } from "@bingo/shared";
 import type { ExtensionState as GameState } from "./client-types.js";
 import { normalizeApiOrigin } from "./wikipedia.js";
 
@@ -47,7 +47,15 @@ async function action(message: object) {
   }
 }
 startButton?.addEventListener("click", () => void action({type:"START_GAME",displayName:nameValue(),mode:valueOf(gameModeSelect),boardConfig:{difficulty:valueOf(difficultySelect),vitalArticleTileCount:15,genericTileCount:10,maxTilesPerTopic:3}}));
-joinGameBtn?.addEventListener("click", () => { const gameId=valueOf(joinGameInput); if(gameId) void action({type:"JOIN_GAME",gameId,displayName:nameValue()}); else showError(new Error("Enter a game ID to join.")); });
+joinGameBtn?.addEventListener("click", async () => {
+  if (busy || latest?.gameId || latest?.pendingAdmission) return;
+  try {
+    const invitation = parseGameInvitation(valueOf(joinGameInput), latest?.apiOrigin ?? "http://localhost:4000");
+    const permitted = await chrome.permissions.request({origins:[`${invitation.apiOrigin}/*`]});
+    if (!permitted) throw new Error("Server access was not granted. Your current server is unchanged.");
+    await action({type:"JOIN_GAME", ...invitation, displayName:nameValue()});
+  } catch (error) { showError(error); }
+});
 refreshButton?.addEventListener("click", () => void action({type:"SYNC_GAME_STATE"}));
 endGameButton?.addEventListener("click", () => void action({type:"LEAVE_GAME"}));
 document.getElementById("start-match")?.addEventListener("click", () => void action({type:"START_MATCH"}));
@@ -58,6 +66,12 @@ joinTeamBtn?.addEventListener("click", () => { const teamId=valueOf(teamSelect);
 leaveTeamBtn?.addEventListener("click", () => void action({type:"LEAVE_TEAM"}));
 copyGameIdButton?.addEventListener("click", () => {
   if (latest?.gameId) void navigator.clipboard.writeText(latest.gameId).then(() => {if(statusEl) statusEl.textContent="Game ID copied.";}).catch(showError);
+});
+document.getElementById("copy-invite")?.addEventListener("click", () => {
+  if (!latest?.gameId) return;
+  void navigator.clipboard.writeText(gameInvitationUrl(latest.apiOrigin, latest.gameId)).then(() => {
+    if(statusEl) statusEl.textContent=isLocalOnlyOrigin(latest!.apiOrigin)?"Invitation copied. This server address works on this computer; other computers need the host’s network address.":"Invitation copied. Players can paste it into Join Game.";
+  }).catch(showError);
 });
 document.getElementById("open-board")?.addEventListener("click", () => void chrome.tabs.create({url:chrome.runtime.getURL("popup.html?view=board")}));
 document.getElementById("open-wikipedia")?.addEventListener("click", () => void chrome.tabs.create({url:"https://en.wikipedia.org/wiki/Special:Random"}));
@@ -99,6 +113,7 @@ function renderState(state: GameState) {
   setHidden("team-controls", state.status !== "WAITING");
   setHidden("match-details", !hasSession);
   setHidden("watch-game", !hasSession);
+  setHidden("copy-invite", !hasSession);
   const playerRoster=document.getElementById("player-roster");
   if(playerRoster) {
     playerRoster.replaceChildren();

@@ -1,7 +1,7 @@
-# WikiRace engineering plan v1.3
+# WikiRace engineering plan v1.5
 
 Owner: Codex, delegated Systems Architect/project operator. Updated: 2026-09-07.
-Proposal: [v1.2](../PROJECT_PROPOSAL.md), WR-DEC-015. Planning authority and acceptance: WR-DEC-002; v1.1 refinement accepted by WR-DEC-009; v1.2 recovery qualification accepted by WR-DEC-010. v1.3 continuation accepted by WR-DEC-016. Review: Accepted. JES 0.3.0, POS v0.3.0-dev, EO v0.3-dev.
+Proposal: [v1.2](../PROJECT_PROPOSAL.md), WR-DEC-015. Planning authority and acceptance: WR-DEC-002; v1.1 refinement accepted by WR-DEC-009; v1.2 recovery qualification accepted by WR-DEC-010. v1.3 continuation accepted by WR-DEC-016. v1.4 invitation/hosting refinement accepted by WR-DEC-019. v1.5 operational fault/runtime qualification accepted by WR-DEC-020. Review: Accepted. JES 0.3.0, POS v0.3.0-dev, EO v0.3-dev.
 
 ## Engineering objective and outputs
 
@@ -70,3 +70,15 @@ Invitation work carries only server origin and game ID. Parsing is strict; the p
 Validation readiness: actual local PostgreSQL, HTTP/WebSocket and isolated Chromium extension profiles are available. Reproduce committed-response loss before the fix; then cover concurrent same-key requests, mismatched payloads/targets, departed-session replay, browser/worker restart while pending, stale credentials, and successful retry with exactly one stored membership. Existing Normal/Lockout checks remain required. Invitation browser tests must exercise a second server origin and prove user-content/token boundaries. Native Windows, Docker runtime, second-machine routing, public deployment and actual OBS remain separate evidence profiles. Docker client is installed but its daemon was unavailable at continuation intake; no Docker success is assumed.
 
 Codex owns engineering and delegated product review. No human/physical action is needed for this local continuation. The next product decision is v1.2 local use after the M6 evidence; original v1.1 acceptance remains historical. Cutoff: 2026-09-08 03:10:09 UTC.
+
+## v1.4 invitation and local network option
+
+WR-EWP-008 makes the explicit origin/game invitation contract usable in the extension and operator page. Shared parsing accepts only valid game IDs or supported HTTP(S) invitation/spectator paths, excludes credentials and unrelated query data, and never contacts a target merely because text was pasted. An explicit Join action obtains the requested host permission and selects that origin only when no existing/pending session conflicts.
+
+The operator may opt into binding the API to `0.0.0.0` using `WIKIRACE_API_HOST`; default `127.0.0.1` is preserved. PostgreSQL remains loopback-only. The selected binding participates in profile ownership, with running-profile changes rejected. Status provides observed private-interface candidates as connection suggestions, never as proof of another machine's reachability. Qualification uses this Mac's actual local interface and an isolated service, then returns the managed service to loopback. Public internet exposure, router/firewall reconfiguration and second-machine qualification are excluded.
+
+## v1.5 operational validation
+
+WR-EWP-009 checks the difference between a stopped database and an established connection that stops responding. Use a loopback TCP proxy to stall only a disposable API/database connection; keep the operator database running. Liveness must remain usable, readiness and player requests must fail in bounded time, and recovery must preserve durable identities/state. If the current defaults leave queries unbounded, apply supported Prisma v6 connection deadlines with documented operator overrides and regressions. No data-model or scoring-rule change is planned.
+
+Validate the declared minimum Node 22.12 runtime using a verified official binary isolated from the installed Node runtime. Do not replace global tools or mutate installed dependencies during a concurrent soak. Run a measured 60-minute local profile with four games, 64 players and 128 real HTTP/WebSocket clients, mode-specific isolation, one controlled API restart, and final cleanup. This is bounded software operation, not public-scale or second-machine qualification. Record raw durations, errors, connection counts and memory observations; retain failed attempts. Existing native Mac and unavailable Windows/Docker boundaries remain explicit. Final M6 product review follows all required results.

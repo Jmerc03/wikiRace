@@ -41,3 +41,8 @@ On 2026-09-08 UTC the user said “ok you may continue for another 2 hours”, c
 | WR-DEC-015 | PROJECT_PROPOSAL.md v1.2 | Approved: recover uncertain admission and share explicit server/game invitations under the existing local product boundary | Codex, delegated owner; 2026-09-08 UTC |
 | WR-DEC-016 | ENGINEERING_PLAN.md v1.3 | EO planning separately authorized, reviewed and Accepted: M6 with unchanged ownership, admission contract and available local validators | Codex, delegated owner; 2026-09-08 UTC |
 | WR-DEC-017 | WR-EWP-007 r1 | Execution approved: recoverable create/join with durable private intent and exact replay, additive migration, API/browser regression and closeout | Codex, delegated owner; 2026-09-08 UTC |
+
+| WR-DEC-018 | WR-EWP-007 r1 closeout | Accepted: 29 unit, 30 integration and 10 Chromium cases; durable exact admission recovery and operator migration/restart verified | Codex, delegated owner; 2026-09-08 UTC |
+| WR-DEC-019 | ENGINEERING_PLAN.md v1.4 and WR-EWP-008 r1 | Plan Accepted and execution approved: explicit invitations, validated cross-origin join, opt-in trusted-network binding with loopback default, and actual local-interface/operator rollback qualification under PR-001/005/007 | Codex, delegated owner; 2026-09-08 UTC |
+
+| WR-DEC-020 | ENGINEERING_PLAN.md v1.5 and WR-EWP-009 r1 | Plan Accepted and execution approved: unresponsive-database recovery, declared minimum Node runtime checks and bounded multi-room operation, with exact configuration/evidence | Codex, delegated owner; 2026-09-08 UTC |

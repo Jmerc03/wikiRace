@@ -1,7 +1,9 @@
+import { parseGameInvitation, gameInvitationUrl, isLocalOnlyOrigin } from "/assets/invitation.js";
 const $ = id => document.getElementById(id);
 const parts = location.pathname.split('/').filter(Boolean);
 const viewing = parts[0] === 'spectate' || parts[0] === 'overlay';
 const overlay = parts[0] === 'overlay';
+const joining = parts[0] === 'join';
 const gameId = parts[1];
 let selected = new URLSearchParams(location.search).get('playerId');
 let current = null;
@@ -92,7 +94,7 @@ function connect() {
 async function copy(path) {
   const query=selected?`?playerId=${encodeURIComponent(selected)}`:'';
   try{await navigator.clipboard.writeText(`${location.origin}/${path}/${gameId}${query}`);notice(path==='overlay'?'OBS browser-source URL copied. Use a 1280 × 900 browser source.':'Spectator link copied.');}
-  catch{notice('Clipboard access is unavailable. Copy the URL from the address bar.',true);}
+  catch{const field=$('copy-fallback');field.value=`${location.origin}/${path}/${gameId}${query}`;field.hidden=false;field.select();notice('Clipboard access is unavailable. Copy the selected link.',true);}
 }
 if(viewing){
   document.body.classList.toggle('overlay',overlay);
@@ -107,5 +109,26 @@ if(viewing){
 }else{
   $('home').hidden=false;$('server-origin').textContent=location.origin;
   fetch('/ready',{signal:AbortSignal.timeout(5000)}).then(response=>{if(!response.ok)throw new Error();connection('Server ready',true);}).catch(()=>connection('Database unavailable'));
-  $('watch-form').addEventListener('submit',event=>{event.preventDefault();let id=$('game-id').value.trim();try{if(id.includes('://'))id=new URL(id).pathname.split('/').filter(Boolean).at(-1);}catch{/* Validation below handles invalid input. */}if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)){$('form-error').textContent='Enter the complete game ID from the host.';return;}location.assign(`/spectate/${id}`);});
+  $('connection-hint').textContent=isLocalOnlyOrigin(location.origin)?'This address works on this computer. Players on other computers need the host’s trusted-network address.':'Players must be able to reach this server address. A shared link does not configure their network.';
+  $('watch-form').addEventListener('submit',event=>{
+    event.preventDefault();
+    try {const target=parseGameInvitation($('game-id').value,location.origin);location.assign(`${target.apiOrigin}/spectate/${target.gameId}`);}
+    catch(error){$('form-error').textContent=error.message;}
+  });
+  if(joining){
+    $('invitation').hidden=false;$('home-hero').hidden=true;$('copy-invitation').disabled=true;
+    (async()=>{
+      try{
+        const target=parseGameInvitation(location.href,location.origin);const url=gameInvitationUrl(target.apiOrigin,target.gameId);$('invite-url').value=url;$('invite-watch').href=`/spectate/${target.gameId}`;
+        const response=await fetch(`/games/${target.gameId}/spectator`,{signal:AbortSignal.timeout(10000)});const state=await response.json();if(!response.ok)throw new Error(state.error || 'This invitation is unavailable.');
+        $('invite-title').textContent=state.status==='FINISHED'?'This match has finished.':'Join the race.';
+        $('invite-details').textContent=`${state.mode==='LOCKOUT'?'Lockout · 13 squares to win':'Normal · first bingo wins'} · ${state.playerCount} playing · ${state.status==='WAITING'?'Waiting in lobby':state.status==='ACTIVE'?'Match in progress':'Ask the host for a new invitation.'}`;
+        $('copy-invitation').disabled=state.status==='FINISHED';
+      }catch(error){$('invite-title').textContent='This invitation is unavailable.';$('invite-details').textContent=error.message;}
+    })();
+    $('copy-invitation').addEventListener('click',async()=>{
+      try{await navigator.clipboard.writeText($('invite-url').value);$('invite-feedback').textContent='Invitation copied. Paste it into Join Game in the extension.';}
+      catch{$('invite-url').select();$('invite-feedback').textContent='Copy the selected invitation, then paste it into Join Game in the extension.';}
+    });
+  }
 }

@@ -14,7 +14,7 @@ npm run setup:local
 npm run local:start
 ```
 
-Open [WikiRace](http://127.0.0.1:4000). Download/unzip the extension there, or load `apps/extension/dist` through Chrome’s **Load unpacked** control. The extension’s default server is `http://localhost:4000`.
+Open [WikiRace](http://127.0.0.1:4000). Download/unzip the extension there, or load `apps/extension/dist` through Chrome’s **Load unpacked** control. The extension’s default server is `http://localhost:4000`. [Trusted-network setup](docs/SETUP.md#invitations-and-a-trusted-local-network) explains connecting other computers.
 
 ```bash
 npm run local:status
@@ -26,7 +26,7 @@ Game data persists in `.local/postgres` with native PostgreSQL. Setup, stop and 
 
 ## Play and watch
 
-- **Create Lobby** or join using a game ID. In Lockout, choose teams before the host starts.
+- **Create Lobby**, then **Copy Invitation**. Join with an invitation link or a game ID. In Lockout, choose teams before the host starts.
 - **Start Match**, then browse article pages. Normal progress stays independent; Lockout claims belong permanently to a player or team.
 - **Open Full Board** keeps the player board in a browser tab. **Watch / Stream** opens the spectator page.
 - Share `/spectate/<game-id>` to watch without an extension. **Copy OBS link** supplies a transparent 1280 × 900 browser-source view.

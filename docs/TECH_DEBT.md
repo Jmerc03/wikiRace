@@ -18,7 +18,7 @@ Updated 2026-09-07. Normal bingo and Lockout 13-square majority remain separate 
 
 - **Single-process realtime:** rooms are in memory. Multiple API instances require shared pub/sub; no horizontal deployment claim.
 - **Client-trusted article content:** sessions protect identity, but an authenticated custom client can fabricate Wikipedia visits. This is a friends/local game, not verified competitive anti-cheat.
-- **Local operator deployment:** loopback defaults and a dedicated local database are qualified. Docker instructions are supplied but Docker execution, native Windows and public internet deployment are not yet qualified.
+- **Local operator deployment:** loopback defaults and a dedicated local database are qualified. Opt-in trusted-network binding has same-host private-interface HTTP/WebSocket evidence; second-machine reachability remains unqualified. Docker instructions are supplied but Docker execution, native Windows and public internet deployment are not yet qualified.
 - **Legacy data:** additive migrations preserve historical records. Old sessions have no recoverable token; unusable memberships are retired and users explicitly join again. An empty host slot transfers to the first authenticated new join. Finished legacy games without stored winner metadata explicitly report an unknown historical result.
 - **Platform-dependent browser capture:** transparent stream layout is exercised in Chromium. Actual OBS application capture is a separate profile.
 - **Future infrastructure:** `infra/k8s` files remain placeholders, not deployable manifests.

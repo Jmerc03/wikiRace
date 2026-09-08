@@ -14,7 +14,9 @@ export async function spectatorRoutes(app: FastifyInstance) {
   for (const [path, file, type] of assets) app.get(path, async (_request, reply) => {
     return reply.type(type).send(await readFile(new URL(file, publicRoot)));
   });
-  for (const path of ["/", "/spectate/:gameId", "/overlay/:gameId"]) app.get(path, async (_request, reply) => {
+  app.get("/assets/invitation.js", async (_request, reply) => reply.type("text/javascript; charset=utf-8")
+    .send(await readFile(new URL("../../../../packages/shared/dist/invitation.js", import.meta.url))));
+  for (const path of ["/", "/join/:gameId", "/spectate/:gameId", "/overlay/:gameId"]) app.get(path, async (_request, reply) => {
     return reply.header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'self'")
       .header("X-Content-Type-Options", "nosniff").type("text/html; charset=utf-8").send(await readFile(new URL("index.html", publicRoot)));
   });

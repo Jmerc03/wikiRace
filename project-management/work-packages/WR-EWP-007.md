@@ -1,6 +1,6 @@
 # WR-EWP-007 r1 — Recoverable lobby admission
 
-Status: In Progress. Phase 1A: VERIFICATION. Owner: Codex. Date: 2026-09-08 UTC.
+Status: Done. Phase 1A: CLOSEOUT. Owner: Codex. Date: 2026-09-08 UTC.
 
 ## Objective and authority
 
@@ -24,4 +24,12 @@ Retain a failing reproduction of committed-response loss. Cover concurrent same-
 
 ## Closeout
 
-Pending.
+Accepted by delegated-owner WR-DEC-018, 2026-09-08 UTC. Implementation source: `2c45db7d98b51771e2611e77028f0ceb31215b0c`.
+
+- Lost-response regression retained in `.jes/local/ewp-007/admission-before.log`. The first post-fix browser attempt exposed Chromium automatic POST retry; `browser-02.log` is retained. The strengthened test drops every committed response until pending intent is visible.
+- `browser/1788830772299/result.json`: four committed responses dropped across create/join; both original identities recovered after full browser restart; unchanged player counts and revisions. Pending/recovered screenshots inspected. Private key excluded from UI snapshot.
+- `integration-02.log`: 30 PostgreSQL/WebSocket tests passed, including six admission cases for concurrent exact retries, canonical request binding, target mismatch, departed membership, malformed keys, another app instance and one revision/broadcast per join.
+- `browser-03.log`: 10 actual Chromium workflows passed, including preflight rejection of an older server with zero POSTs, explicit pending abandonment and all existing gameplay/recovery/viewer checks. `unit-02.log`: 29 unit cases pass. Full build and Prisma validation pass.
+- Additive ninth migration deployed after a private operator backup; original runtime restored ready/profile-matching at port 4000. Actual fresh default operator extension check passed in `.jes/local/ewp-006/operator-browser/1788830837415/result.json`.
+
+API stores only credential/request hashes. Current extensions check the advertised capability before sending an admission. Historical unkeyed clients remain supported with their previous one-shot response behavior. Explicit abandonment may leave a committed membership; it does not silently delete history. No public, Windows, Docker or second-machine claim was added. One Draft observation records the transport-retry lesson; its exact reporting receipt is referenced in OBSERVATIONS.md after capture. Product v1.2 acceptance remains due after M6.
