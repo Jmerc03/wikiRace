@@ -11,13 +11,13 @@ The accepted plan and evidence are in [ENGINEERING_PLAN.md](../project-managemen
 
 - M5: real Wikipedia/generated-board wins, 30-minute idle/restart recovery, 45-minute repeated-session cleanup, legacy migration, backup/restore and final local delivered-use acceptance.
 
+- M6: recoverable admission, explicit invitations, trusted-network binding with same-host interface evidence, bounded database failure, supported-runtime verification and sustained multi-room/browser recovery.
+
 ## Completed qualification
 
-The initial five milestones and six packages are Done. [The initial local delivery](../project-management/baselines/DELIVERY_ACCEPTANCE-v1.0.md) was accepted under delegated-owner decision WR-DEC-013. Real Wikipedia and runtime/recovery profiles remain distinct from deterministic fixture tests. Source and host-local evidence hashes are recorded in the qualification index.
+All six milestones and nine packages are Done. [Local delivery against proposal v1.2 is accepted](../project-management/DELIVERY_ACCEPTANCE.md) by delegated-owner WR-DEC-024. The one-hour 64-player/128-WebSocket profile and strict 30-minute current-browser repeat passed. The supplemental 45-minute browser attempt failed its uninterrupted-connection criterion during a correlated display transition; that failure and successful automatic recovery remain distinct evidence under WR-DEC-023. No general uninterrupted power-transition claim is made.
 
-## Active continuation
-
-M6 improves recoverable lobby entry and explicit server/game invitations under proposal v1.2 and plan v1.5. WR-EWP-007/008 are Done; WR-EWP-009 is verifying bounded database failure, minimum-runtime operation and sustained multi-room/client recovery. Historical M1–M5 acceptance remains unchanged; see current EWP records and the [current delivery review](../project-management/DELIVERY_ACCEPTANCE.md) for continuation results.
+Real Wikipedia, deterministic fixtures, minimum Node, restoration and sustained operation retain separate evidence profiles and exact checkpoints. The [initial local delivery](../project-management/baselines/DELIVERY_ACCEPTANCE-v1.0.md) remains historical; M6 records do not rewrite its evidence.
 
 ## Future product decisions
 

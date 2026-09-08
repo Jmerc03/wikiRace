@@ -1,6 +1,6 @@
 # WR-EWP-009 r1 — Database faults, runtime floor and multi-room operation
 
-Status: In Progress. Phase 1A: VERIFICATION. Owner: Codex. Date: 2026-09-08 UTC.
+Status: Done. Phase 1A: CLOSEOUT. Owner: Codex. Date: 2026-09-08 UTC.
 
 ## Objective and authority
 
@@ -22,7 +22,17 @@ Retain pre-fix fault evidence if a defect is found. Require bounded failure and 
 
 ## Closeout
 
-Pending.
+Done under WR-DEC-023, 2026-09-08T03:06:41.319948+00:00. Codex reviewed this bounded package as delegated owner/operator; no independent human review is implied.
+
+- The required four-room/64-player/128-WebSocket run passed for 3600.060 seconds, with 15616 state reads, exactly 256 lifetime connections across its one controlled API restart, zero unexpected reconnects, independent Normal views, exclusive Lockout ownership, unchanged source and zero remaining sockets/games. Peak combined API/test-process RSS was 318.86 MiB against the declared 768 MiB budget. Evidence: `.jes/local/ewp-009/multiroom/1788832921202/result.json` and original start/end inventories. The wrapper removed its isolated schema.
+- The original supplemental browser attempt completed 2700.071 seconds and failed its unchanged strict connection-count assertion (six observed versus four expected). Its two extra connections coincided with OS display sleep/wake events and recovered in 503 ms. The final identity, revision, visit and completion assertions were reached before that specific failure. Exact failure and scoped OS evidence are retained; causation remains unproven.
+- The separate diagnostic browser repeat passed 1800.111 seconds, 40 committed visits, exactly four lifetime connections across its one API restart, preserved identity/revision and zero unexpected reconnects. Evidence: `.jes/local/ewp-005/endurance/1788834950649/result.json`. Idle-sleep inhibition began after this run started; its exact window is retained. Both browser attempts removed their profiles and schemas.
+- The temporary power assertions were released at 2026-09-08T03:06:34.989074+00:00. Final read-only operator verification passed in `.jes/local/ewp-009/operator-final-030635/result.json`: original loopback profile, healthy/ready service, nine migrations, exact qualified assets, no test schemas/restore databases/profiles and preserved operator data.
+- Earlier completed checks remain valid against unchanged product source `f03c4f4502021e7c251292efab241d33ad90e80f`: build and 36/30/11 checks on both Node profiles, actual Wikipedia wins, bounded database failure/recovery, exact five-admission restoration and forced-worker recovery. Seven JES observations remain state-neutral Drafts.
+
+Qualification deviation accepted by the delegated owner in WR-DEC-023: the supplemental uninterrupted-connection profile failed, and remains failed. PR-005 requires state-preserving recovery from temporary interruptions; the observed 503 ms recovery, full functional regressions, one-hour multi-room pass and strict 30-minute browser repeat support the stated local profile. There is no general uninterrupted host-power-transition claim. Product acceptance is separately recorded by WR-DEC-024.
+
+Earlier entries below preserve the in-progress review history; this closeout controls the current package state.
 
 ## Verification review, 02:14 UTC
 

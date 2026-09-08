@@ -1,6 +1,6 @@
 {
   "schema": "wikirace-qualification-index.v1",
-  "status": "draft_pending_sustained_runs",
+  "status": "complete_with_explicit_qualification_limits",
   "implementationSource": "f03c4f4502021e7c251292efab241d33ad90e80f",
   "extensionVersion": "1.3.0",
   "hostProfile": "native Mac; Node 24.15 and isolated official Node 22.12; PostgreSQL 18; actual Chromium",
@@ -100,6 +100,111 @@
       "path": ".jes/local/coordination/1788835407718336000/observation-display-readback.json",
       "bytes": 2992,
       "sha256": "bb98e1542c1ecd5c88d71c11a9dc4b6fbfc206cbd12a1e2ac5df62c08f6754fd"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/health.receipt.json",
+      "bytes": 152,
+      "sha256": "0a1d10dfe1d89df5355b49cbde9146e55101b0c2197923200ccfa2a0826d0e9f"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/health.request.json",
+      "bytes": 86,
+      "sha256": "721ff69ba6c8b6eabc780031416bb35bac412bc48f7cc1c4e1e4607b8faff074"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/observation-admission.receipt.json",
+      "bytes": 2088,
+      "sha256": "6fe8099acca0c08c4b2b9bf68dfcb4ada10ad7f3b81e5b3ecd69f542fcf436b1"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/observation-admission.request.json",
+      "bytes": 124,
+      "sha256": "d086570d2849d2294418efb60e82784ac8702f24521d0fd7f3a2beb20e4f4dd4"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/project-after.receipt.json",
+      "bytes": 3138,
+      "sha256": "7c60bb8b5d112b2c79f8848cc285128374622e10f4dd6b2a9bf9b7a858a9e1c4"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/project-after.request.json",
+      "bytes": 109,
+      "sha256": "71bb675a0d8fd5e9232b162984974da7bb3a53ff2e32bed26e0dc95032922682"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/project-before.receipt.json",
+      "bytes": 3003,
+      "sha256": "69205ba45df3c4d51372e717cba6548276ac30f51240855e91db9954566c7967"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/project-before.request.json",
+      "bytes": 109,
+      "sha256": "71bb675a0d8fd5e9232b162984974da7bb3a53ff2e32bed26e0dc95032922682"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/project-update.receipt.json",
+      "bytes": 3138,
+      "sha256": "7c60bb8b5d112b2c79f8848cc285128374622e10f4dd6b2a9bf9b7a858a9e1c4"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/project-update.request.json",
+      "bytes": 3023,
+      "sha256": "d1c9e24a9006e596dbcfbeced7c209210267de451cbd0fdc0c8b3c8ad694f176"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/repository-after.receipt.json",
+      "bytes": 8127,
+      "sha256": "0c07aff3f22fda692f9296d7a9bfc07cd2c4402a11db6cfefd2e445072ba9f3f"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/repository-after.request.json",
+      "bytes": 110,
+      "sha256": "a4066d753655ec4de4bb844fe4c08259c8fd30b4068d212566073fea329918a8"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/repository-before.receipt.json",
+      "bytes": 8127,
+      "sha256": "ad8495c903e3ce0662defbc163443220c8becfa7680ee30e46d008ecdb9eb78b"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/repository-before.request.json",
+      "bytes": 110,
+      "sha256": "a4066d753655ec4de4bb844fe4c08259c8fd30b4068d212566073fea329918a8"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/repository-update.receipt.json",
+      "bytes": 8127,
+      "sha256": "0c07aff3f22fda692f9296d7a9bfc07cd2c4402a11db6cfefd2e445072ba9f3f"
+    },
+    {
+      "path": ".jes/local/coordination/1788835575333289000/repository-update.request.json",
+      "bytes": 385,
+      "sha256": "cc24b612cd47e1335745e5e73ba6373b2aa94186261ccb07ac7d80b94730642a"
+    },
+    {
+      "path": ".jes/local/ewp-005/endurance/1788833749386/failure.json",
+      "bytes": 12508,
+      "sha256": "d20dfd8c475c82f1a28381d6857e2eccd4d8e963fcc9e8981861d582a46904eb"
+    },
+    {
+      "path": ".jes/local/ewp-005/endurance/1788833749386/progress.json",
+      "bytes": 12404,
+      "sha256": "e750baf82c4dbebec6701944b4f695131bbacd82b9ceac81cc6201f260f215b5"
+    },
+    {
+      "path": ".jes/local/ewp-005/endurance/1788834950649/after-endurance.png",
+      "bytes": 88330,
+      "sha256": "a49721b6f5596bb641134893e355c1d929d777bbc949ca4eee03026345d1f18c"
+    },
+    {
+      "path": ".jes/local/ewp-005/endurance/1788834950649/progress.json",
+      "bytes": 8638,
+      "sha256": "b240053b3bb1ac36416ba97b545259640f3222ac950909adcd20af5b2e634732"
+    },
+    {
+      "path": ".jes/local/ewp-005/endurance/1788834950649/result.json",
+      "bytes": 9028,
+      "sha256": "9525f454f0fd994d0cd85131ab235d703e1bd6f6a2787549d1ba7691419389d0"
     },
     {
       "path": ".jes/local/ewp-005/worker/1788833755275/result.json",
@@ -362,6 +467,16 @@
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
+      "path": ".jes/local/ewp-009/extension-endurance-01.log",
+      "bytes": 10637,
+      "sha256": "10a8924c7e2e69c3a4a1fee54c66b91589e8d541b7eb837d95cf7767098237cc"
+    },
+    {
+      "path": ".jes/local/ewp-009/extension-endurance-diagnostic-01.log",
+      "bytes": 7241,
+      "sha256": "76845abbfcf9d6ef36015f93e3656431f5a8b3732de4b9f70f881ee67618bf11"
+    },
+    {
       "path": ".jes/local/ewp-009/extension-worker-01.log",
       "bytes": 2043,
       "sha256": "69d1390e31c55612f5e218dcf3d37e83971b27724749857cbae349a9a673201b"
@@ -370,6 +485,26 @@
       "path": ".jes/local/ewp-009/integration-02.log",
       "bytes": 4714,
       "sha256": "84353716b0fc905dd14afb9909381d51f2753f3ae34c5ee4dc3ab9c58e2813fb"
+    },
+    {
+      "path": ".jes/local/ewp-009/multiroom/1788832921202/progress.json",
+      "bytes": 36885,
+      "sha256": "6e9940b9c8ce66c4ca55364b0049e65cecf6e8d05f1db7eef256927ee27329ea"
+    },
+    {
+      "path": ".jes/local/ewp-009/multiroom/1788832921202/result.json",
+      "bytes": 37412,
+      "sha256": "7f915649ba3a7e6eab3b2607fbc0ee8231afda0ae65d17cdaa56a8b3081e85da"
+    },
+    {
+      "path": ".jes/local/ewp-009/multiroom/1788832921202/source-end.json",
+      "bytes": 5080,
+      "sha256": "07c4b2f90fbdb82b3f133248656f2abba4f950f15a824488461852c59f7e1f47"
+    },
+    {
+      "path": ".jes/local/ewp-009/multiroom/1788832921202/source-start.json",
+      "bytes": 5080,
+      "sha256": "ef0d3975a6480cc3ac345f63b5de85b0523117f9e87f6cbdbbfa9b04739c3148"
     },
     {
       "path": ".jes/local/ewp-009/multiroom/1788834453527/progress.json",
@@ -395,6 +530,11 @@
       "path": ".jes/local/ewp-009/multiroom-assets-smoke-01.log",
       "bytes": 2870,
       "sha256": "2df9d4abcdab925d6a881b6e7d56e20df6131c3fe06cef0a75e2394927b7fbca"
+    },
+    {
+      "path": ".jes/local/ewp-009/multiroom-long-01.log",
+      "bytes": 27096,
+      "sha256": "7f1abf5eb2538ef800ce860129cd890342a7a5502d2fdf4d1f57b2a9db3f3609"
     },
     {
       "path": ".jes/local/ewp-009/multiroom-smoke-01.log",
@@ -662,6 +802,11 @@
       "sha256": "25997e19520bceb261482a35474e05dd8c7c03a408acfda8c8ff0efc243d3a59"
     },
     {
+      "path": ".jes/local/ewp-009/operator-final-030635/result.json",
+      "bytes": 1817,
+      "sha256": "aac069b7762bbc6d94cb51d395aae8a982874cc8334331d612ab1fe96949efae"
+    },
+    {
       "path": ".jes/local/ewp-009/operator-served-assets-01.json",
       "bytes": 1534,
       "sha256": "1e4af37724baa325695b4eefec74e12c514a954db0cf9cce4e60d1594fa67fdf"
@@ -675,6 +820,11 @@
       "path": ".jes/local/ewp-009/qualification-awake-assertion.json",
       "bytes": 381,
       "sha256": "f90d9c7bff51d51bfc2dce9ab9044a4c6e1d5d22e9ec31f96016eb3f08baafe1"
+    },
+    {
+      "path": ".jes/local/ewp-009/qualification-awake-release.json",
+      "bytes": 195,
+      "sha256": "95a10b8959996f8bcaf941a3e982f9737cbc2d739f5d5514c34e9e1e17b550eb"
     },
     {
       "path": ".jes/local/ewp-009/qualification-awake-verification.json",
@@ -707,12 +857,7 @@
       "sha256": "cbac583d2487e1b622ce9bd734765683d1d9269ce3dfa0156fbd0e1540a87d63"
     }
   ],
-  "pending": [
-    "one-hour multiroom result, source integrity and cleanup",
-    "original 45-minute browser attempt complete outcome and cleanup",
-    "strict 30-minute diagnostic browser repeat result and cleanup",
-    "release bounded sleep inhibition, final operator readiness, package closeout and owner adjudication"
-  ],
+  "pending": [],
   "profiles": {
     "standardNode24": {
       "passed": true,
@@ -743,20 +888,51 @@
       "recoverySeconds": 60.177
     },
     "multiroom3600Seconds": {
-      "status": "running"
+      "passed": true,
+      "elapsedSeconds": 3600.06,
+      "players": 64,
+      "activeSockets": 128,
+      "successfulConnections": 256,
+      "stateReads": 15616,
+      "unexpectedReconnects": 0,
+      "peakCombinedApiTestProcessRssMiB": 318.86,
+      "sourceFilesUnchanged": 34,
+      "supplementalWebAssetsUnchanged": 3,
+      "cleanupVerified": true
     },
     "closedPopup2700Seconds": {
-      "status": "running_strict_connection_count_violated",
+      "passed": false,
+      "elapsedSeconds": 2700.071,
+      "failure": "strict lifetime connection count: six observed versus four expected",
       "extraConnectionsBeforePlannedRestart": 2,
       "automaticRecoveryMs": 503,
       "displayTransitionCorrelation": true,
-      "causationProven": false
+      "causationProven": false,
+      "cleanupVerified": true,
+      "acceptedAsUninterruptedConnectionPass": false
     },
     "closedPopupDiagnostic1800Seconds": {
-      "status": "running",
+      "passed": true,
+      "elapsedSeconds": 1800.111,
+      "committedVisits": 40,
+      "unexpectedReconnects": 0,
       "unchangedStrictAssertions": true,
       "idleSleepInhibitionStartedAt": "2026-09-08T02:40:10.486193+00:00",
-      "inhibitionStartedAfterRunBegan": true
+      "inhibitionStartedAfterRunBegan": true,
+      "inhibitionReleasedAt": "2026-09-08T03:06:34.989074+00:00",
+      "cleanupVerified": true
     }
-  }
+  },
+  "completedAt": "2026-09-08T03:06:41.319948+00:00",
+  "deliveryDecision": "WR-DEC-024",
+  "packageCloseoutAndVarianceDecision": "WR-DEC-023",
+  "originalFailedAttemptsRetained": true,
+  "qualificationLimits": [
+    "native Mac local single-process service",
+    "same-host interface access does not establish second-machine reachability",
+    "no native Windows, Docker runtime, public deployment or actual OBS capture claim",
+    "no general uninterrupted browser connection claim across host power transitions",
+    "real Wikipedia samples do not cover every article or future external availability",
+    "backups and raw evidence remain host-local"
+  ]
 }
