@@ -41,3 +41,11 @@ Within the approved PR-005/007 durable-state recovery scope, extend the existing
 - WR-OBS-2026-006 is captured/read back as a state-neutral JES Draft; no governance approval is implied by observation capture.
 
 The 3600-second four-room run and supplemental 2700-second current-extension closed-popup session remain active. Their actual completion, exact results, unchanged source and cleanup are required for the final bounded closeout; no elapsed duration is assumed from an intended timer.
+
+At 02:26 UTC, review found that the long-run source inventory lists 34 `src`/extension-public files but omits the API's three web assets. The product assets match `f03c4f4` in `.jes/local/ewp-009/served-assets-baseline-01.json`; actual operator HTTP bytes also match in `operator-served-assets-01.json`. Future harness inventories now include all 37 files. A separate 30-second check passes in `multiroom/1788834453527/result.json`, with its original start/end inventories and complete cleanup. No loaded product source or asset changed, and the ongoing long run's original inventory is not retroactively expanded.
+
+## Supplemental browser finding and review
+
+The 2700-second extension run recorded two extra connections before its planned restart at 02:33:30 UTC; both reconnected in 503 ms and sampled state remained consistent. Its strict final connection-count criterion is therefore violated, and the original attempt remains active to retain its complete outcome. Scoped browser OS logs show a simultaneous display sleep/wake transition; causation is not independently reproduced. The separate 128-socket multi-room run was unaffected.
+
+WR-DEC-022 retains the strict assertions and original evidence, and authorizes a separate 1800-second repeat with socket close-code/reason and heartbeat diagnostics. Temporary idle display/system sleep inhibition started at 02:40:10 UTC, after the repeat began at 02:35:50 UTC; this timing remains explicit and is not represented as a full-run controlled power profile. Its bounded assertion must be released before the cutoff. Final local-use review must distinguish continuous-connection results, state-preserving recovery, and unqualified power transitions. The 3600-second multi-room requirement is unchanged. WR-OBS-2026-007 is a captured state-neutral Draft; its capture itself approves nothing.

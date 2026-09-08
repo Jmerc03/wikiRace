@@ -78,3 +78,15 @@ Captured 2026-09-07/08 during WR-EWP-005 through WR-EWP-009 verification. Author
 - Deferred owner/trigger: project operator when selecting different database deadlines for a new workload or deployment. No blocking open question for capture.
 - Recommendation, unaccepted: keep established-connection stalls distinct from stopped-database and HTTP outage checks; process health alone does not establish bounded database failure.
 - JES Draft ID: `JES-OBS-MANUAL-20260908-WR-DBSTALL`; exact input `.jes/local/observation-inputs/WR-OBS-2026-006.json`, outbox `.jes/reports/WR-OBS-2026-006.json`, confirmed captured/Draft readback `.jes/local/coordination/1788833546198749000/observation-dbstall-readback.json`. Governance effect is none; no improvement proposal or approval was created.
+
+## WR-OBS-2026-007
+
+- Date: 2026-09-08 UTC. Source: WR-EWP-009, `f03c4f4502021e7c251292efab241d33ad90e80f`.
+- Category: display_transition_realtime_qualification. Route: project_local_engineering.
+- Facts: during the supplemental extension endurance run, both browser sockets closed at 02:33:30.169 UTC and reopened 503 ms later, before the planned API restart. Sampled state stayed consistent, but the extra connections violate the unchanged strict total-connection criterion. The original run was still active at capture.
+- Facts: scoped logs for the disposable browser show display-will-sleep at 02:33:30.175892 UTC and display-did-wake at 02:33:31.474607 UTC. The browser and network process remained running. Temporal correlation is established; the causal mechanism is not independently reproduced.
+- Evidence: `.jes/local/ewp-009/endurance-display-transition-analysis.json`, `endurance-reconnect-os-log.json`, `endurance-network-processes.txt`, `qualification-awake-assertion.json`, and `.jes/local/ewp-005/endurance/1788833749386/progress.json`. A separate 1800-second repeat adds close/heartbeat diagnostics without weakening assertions; temporary idle display/system sleep inhibition started at 02:40:10 UTC and is bounded to the qualification window.
+- Assumptions: one native Mac and isolated actual Chromium; no general OS power-transition claim. Both runs were unfinished at capture, so no completion was inferred.
+- Open question: the exact display-transition/socket-close mechanism remains unproven. Deferred owner: project operator when a broader power-state qualification is required. Final local-use adjudication is a separate delegated-owner decision after measured results and cleanup.
+- Recommendation, unaccepted: retain host power-transition evidence and distinguish continuous-connection qualification from automatic state-preserving recovery.
+- JES Draft ID: `JES-OBS-MANUAL-20260908-WR-DISPLAY`; exact input `.jes/local/observation-inputs/WR-OBS-2026-007.json`, recorded outbox `.jes/reports/WR-OBS-2026-007.json`. The capture does not approve a qualification exception or create an improvement proposal.

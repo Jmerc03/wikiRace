@@ -14,7 +14,7 @@ const seconds=Number(process.env.WIKIRACE_MULTIROOM_SECONDS??90);
 if(!Number.isFinite(seconds)||seconds<30||seconds>3900)throw new Error("Multi-room qualification must last 30–3900 seconds");
 test("four simultaneous games preserve 64 player views through 128 sockets and one API restart",{timeout:(seconds+180)*1000},async()=>{
   const output=resolve(".jes/local/ewp-009/multiroom",String(Date.now()));await mkdir(output,{recursive:true});console.log(`Multi-room evidence: ${output}`);
-  const paths=execFileSync("git",["ls-files","apps/api/src","apps/extension/src","apps/extension/public","packages/shared/src","packages/game-engine/src"],{encoding:"utf8"}).trim().split("\n");
+  const paths=execFileSync("git",["ls-files","apps/api/src","apps/api/public","apps/extension/src","apps/extension/public","packages/shared/src","packages/game-engine/src"],{encoding:"utf8"}).trim().split("\n");
   const source=async()=>({head:execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim(),files:await Promise.all(paths.map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})))});
   const initialSource=await source();await writeFile(resolve(output,"source-start.json"),JSON.stringify(initialSource,null,2));
   let app=buildApp();let origin=await app.listen({port:0,host:"127.0.0.1"});const port=Number(new URL(origin).port);let restarting=false;let disposed=false;let opens=0;let reads=0;let expectedOutageErrors=0;

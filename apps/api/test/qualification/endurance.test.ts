@@ -14,8 +14,14 @@ test("closed-popup extension survives idle periods and API restart while a spect
   const output=resolve(".jes/local/ewp-005/endurance",String(Date.now()));await mkdir(output,{recursive:true});console.log(`Endurance evidence: ${output}`);
   const profile=await mkdtemp(resolve(".local/wr-endurance-"));let app=buildApp();let origin=await app.listen({port:0,host:"127.0.0.1"});
   const port=Number(new URL(origin).port);let context:BrowserContext|undefined;
-  const connections:{openedAt:string;closedAt?:string}[]=[];
-  const trackConnections=()=>app.websocketServer.on("connection",socket=>{const record={openedAt:new Date().toISOString()} as {openedAt:string;closedAt?:string};connections.push(record);socket.on("close",()=>{record.closedAt=new Date().toISOString();});});trackConnections();
+  const connections:{openedAt:string;closedAt?:string;closeCode?:number;closeReason?:string;lastPingAt?:string;lastPongAt?:string;errors:string[]}[]=[];
+  const trackConnections=()=>app.websocketServer.on("connection",socket=>{
+    const record:typeof connections[number]={openedAt:new Date().toISOString(),errors:[]};connections.push(record);
+    socket.on("ping",()=>{record.lastPingAt=new Date().toISOString();});
+    socket.on("pong",()=>{record.lastPongAt=new Date().toISOString();});
+    socket.on("error",error=>{record.errors.push(String(error));});
+    socket.on("close",(code,reason)=>{record.closedAt=new Date().toISOString();record.closeCode=code;record.closeReason=reason.toString();});
+  });trackConnections();
   const samples:any[]=[];const startedAt=Date.now();let restarted=false;
   try{
     const extensionPath=resolve("apps/extension/dist");
