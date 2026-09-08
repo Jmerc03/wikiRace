@@ -1,8 +1,8 @@
 {
   "schema": "wikirace-qualification-index.v1",
-  "status": "draft_pending_sustained_session_closeout",
+  "status": "accepted_local_intended_use",
   "createdAt": "2026-09-08T00:23:43.450592+00:00",
-  "reviewCheckpoint": "e2616e790175d2c178574c606d3759267f792000",
+  "reviewCheckpoint": "3490cfe0ae6704d8e1fb595dd7c008cbc64eb470",
   "hostProfile": "local Mac; actual PostgreSQL 18 and Chromium",
   "rawArtifactsHostLocal": true,
   "entries": [
@@ -171,10 +171,84 @@
       "path": ".jes/local/coordination/1788827457367366000/observation-restore.receipt.json",
       "bytes": 2304,
       "sha256": "6de7b690e1c385a112b39bb7a1006c3ae5f5f0f707e73f7de364d57c2306c8e9"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-package-final.log",
+      "bytes": 121,
+      "sha256": "a2164343de942afbf65aa6de6b813b426d1efae1931131074ad70571a01d5749"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-install-final.log",
+      "bytes": 143,
+      "sha256": "fe8ac14958cffb32d59fb33c8a19c3078ba34efe56b7424f021a82c378bb1b78"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-integration-final.log",
+      "bytes": 3872,
+      "sha256": "6ee7078ccadc046dafb6b83f198692b7a8e2a6cbed2d876c112ad02f0c5d33bf"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-stop-final.log",
+      "bytes": 43,
+      "sha256": "fd4eb7cafd471ac26cee5bc9d900488c39dab24ccd0cc79165268441f097b300"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-status-final.json",
+      "bytes": 189,
+      "sha256": "779d48b9700e6284b2e8e83c8e18263ce7e2c59615b234d2bc7c4289bb6ead43"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-setup-final.log",
+      "bytes": 1697,
+      "sha256": "2b841a81086d83418febf42517ff7e267149b7473a0a6cd1f65f7b9175c49738"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-start-final.log",
+      "bytes": 135,
+      "sha256": "97717f1e19dbe33bc1d0791bd5ea1e0d3bb3c516c5d311e76ae0091a736af21c"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-prisma-final.log",
+      "bytes": 314,
+      "sha256": "da334c50b233b2511d2868ea462be923f4ab704c5bebd772b56896a38185de0b"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-browser-final.log",
+      "bytes": 2795,
+      "sha256": "9de71934fd38cfe7c2385255e1d1f6366141d2672d02c5c0c048e24bb7bc2bb3"
+    },
+    {
+      "path": ".jes/local/ewp-006/clean-unit-final.log",
+      "bytes": 3437,
+      "sha256": "39e1ea249b36f5c3cc0a6ddc127e22df620acbbc481cf979cd13e0825218f7ee"
+    },
+    {
+      "path": ".jes/local/ewp-006/sessions/1788825830160/result.json",
+      "bytes": 35348,
+      "sha256": "bc2af8df337101c57b5b71ede43fb1bd62b1c6c8b77d2398cc0f3410d442f46c"
+    },
+    {
+      "path": ".jes/local/ewp-006/sessions-long-03.log",
+      "bytes": 24977,
+      "sha256": "ddde967643b64671c2be7323522d5ec744c922e55b8377547f95490c8c075cc4"
+    },
+    {
+      "path": ".jes/local/ewp-006/final-candidate-source.txt",
+      "bytes": 41,
+      "sha256": "80b0a719e0118ffc02472aee328698522275ed0cb652ba4d3367d5914f237952"
+    },
+    {
+      "path": ".jes/local/ewp-006/delivered-health-final.json",
+      "bytes": 1622,
+      "sha256": "867169e3c5e9343f83c5da8aa0e2be736a1d1c41c4595f12febf50f6fa667ab3"
+    },
+    {
+      "path": ".jes/local/ewp-005/package/1788828773534/result.json",
+      "bytes": 491,
+      "sha256": "bf1ba8786e306632e9d72a455e9624c461b6aa533f92e25453f61471bd176a66"
     }
   ],
-  "pending": [
-    "45-minute repeated-session qualification",
-    "Final service/source/JES readback and delegated delivered-use decision"
-  ]
+  "pending": [],
+  "decision": "WR-DEC-013",
+  "updatedAt": "2026-09-08T00:55:12.915154+00:00"
 }

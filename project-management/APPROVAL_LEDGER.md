@@ -26,4 +26,7 @@ This explicit delegation takes precedence over skill defaults that would request
 
 | WR-DEC-011 | WR-EWP-005 r2 closeout | Accepted: live navigation, generated-board wins, migration/draw/display fixes, 30-minute endurance, worker and delayed-response recovery verified | Codex, delegated owner; 2026-09-08 UTC |
 
+| WR-DEC-012 | WR-EWP-006 r1 closeout | Accepted: exact-row restore/authentication, operator rollback and profile guard, 180 lifecycles over 45 minutes, final clean install/build and 29/24/8 checks, migrations/package/readiness/cleanup verified | Codex, delegated owner; 2026-09-08 UTC |
+| WR-DEC-013 | DELIVERY_ACCEPTANCE.md v1.0 | Accepted for the stated native Mac local multiplayer intended use; PR-001 through PR-008 adjudicated with separate deterministic, real-site, recovery and endurance profiles; deployment/platform limits retained | Codex, delegated owner; 2026-09-08 UTC |
+
 New package approvals are recorded before their execution. Package completion and product acceptance depend on evidence, not delegation alone.

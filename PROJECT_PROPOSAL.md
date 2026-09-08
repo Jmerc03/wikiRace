@@ -97,4 +97,4 @@ First establish the baseline and real persistence tests, then protect match inte
 - Source idea/evidence: existing docs and checkout at `7c164a4`; exact dirty baseline retained in `.jes/local/baseline/`.
 - Key decisions: [approval ledger](project-management/APPROVAL_LEDGER.md).
 - Systems Architecture handoff: [engineering plan](project-management/ENGINEERING_PLAN.md), [interface/lifecycle specification](docs/GAME_CONTRACT.md).
-- Delivered-product decision: pending integrated evidence; use a separate bounded acceptance record.
+- Delivered-product decision: accepted for the declared local intended use by WR-DEC-013; see [DELIVERY_ACCEPTANCE.md](project-management/DELIVERY_ACCEPTANCE.md).

@@ -9,9 +9,11 @@ The accepted plan and evidence are in [ENGINEERING_PLAN.md](../project-managemen
 - M3: waiting lobby, host start/end/transfer, team setup, leave/resume, configurable server, WebSocket recovery and browser restart persistence.
 - M4: read-only spectator and transparent stream pages, downloadable extension, managed local startup/recovery, clean install and integrated browser verification.
 
-## Current qualification
+- M5: real Wikipedia/generated-board wins, 30-minute idle/restart recovery, 45-minute repeated-session cleanup, legacy migration, backup/restore and final local delivered-use acceptance.
 
-Real Wikipedia extraction and extended realtime/recovery qualification are tracked separately from deterministic fixture tests. Follow bounded package status in `project-management/work-packages`.
+## Completed qualification
+
+All five milestones and six packages are Done. [Local delivered use is accepted](../project-management/DELIVERY_ACCEPTANCE.md) under delegated-owner decision WR-DEC-013. Real Wikipedia and runtime/recovery profiles remain distinct from deterministic fixture tests. Source and host-local evidence hashes are recorded in the qualification index.
 
 ## Future product decisions
 
