@@ -1,0 +1,581 @@
+{
+  "schema": "wikirace-qualification-index.v1",
+  "status": "draft_pending_sustained_runs",
+  "implementationSource": "f03c4f4502021e7c251292efab241d33ad90e80f",
+  "extensionVersion": "1.3.0",
+  "hostProfile": "native Mac; Node 24.15 and isolated official Node 22.12; PostgreSQL 18; actual Chromium",
+  "rawArtifactsHostLocal": true,
+  "entries": [
+    {
+      "path": ".jes/local/coordination/1788833546198749000/health-readback.json",
+      "bytes": 130,
+      "sha256": "93cb3e0ee222ded158dba0662865145486d43f14484b28f8423fd62efc84fdf8"
+    },
+    {
+      "path": ".jes/local/coordination/1788833546198749000/observation-dbstall-readback.json",
+      "bytes": 2039,
+      "sha256": "9980a4c8563712b6b959002996518517d5a9c5d2b965cc1006451135e14bcfd4"
+    },
+    {
+      "path": ".jes/local/ewp-005/worker/1788833755275/result.json",
+      "bytes": 4173,
+      "sha256": "7ca61a24413967ac4061778a1c1297057cab462cb1c22d108685024f44dc69cc"
+    },
+    {
+      "path": ".jes/local/ewp-006/backup/1788833661616/qualification.dump",
+      "bytes": 32162,
+      "sha256": "1b9f81d010ec51f887fab903a6cdfacdb9bc30cfde1eadd24052c50b85285ca2"
+    },
+    {
+      "path": ".jes/local/ewp-006/backup/1788833661616/result.json",
+      "bytes": 1060,
+      "sha256": "e0d82938e81c8ae417a4eab894379a641edb2732f053a1a98be3d50cff1c22fb"
+    },
+    {
+      "path": ".jes/local/ewp-007/admission-before.log",
+      "bytes": 5560,
+      "sha256": "bea5e5aa8f56eaf72fcfddd47a64b002c8698abfd2cef2a4ebac43509bf09a7c"
+    },
+    {
+      "path": ".jes/local/ewp-007/browser/1788830772299/result.json",
+      "bytes": 568,
+      "sha256": "64672999eb29be9bf1c3a644bff1c640fde9d832feab315936e71560e3804e7b"
+    },
+    {
+      "path": ".jes/local/ewp-007/browser-01.log",
+      "bytes": 3163,
+      "sha256": "c6198141a7bf958f477f5bcaea24e50714e22eb9b76b96ccc123a2a1f51de896"
+    },
+    {
+      "path": ".jes/local/ewp-007/browser-02.log",
+      "bytes": 7137,
+      "sha256": "4a658d2211defacd2184f4ea7e36b3c3ef0ce3903a8b2aad7489275a83139d8d"
+    },
+    {
+      "path": ".jes/local/ewp-007/browser-03.log",
+      "bytes": 3278,
+      "sha256": "ec9511f36052433ab6f0a808bedb31e85d4727053a9ab69ec92e9f5c4e22b2fe"
+    },
+    {
+      "path": ".jes/local/ewp-007/build-01.log",
+      "bytes": 757,
+      "sha256": "f4b76e21f83329af6314fcc21da22e8517598ef4a3e3476fb3969c140da733b4"
+    },
+    {
+      "path": ".jes/local/ewp-007/build-02.log",
+      "bytes": 757,
+      "sha256": "45c5bf9e3605045fc6a4d81d9047953566866bd8ebe0bc783b6cf4d51e6135b1"
+    },
+    {
+      "path": ".jes/local/ewp-007/build-api-01.log",
+      "bytes": 330,
+      "sha256": "861aee29778a71c35c488a952decc88658658bd44f6bc198b8ccee11ac07987b"
+    },
+    {
+      "path": ".jes/local/ewp-007/generate-01.log",
+      "bytes": 551,
+      "sha256": "5f71acdae9dd3fe1a0773b8d68a9cd1590e19783cb896f4212e6296eda146eea"
+    },
+    {
+      "path": ".jes/local/ewp-007/integration-01.log",
+      "bytes": 4558,
+      "sha256": "ad6d6d5283d6d9e659a4df74b635b1b87d4111a5fb2f3080c86c3b42661ba900"
+    },
+    {
+      "path": ".jes/local/ewp-007/integration-02.log",
+      "bytes": 4560,
+      "sha256": "697f2c33e9fa04e573a71ef84f30afd82ad5c12adcaeb51e416dce69475f405d"
+    },
+    {
+      "path": ".jes/local/ewp-007/invite-build-01.log",
+      "bytes": 757,
+      "sha256": "35fb5fbe8ad809bd7e8ece42619e7093fe95929f1a917223ecad18cc123cb37d"
+    },
+    {
+      "path": ".jes/local/ewp-007/operator-backup.log",
+      "bytes": 337,
+      "sha256": "b4f7a3fffc61f0ac3f7144f207cbe7d7e587d73a768f109c2e3d9efce210e6cf"
+    },
+    {
+      "path": ".jes/local/ewp-007/operator-browser.log",
+      "bytes": 134,
+      "sha256": "d1c1968a1a10605d4067c38d391c42a02a851ffb719c9511f973d54e4863fbf0"
+    },
+    {
+      "path": ".jes/local/ewp-007/operator-setup.log",
+      "bytes": 1903,
+      "sha256": "20943fb0b5dd0ccd30f60d5bfc1b9887ee47e591918eb65b1092705ec3ae9b7f"
+    },
+    {
+      "path": ".jes/local/ewp-007/operator-start.log",
+      "bytes": 135,
+      "sha256": "e05cd87d8295acbbbf05b20c732f753ce7b8c4e6e05b6fc8d65794d9529fea56"
+    },
+    {
+      "path": ".jes/local/ewp-007/operator-stop.log",
+      "bytes": 43,
+      "sha256": "fd4eb7cafd471ac26cee5bc9d900488c39dab24ccd0cc79165268441f097b300"
+    },
+    {
+      "path": ".jes/local/ewp-007/prisma-03.log",
+      "bytes": 314,
+      "sha256": "da334c50b233b2511d2868ea462be923f4ab704c5bebd772b56896a38185de0b"
+    },
+    {
+      "path": ".jes/local/ewp-007/unit-02.log",
+      "bytes": 3439,
+      "sha256": "f3a219d8eea0202c7176c4ff8def705d5b99090e187e8d51d3351b77cc722d68"
+    },
+    {
+      "path": ".jes/local/ewp-008/browser/1788831934230/result.json",
+      "bytes": 688,
+      "sha256": "e6abdd430a1518c4182988a7b497cb1f7450aca307a67f51d77d627f8b0a720c"
+    },
+    {
+      "path": ".jes/local/ewp-008/browser-01.log",
+      "bytes": 5947,
+      "sha256": "c53d73e5f79a9e21ec996f94eb45afbed7b309f5898ac5c0b1386250f26c7bd1"
+    },
+    {
+      "path": ".jes/local/ewp-008/browser-02.log",
+      "bytes": 4127,
+      "sha256": "03a1d4f1125925f5e46ca21a7833fce313ed6099ba8f4ce10cba21fa5df3c801"
+    },
+    {
+      "path": ".jes/local/ewp-008/browser-03.log",
+      "bytes": 3524,
+      "sha256": "df33cb6cfab555aee517e1c042edc1222e71b671f68604f9b367116ed1513e45"
+    },
+    {
+      "path": ".jes/local/ewp-008/browser-04.log",
+      "bytes": 3524,
+      "sha256": "19f97fce5df0778640371137028e8ae2757df77673a6b1002a0261f91aa1af85"
+    },
+    {
+      "path": ".jes/local/ewp-008/build-01.log",
+      "bytes": 757,
+      "sha256": "35fb5fbe8ad809bd7e8ece42619e7093fe95929f1a917223ecad18cc123cb37d"
+    },
+    {
+      "path": ".jes/local/ewp-008/build-02.log",
+      "bytes": 757,
+      "sha256": "11fd4509c5d435a756f53f7782e37e1f5b96de593b2474e099b7d31d5230a30d"
+    },
+    {
+      "path": ".jes/local/ewp-008/integration-01.log",
+      "bytes": 4560,
+      "sha256": "b702b85220e4e0868975e55e1dae28f31c00bdbafc918c537114c19d0e94a569"
+    },
+    {
+      "path": ".jes/local/ewp-008/integration-02.log",
+      "bytes": 4555,
+      "sha256": "241e575bf4e0e6faea32b664a952aac2c0aab2a874bdbf0bffc15612be60d06c"
+    },
+    {
+      "path": ".jes/local/ewp-008/network/1788831730956/checks.json",
+      "bytes": 329,
+      "sha256": "a9fe478eb2ecf7206c172ba409ddb781e771bf8ef384d0b6fa94fad335dec8cc"
+    },
+    {
+      "path": ".jes/local/ewp-008/network/1788831730956/result.json",
+      "bytes": 288,
+      "sha256": "a5f159bcd5769295b2d6a6020d99d23e68e09dfbf931c7bc95270c5d5b0f49d4"
+    },
+    {
+      "path": ".jes/local/ewp-008/network-01.log",
+      "bytes": 125,
+      "sha256": "203699a2c6c39a2722b59a5deb74093450b5f3489c2517146d3b7e4e1e0da22e"
+    },
+    {
+      "path": ".jes/local/ewp-008/operator-route-start.log",
+      "bytes": 135,
+      "sha256": "d03dc81ce868ab65bc33ea67415d785226f181ef89f77951ed5938edb645401f"
+    },
+    {
+      "path": ".jes/local/ewp-008/operator-route-stop.log",
+      "bytes": 43,
+      "sha256": "fd4eb7cafd471ac26cee5bc9d900488c39dab24ccd0cc79165268441f097b300"
+    },
+    {
+      "path": ".jes/local/ewp-008/package-02.log",
+      "bytes": 121,
+      "sha256": "3c4eb5155c97adb4a52c780a5ee6e803fb1afd033972d020d7450184ff982f85"
+    },
+    {
+      "path": ".jes/local/ewp-008/unit-01.log",
+      "bytes": 4097,
+      "sha256": "47597433c3203a37d49a6a1b8a9fef1c960db31b98ef4538ed0d32c6be50a00d"
+    },
+    {
+      "path": ".jes/local/ewp-008/unit-02.log",
+      "bytes": 4093,
+      "sha256": "1892fff4656f569f9fd5eddd5e166d81d1bb82c06ee37066515d6e451cd55d6d"
+    },
+    {
+      "path": ".jes/local/ewp-009/admission-backup-01.log",
+      "bytes": 2072,
+      "sha256": "c808c6fce874f51ed22f8b4da888e6d59d6ba9db6c2aa6a6fc58aa351c2faac6"
+    },
+    {
+      "path": ".jes/local/ewp-009/browser-02.log",
+      "bytes": 3952,
+      "sha256": "b66049a68551e29f1a09e969457e7a58826c9a56e85effcdc29b43c8430164b3"
+    },
+    {
+      "path": ".jes/local/ewp-009/build-02.log",
+      "bytes": 757,
+      "sha256": "11fd4509c5d435a756f53f7782e37e1f5b96de593b2474e099b7d31d5230a30d"
+    },
+    {
+      "path": ".jes/local/ewp-009/database-fault/1788832686745/result.json",
+      "bytes": 678,
+      "sha256": "7fef0bf5edf488ebe279c58ef34692ae717479ef6edf3e45687d40e7b25d5554"
+    },
+    {
+      "path": ".jes/local/ewp-009/database-fault-after-01.log",
+      "bytes": 2092,
+      "sha256": "9ff4944308d5544ec52a205f48f52ff158ddb446c05414e494a67fc321aef977"
+    },
+    {
+      "path": ".jes/local/ewp-009/database-fault-before-02.log",
+      "bytes": 2921,
+      "sha256": "2baab961f4507fc9b8ee62744b54d04928a86794869a6f88a455fe204ae62445"
+    },
+    {
+      "path": ".jes/local/ewp-009/database-fault-before.log",
+      "bytes": 2757,
+      "sha256": "2234799c7183d0c7d1828f2f18daad7c372c91c8b4f6ddf8432f0af13f4264de"
+    },
+    {
+      "path": ".jes/local/ewp-009/document-evidence-review-01.json",
+      "bytes": 254,
+      "sha256": "88b0669522d6418a014dd16a6445c07d029660a2b2c369777e48a4966e2a03bf"
+    },
+    {
+      "path": ".jes/local/ewp-009/extension-worker-01.log",
+      "bytes": 2043,
+      "sha256": "69d1390e31c55612f5e218dcf3d37e83971b27724749857cbae349a9a673201b"
+    },
+    {
+      "path": ".jes/local/ewp-009/integration-02.log",
+      "bytes": 4714,
+      "sha256": "84353716b0fc905dd14afb9909381d51f2753f3ae34c5ee4dc3ab9c58e2813fb"
+    },
+    {
+      "path": ".jes/local/ewp-009/multiroom-smoke-01.log",
+      "bytes": 2887,
+      "sha256": "87e81b2843f0d266ca9db667b33cf1915c48599dee7d95fbec5b34e63e64739f"
+    },
+    {
+      "path": ".jes/local/ewp-009/multiroom-smoke-02.log",
+      "bytes": 2885,
+      "sha256": "81e5d74ed927eb71375d81d5c8cf3c4f80e42bc087a6ee06e7746fda224c5d6f"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-admission-backup-01.log",
+      "bytes": 2233,
+      "sha256": "1fd0cd4c3717964e93d533058aed6f181426332a82ebc7350d220d8a8357a127"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifact-comparison.json",
+      "bytes": 476,
+      "sha256": "9f2c5a777995bc238fdcd4a4bfa4a782e1bc6dd683c87cd9c31e85d0812539d4"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifact-inventory.json",
+      "bytes": 7900,
+      "sha256": "cbda1e47fa7bb45fe01baa863ca70627e11393e200d672db902bf9dfe6b59932"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-003/browser/1788833021463/draw-result.json",
+      "bytes": 296,
+      "sha256": "92eb3426dd1b6497ad7d9d5adce472977a7578bacce28fcbf3ba5974b4060eb5"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-003/browser/1788833021463/lockout-draw-extension.png",
+      "bytes": 123824,
+      "sha256": "4f714d462e2c45cf66815ca2c30c9c7c8c2dce9517dc6f79bd7e82f96c5fea85"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-003/browser/1788833021463/lockout-draw-spectator.png",
+      "bytes": 108481,
+      "sha256": "e3eb2e4d8c623033874197b683aed97516fd09ecfcd1e54e5cd19f776aeb97d3"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-003/browser/1788833021463/lockout-result.json",
+      "bytes": 249,
+      "sha256": "4dd439dfc726d6b8d30c36792be375d2460d882f88f9af651ceb8c4b3ec75a42"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-003/browser/1788833021463/lockout-team-winner.png",
+      "bytes": 101980,
+      "sha256": "8babd13a6bd6f33d82639a56f17cb038e0b82bc71c936138edb31bc36d875bf2"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-003/browser/1788833021463/normal-other-winner-own-progress.png",
+      "bytes": 74467,
+      "sha256": "a760035932df393c9632465269879652af7ecfe1537a9092eb4ac84248bfe9d4"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-003/browser/1788833021463/normal-two-player.png",
+      "bytes": 77311,
+      "sha256": "e840c9747cd3f95a51bb1262292b1258400ed5b74240f5aa22200aba307f8d1c"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-003/browser/1788833021463/normal-winner-result.json",
+      "bytes": 265,
+      "sha256": "35728fe2f8b7afe866370e361801463e8bcdd0ecfa3312fc93a27c4951e40238"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-003/browser/1788833021463/result.json",
+      "bytes": 264,
+      "sha256": "ea48c5a227c9d6f666617b6e9081acf59369148e916491c090f1116539961c57"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-004/browser/1788833021467/full-roster-overlay.png",
+      "bytes": 128580,
+      "sha256": "4efb0b1de5de5bb612c056d2b8b1b3c2da60b792321ceb3547744ec9f8a799d4"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-004/browser/1788833021467/lockout-spectator.png",
+      "bytes": 90843,
+      "sha256": "11ba63e29ed0defe7587f6305884f0da628cfb3e6908e8d1e07e8b2fd6be896b"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-004/browser/1788833021467/mobile-spectator.png",
+      "bytes": 221844,
+      "sha256": "701951711717b2ffd30f4b72da762f6702b828c2b6ce8e96b7ddd79bccc6bce7"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-004/browser/1788833021467/normal-spectator.png",
+      "bytes": 90492,
+      "sha256": "6388f4c7df1ae49b8ac4f5b7bb2fcf91fc91f58f6b9ea24b6e003ea61f0a2be4"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-004/browser/1788833021467/obs-overlay.png",
+      "bytes": 75725,
+      "sha256": "5f48c2707b3c970fe21a3afe67a4710a8b9de38cf8c5d1464e211a127298f83b"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-004/browser/1788833021467/operator-home.png",
+      "bytes": 116918,
+      "sha256": "01b64bf2561ddd29fecf2cbd14ca21efaf7eff90a1be494fec8a39a333a0ad17"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-004/browser/1788833021467/spectator-result.json",
+      "bytes": 247,
+      "sha256": "0881bb456aabf865f967a8b58224d5b3aef98e0306fc6c583272dd4a7f16b032"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/live-generated/1788833171919-NORMAL/actual-generated-board-winner.png",
+      "bytes": 95388,
+      "sha256": "4875fd6e2466ddbe8ed01492eb8ee3a45826d8136b7237e9edd9041eda32f565"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/live-generated/1788833171919-NORMAL/observations.json",
+      "bytes": 1806,
+      "sha256": "70e317cdce03ce2e88f48fe36efd67cf3ee57de0b0332183460c6c446d5f85d4"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/live-generated/1788833171919-NORMAL/original-board.json",
+      "bytes": 7751,
+      "sha256": "627b3399444631ff4fffd144750e724b621e6f60504dceaf22959dca95281e7d"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/live-generated/1788833171919-NORMAL/result.json",
+      "bytes": 2339,
+      "sha256": "478c772ee4096d948e65c891f9746a02821ad8565c6d76a769e144a19dbcf20c"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/live-generated/1788833179173-LOCKOUT/actual-generated-board-winner.png",
+      "bytes": 122527,
+      "sha256": "a2cb901f192146b9565276c44eaf711bf96ec177c8d88af32bae5c8bb9f6831f"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/live-generated/1788833179173-LOCKOUT/observations.json",
+      "bytes": 3581,
+      "sha256": "88bb0721f04b7168af848b8b970131c7eacab7309563b47f86bb75f5780f5c60"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/live-generated/1788833179173-LOCKOUT/original-board.json",
+      "bytes": 7776,
+      "sha256": "b30ac3c82d212e416b482e9086d81f405740ccb5ab2f46fbd7707c311b4c101c"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/live-generated/1788833179173-LOCKOUT/result.json",
+      "bytes": 4221,
+      "sha256": "9b7b192c825e4ebb77398e7786d5692934dc6250078b6704ba9ce5007b422fa5"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/recovery/1788833021440/new-session-after-stale-response.png",
+      "bytes": 109059,
+      "sha256": "16c9b18a6d1c22c2601325914a2370b0345af78107546c18ecdd9f50777d54d8"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-005/recovery/1788833021440/result.json",
+      "bytes": 252,
+      "sha256": "6569d7043ddac11ca14c51a2150d0c561497237cf1356f1a68854907983fcc72"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-006/backup/1788834035689/qualification.dump",
+      "bytes": 32194,
+      "sha256": "22bd30feb6280e116922b52d289e20ccf8a4578f68fd57db487098fdcf8ec6b8"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-006/backup/1788834035689/result.json",
+      "bytes": 1060,
+      "sha256": "bb1ad1fcbb2a94dddbb41237672670cce4462acf2f0d57273e6bed2a445bfef1"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-007/browser/1788833021436/create-pending.png",
+      "bytes": 52928,
+      "sha256": "2b01b351cac3bf4d790d371a2a75b26419d8b0c2ef46636a495d0852ee4c978d"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-007/browser/1788833021436/create-recovered.png",
+      "bytes": 100593,
+      "sha256": "94a7f8baf0271c463b1c5b1f9904447b08114860634f753f5217f89898b187d4"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-007/browser/1788833021436/join-pending.png",
+      "bytes": 54315,
+      "sha256": "457094dcc258424bbbd63b58d35c629f62c385a3e34d9b5d99c8f28bd10f6794"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-007/browser/1788833021436/join-recovered.png",
+      "bytes": 100006,
+      "sha256": "0e9a284f36571aaece086a99fa0205cab1823b080771f0e583d7e90cdc862b57"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-007/browser/1788833021436/result.json",
+      "bytes": 568,
+      "sha256": "64672999eb29be9bf1c3a644bff1c640fde9d832feab315936e71560e3804e7b"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-008/browser/1788833021435/invitation-desktop.png",
+      "bytes": 123219,
+      "sha256": "383a8791d542927966b4ee7f69f35287ddbddb34ed6734b93397ff710fd64e5e"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-008/browser/1788833021435/invitation-mobile.png",
+      "bytes": 117211,
+      "sha256": "6fd4aecb1968be38113cd2f857f60c42ece95df6f4730b8a57722fdfbe638434"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-artifacts/ewp-008/browser/1788833021435/result.json",
+      "bytes": 688,
+      "sha256": "e6abdd430a1518c4182988a7b497cb1f7450aca307a67f51d77d627f8b0a720c"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-backup-artifact-inventory.json",
+      "bytes": 515,
+      "sha256": "c68e69f12ac4d93bfb64aaf3d6d7472e4b684babb5077e031f22260e08cefb6c"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-backup-test-provenance.json",
+      "bytes": 332,
+      "sha256": "0ca57dc606635de5255fc47b5dacbe9d0bf435c408f7079b14ab20253e92fd7f"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-browser-01.log",
+      "bytes": 6285,
+      "sha256": "e0ca773dc42bfeec0d9f69fe604e8d9303ff55e629341886ff362f70eda95ee7"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-build-01.log",
+      "bytes": 757,
+      "sha256": "11fd4509c5d435a756f53f7782e37e1f5b96de593b2474e099b7d31d5230a30d"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-checkout.json",
+      "bytes": 298,
+      "sha256": "6c43c39e826185dbd87dd261407dc112722b5c72af0568f063d415bc624fd23a"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-generate-01.log",
+      "bytes": 508,
+      "sha256": "5f84ec14a023cb47940ceb48dc202696804f3c4cfa063303e74052b6d1f7afbf"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-install-01.log",
+      "bytes": 143,
+      "sha256": "635586fc8e011ee2f2c312ce134658a733a5d02707a826ca72a2efd7c5a7e7b4"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-integration-01.log",
+      "bytes": 8122,
+      "sha256": "76ab8cac55de2c90223a579fb84fd40993aa0fb97f63ca12f18384d1edde116c"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-live-generated-01.log",
+      "bytes": 2542,
+      "sha256": "973e5befae2fad8715ccdb5cd995cf198a0ddd7c91576a5fa66295f005154a0b"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-prisma-01.log",
+      "bytes": 1182,
+      "sha256": "d73fa69616ac25510269301a737f83a79d80514a7183666b066e7bbf9c1eeb66"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-provenance.json",
+      "bytes": 347,
+      "sha256": "999cd288419ac5b0dfc91910bb3e3f4e2bcb5ff6efed2d15b7c85d7d4248a545"
+    },
+    {
+      "path": ".jes/local/ewp-009/node22-unit-01.log",
+      "bytes": 8148,
+      "sha256": "25997e19520bceb261482a35474e05dd8c7c03a408acfda8c8ff0efc243d3a59"
+    },
+    {
+      "path": ".jes/local/ewp-009/unit-02.log",
+      "bytes": 4410,
+      "sha256": "a1903c4ec5959ab89aad0d69cd999dd5bef753d23cb0fd8c114ddd580213a674"
+    },
+    {
+      "path": "apps/api/test/qualification/backup.test.ts",
+      "bytes": 8638,
+      "sha256": "fb71e20e0dde53574234460fbf0845690a026a20f422e11b21a0a883592191b7"
+    }
+  ],
+  "pending": [
+    "one-hour multiroom result, source integrity and cleanup",
+    "45-minute current-extension closed-popup result and cleanup",
+    "final operator readiness, package closeout and delivered-use decision"
+  ],
+  "profiles": {
+    "standardNode24": {
+      "passed": true,
+      "unit": 36,
+      "integration": 30,
+      "chromium": 11
+    },
+    "minimumNode22": {
+      "passed": true,
+      "freshInstall": true,
+      "unit": 36,
+      "integration": 30,
+      "chromium": 11,
+      "realWikipediaGeneratedModes": 2,
+      "restoredAdmissions": 5
+    },
+    "databaseFault": {
+      "passed": true,
+      "readinessFailureMs": 5008,
+      "mutationFailureMs": 5007
+    },
+    "admissionRestoreNode24": {
+      "passed": true,
+      "restoredAdmissions": 5
+    },
+    "workerRecoveryNode24": {
+      "passed": true,
+      "recoverySeconds": 60.177
+    },
+    "multiroom3600Seconds": {
+      "status": "running"
+    },
+    "closedPopup2700Seconds": {
+      "status": "running"
+    }
+  }
+}

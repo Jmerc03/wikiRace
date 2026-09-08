@@ -55,7 +55,7 @@ Substitute the prior database name if the original profile already selected a di
 
 ## Qualification
 
-`npm run test:backup` creates historical fixture data in an isolated schema, archives it, restores into a uniquely created disposable database, compares all game rows, and authenticates five retained sessions through the compiled API. It also exercises a restored host action without changing the source records.
+`npm run test:backup` creates historical fixture data in an isolated schema, archives it, restores into a uniquely created disposable database, compares all game rows, and authenticates five retained sessions through the compiled API. It also recovers all five original create/join requests using their retained private admission keys, rejects conflicting requests, verifies unchanged restored rows/revisions after replay, and exercises a restored host action without changing the source records. An extension must still retain its original private key; the archive contains hashes, not recoverable plaintext keys.
 
 `node scripts/verify-restore.mjs` verifies the complete managed operator cutover to a restored clone and back. It briefly stops/restarts the operator API, creates one named test game, restores the exact original profile, removes only its own marker and clone, and preserves the original game count. Run this only during a local maintenance window, separately from active play. PostgreSQL remains running, so isolated database tests can continue.
 

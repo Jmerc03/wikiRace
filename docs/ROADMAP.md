@@ -13,11 +13,11 @@ The accepted plan and evidence are in [ENGINEERING_PLAN.md](../project-managemen
 
 ## Completed qualification
 
-All five milestones and six packages are Done. [Local delivered use is accepted](../project-management/DELIVERY_ACCEPTANCE.md) under delegated-owner decision WR-DEC-013. Real Wikipedia and runtime/recovery profiles remain distinct from deterministic fixture tests. Source and host-local evidence hashes are recorded in the qualification index.
+The initial five milestones and six packages are Done. [The initial local delivery](../project-management/baselines/DELIVERY_ACCEPTANCE-v1.0.md) was accepted under delegated-owner decision WR-DEC-013. Real Wikipedia and runtime/recovery profiles remain distinct from deterministic fixture tests. Source and host-local evidence hashes are recorded in the qualification index.
 
 ## Active continuation
 
-M6 improves recoverable lobby entry and explicit server/game invitations under proposal v1.2 and plan v1.3. Historical M1–M5 acceptance remains unchanged; see current EWP records for continuation results.
+M6 improves recoverable lobby entry and explicit server/game invitations under proposal v1.2 and plan v1.5. WR-EWP-007/008 are Done; WR-EWP-009 is verifying bounded database failure, minimum-runtime operation and sustained multi-room/client recovery. Historical M1–M5 acceptance remains unchanged; see current EWP records and the [current delivery review](../project-management/DELIVERY_ACCEPTANCE.md) for continuation results.
 
 ## Future product decisions
 

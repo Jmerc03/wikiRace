@@ -35,8 +35,8 @@ Consequential cross-component behavior is specified in [GAME_CONTRACT.md](../doc
 | M2 Match integrity | Valid boards, validation errors, isolated identity, atomic claims/wins, stable winner | WR-EWP-002 | Done |
 | M3 Complete player experience | Lobby/host/team lifecycle, leave/resume, configurable backend, resilient extension | WR-EWP-003 | Done |
 | M4 Watch and operate | Spectator/stream pages, documented clean startup, integrated browser/API evidence, delivered-use review | WR-EWP-004 | Done |
-| M6 Recoverable entry and invitations | Exactly one membership after uncertain admission, safe server/game invitation flow, actual browser recovery and bounded integrated operation | WR-EWP-007, WR-EWP-008; further qualification package after findings | Active |
 | M5 Extended qualification | Real Wikipedia, idle/restart, upgrade/draw edges, backup/restore, repeated-session cleanup and final local delivered-use decision | WR-EWP-005, WR-EWP-006 | Done |
+| M6 Recoverable entry and invitations | Exactly one membership after uncertain admission, safe server/game invitation flow, actual browser recovery and bounded integrated operation | WR-EWP-007, WR-EWP-008, WR-EWP-009 | Active |
 
 ## Validation readiness and dependencies
 

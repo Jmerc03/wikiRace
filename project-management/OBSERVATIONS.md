@@ -1,6 +1,6 @@
 # WikiRace observations
 
-Captured 2026-09-07 during WR-EWP-005 VERIFICATION. Author: Codex under the user’s owner/operator delegation. These are Draft observations; recommendations are unaccepted and do not create an improvement proposal, policy, or engineering approval. Product decisions have separate ledger records.
+Captured 2026-09-07/08 during WR-EWP-005 through WR-EWP-009 verification. Author: Codex under the user’s owner/operator delegation. These are Draft observations; recommendations are unaccepted and do not create an improvement proposal, policy, or engineering approval. Product decisions have separate ledger records.
 
 ## WR-OBS-2026-001
 
@@ -67,3 +67,14 @@ Captured 2026-09-07 during WR-EWP-005 VERIFICATION. Author: Codex under the user
 - Assumption: measured native Mac/PostgreSQL/Chromium profile. Deferred owner/trigger: project operator when another browser/runtime/network profile is selected. No blocking open question for capture.
 - Recommendation, unaccepted: keep stored admission, acknowledgement receipt and automatic transport retries separate in recovery tests.
 - JES Draft ID: `JES-OBS-MANUAL-20260908-WR-ADMISSION`; exact input `.jes/local/observation-inputs/WR-OBS-2026-005.json`, outbox/recorded receipt `.jes/reports/WR-OBS-2026-005.json`. Capture is state-neutral and grants no process or scope approval.
+
+## WR-OBS-2026-006
+
+- Date: 2026-09-08 UTC. Source: WR-EWP-009, `f03c4f4502021e7c251292efab241d33ad90e80f`.
+- Category: established_database_connection_stall. Route: project_local_engineering.
+- Facts: after correcting a proxy-fixture setup error, an established PostgreSQL response stall left readiness pending beyond the client's eight-second deadline while process liveness stayed available. Bounded Prisma v6 defaults returned readiness 503 in 5008 ms and a failed host action in 5007 ms. The interrupted transaction preserved WAITING/revision 0, and the same player successfully retried after traffic recovered.
+- Evidence: `.jes/local/ewp-009/database-fault-before-02.log`, `database-fault/1788832686745/result.json`; full 36 unit, 30 integration and 11 actual Chromium cases passed. The original fixture failure is retained separately in `database-fault-before.log`.
+- Assumptions: separate test API/proxy and isolated schema; the operator database stayed running. An operator override that disables a timeout is outside the bounded-default claim.
+- Deferred owner/trigger: project operator when selecting different database deadlines for a new workload or deployment. No blocking open question for capture.
+- Recommendation, unaccepted: keep established-connection stalls distinct from stopped-database and HTTP outage checks; process health alone does not establish bounded database failure.
+- JES Draft ID: `JES-OBS-MANUAL-20260908-WR-DBSTALL`; exact input `.jes/local/observation-inputs/WR-OBS-2026-006.json`, outbox `.jes/reports/WR-OBS-2026-006.json`, confirmed captured/Draft readback `.jes/local/coordination/1788833546198749000/observation-dbstall-readback.json`. Governance effect is none; no improvement proposal or approval was created.
