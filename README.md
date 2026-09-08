@@ -2,7 +2,7 @@
 
 Multiplayer Wikipedia bingo with a Chrome extension, live spectators, and an OBS browser view.
 
-Create a lobby, invite friends, choose teams, and race through English Wikipedia. Normal mode awards the first bingo; Lockout awards the first player or team to claim 13 squares. The backend keeps progress, ownership, and the final winner synchronized.
+Create a lobby, invite friends, choose teams, and race through English Wikipedia. Normal mode awards the first bingo; Lockout awards the first player or team to claim 13 squares, with an explicit draw if the board fills without a majority. The backend keeps progress, ownership, and the final winner synchronized.
 
 ## Start locally
 
@@ -18,10 +18,11 @@ Open [WikiRace](http://127.0.0.1:4000). Download/unzip the extension there, or l
 
 ```bash
 npm run local:status
+npm run local:backup
 npm run local:stop
 ```
 
-Game data persists in `.local/postgres` with native PostgreSQL. Setup, stop and restart do not reset it. [Setup and recovery](docs/SETUP.md) covers alternative configurations, Docker, browser tests, and migration commands.
+Game data persists in `.local/postgres` with native PostgreSQL. Setup, stop and restart do not reset it. [Setup and recovery](docs/SETUP.md) covers alternative configurations, Docker, browser tests, and migration commands. [Backup and restore](docs/BACKUP_RESTORE.md) covers private archives, restoring to a new database, and verified rollback.
 
 ## Play and watch
 

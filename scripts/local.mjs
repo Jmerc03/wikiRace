@@ -32,6 +32,8 @@ async function setup(){
   const saved=await json(configPath);
   const dbPort=Number(process.env.WIKIRACE_DB_PORT ?? saved?.dbPort ?? 55432);
   const port=Number(process.env.WIKIRACE_API_PORT ?? saved?.port ?? 4000);
+  const databaseName=process.env.WIKIRACE_DATABASE_NAME ?? saved?.databaseName ?? (saved?.databaseUrl ? new URL(saved.databaseUrl).pathname.slice(1) : "wikirace");
+  if(databaseName.length>63 || !/^wikirace(?:_[a-z0-9]+)*$/.test(databaseName))throw new Error("Use wikirace or a lowercase wikirace_ database name with letters, digits and underscores (maximum 63 characters).");
   if(![dbPort,port].every(value=>Number.isInteger(value)&&value>1023&&value<65536))throw new Error("Choose ports from 1024 through 65535.");
   const dbMode=process.env.WIKIRACE_DB_MODE ?? saved?.dbMode ?? (available("pg_ctl")?"native":"docker");
   if(dbMode==="native"){
@@ -45,14 +47,14 @@ async function setup(){
     const args=["-h","127.0.0.1","-p",String(dbPort),"-U","wikirace","-d","postgres","-tA"];
     const directory=run("psql",[...args,"-c","SHOW data_directory"],{encoding:"utf8",stdio:"pipe"}).stdout.trim();
     if(await realpath(directory)!==await realpath(data))throw new Error("The selected port belongs to another database; refusing to initialize it.");
-    const exists=run("psql",[...args,"-c","SELECT 1 FROM pg_database WHERE datname='wikirace'"],{encoding:"utf8",stdio:"pipe"}).stdout.trim();
-    if(exists!=="1")run("createdb",["-h","127.0.0.1","-p",String(dbPort),"-U","wikirace","wikirace"]);
+    const exists=run("psql",[...args,"-c",`SELECT 1 FROM pg_database WHERE datname='${databaseName}'`],{encoding:"utf8",stdio:"pipe"}).stdout.trim();
+    if(exists!=="1")run("createdb",["-h","127.0.0.1","-p",String(dbPort),"-U","wikirace",databaseName]);
   }else if(dbMode==="docker"){
     if(dbPort!==55432)throw new Error("Docker local mode uses port 55432 from compose.local.yml.");
     if(!available("docker"))throw new Error("Install PostgreSQL tools or start Docker Desktop, then retry.");
     run("docker",["compose","-f","compose.local.yml","up","-d","--wait","postgres"]);
   }else throw new Error("WIKIRACE_DB_MODE must be native or docker.");
-  const config={dbMode,dbPort,port,databaseUrl:`postgresql://wikirace@127.0.0.1:${dbPort}/wikirace`};
+  const config={dbMode,dbPort,port,databaseName,databaseUrl:`postgresql://wikirace@127.0.0.1:${dbPort}/${databaseName}`};
   const env={...process.env,DATABASE_URL:config.databaseUrl};
   for(const args of [["generate"],["migrate","deploy"]])run(process.execPath,[requireApi.resolve("prisma/build/index.js"),...args],{cwd:resolve(root,"apps/api"),env});
   await writeFile(configPath,JSON.stringify(config,null,2)+"\n",{mode:0o600});

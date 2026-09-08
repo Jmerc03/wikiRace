@@ -104,6 +104,21 @@ test("Normal bingo finishes the game and subsequent visits cannot write", async 
   assert.equal(await prisma.pageVisitEvent.count({ where: { gameId: host.gameId } }), count);
 });
 
+test("one real-shaped article event can atomically satisfy different objective kinds and win Normal", async () => {
+  const host=await createGame();
+  const objectives=[
+    {type:"VISIT_ARTICLE",condition:{title:"Science"}},
+    {type:"TITLE_CONTAINS",condition:{text:"SCIENCE"}},
+    {type:"TITLE_STARTS_WITH",condition:{letter:"s"}},
+    {type:"CATEGORY_CONTAINS",condition:{text:"science"}},
+    {type:"LINK_COUNT_GREATER_THAN",condition:{count:50}},
+  ] as const;
+  for(let position=0;position<5;position++)await prisma.boardSquare.update({where:{id:host.game.board.squares.find((s:any)=>s.position===position).id},data:objectives[position]});
+  const response=await app.inject({method:"POST",url:`/games/${host.gameId}/events/page-visit`,headers:auth(host.playerId),payload:{playerId:host.playerId,title:"Science",url:"https://en.wikipedia.org/wiki/Science",categories:["Sciences"],links:Array.from({length:51},()=>"/wiki/Earth")}});
+  assert.equal(response.statusCode,200,response.body);assert.equal(response.json().status,"FINISHED");assert.deepEqual(response.json().winningLine,[0,1,2,3,4]);
+  assert.equal(await prisma.pageVisitEvent.count({where:{gameId:host.gameId}}),1);assert.equal(await prisma.squareCompletion.count({where:{gameId:host.gameId}}),5);
+});
+
 test("Lockout first claims persist and a bingo does not finish a game", async () => {
   const host = await createGame("LOCKOUT"); const guest = await join(host.gameId);
   for (let i=0; i<5; i++) await visit(host.gameId, host.playerId, i);

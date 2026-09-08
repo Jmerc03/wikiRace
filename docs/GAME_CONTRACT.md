@@ -1,6 +1,6 @@
-# Game contract v1.0
+# Game contract v1.1
 
-Owner: WikiRace Systems Architecture. Accepted for implementation by Codex under WR-DEC-002, 2026-09-07. Claim state: planned until linked package evidence passes.
+Owner: WikiRace Systems Architecture. Initial acceptance WR-DEC-002; v1.1 refinement WR-DEC-009, 2026-09-07. Implemented and verified through WR-EWP-005; see package closeouts for exact evidence and limits.
 
 ## State and authority
 

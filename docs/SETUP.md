@@ -25,9 +25,11 @@ Defaults:
 | Built extension | `apps/extension/dist` |
 | Extension ZIP/checksum | `apps/api/public/downloads` |
 
-`WIKIRACE_API_PORT` and `WIKIRACE_DB_PORT` can select non-default ports during setup. Docker database mode uses the port in `compose.local.yml`. These variables do not select or reset unrelated databases. Local trust authentication is restricted to the loopback profile; it is not a public production database configuration.
+`WIKIRACE_API_PORT` and `WIKIRACE_DB_PORT` can select non-default ports during setup. `WIKIRACE_DATABASE_NAME` selects a restored database while retaining the same API address; its value persists across setup/start. See [Backup and restore](BACKUP_RESTORE.md) for the qualified procedure. Docker database mode uses the port in `compose.local.yml`. These variables do not select or reset unrelated databases. Local trust authentication is restricted to the loopback profile; it is not a public production database configuration.
 
 ## Stop and recover
+
+`npm run local:backup` creates an immutable local PostgreSQL archive and checksum manifest. It does not replace the database or schedule future backups.
 
 ```bash
 npm run local:status

@@ -22,6 +22,6 @@ Updated 2026-09-07. Normal bingo and Lockout 13-square majority remain separate 
 - **Legacy data:** additive migrations preserve historical records. Old sessions have no recoverable token; unusable memberships are retired and users explicitly join again. An empty host slot transfers to the first authenticated new join. Finished legacy games without stored winner metadata explicitly report an unknown historical result.
 - **Platform-dependent browser capture:** transparent stream layout is exercised in Chromium. Actual OBS application capture is a separate profile.
 - **Future infrastructure:** `infra/k8s` files remain placeholders, not deployable manifests.
-- **Operational scope:** no accounts, centralized session recovery, match retention policy, public abuse/rate-limiting infrastructure or managed backups. A lost extension profile loses its private session token; retained game history remains readable.
+- **Operational scope:** no accounts, centralized session recovery, match retention policy, public abuse/rate-limiting infrastructure, scheduled backups or off-machine backup storage. Manual local archives and restore/rollback are qualified in WR-EWP-006. A lost extension profile loses its private session token; retained game history remains readable.
 
 Live Wikipedia and longer realtime lifetimes are additional qualification profiles, separate from deterministic DOM fixture evidence. See current package records for results.

@@ -34,7 +34,10 @@
     "test:upgrade": "node scripts/test-integration.mjs --qualification=upgrade",
     "test:live:generated": "npm run build && node scripts/test-integration.mjs --qualification=live-generated",
     "test:worker": "npm run build && node scripts/test-integration.mjs --qualification=worker",
-    "test:package": "npm run build:extension && node scripts/verify-package.mjs"
+    "test:package": "npm run build:extension && node scripts/verify-package.mjs",
+    "local:backup": "node scripts/backup-local.mjs",
+    "test:backup": "npm run build:api && node scripts/test-integration.mjs --qualification=backup",
+    "test:sessions": "npm run build:api && node scripts/test-integration.mjs --qualification=sessions"
   },
   "engines": {
     "node": ">=22.12"

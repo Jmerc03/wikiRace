@@ -24,4 +24,6 @@ This explicit delegation takes precedence over skill defaults that would request
 
 | WR-DEC-010 | ENGINEERING_PLAN.md v1.2 and WR-EWP-006 r1 | Accepted and execution approved: local backup/restore proof, repeated session cleanup, operating instructions and final bounded delivery adjudication under PR-007/008 | Codex, delegated owner; 2026-09-08 UTC |
 
+| WR-DEC-011 | WR-EWP-005 r2 closeout | Accepted: live navigation, generated-board wins, migration/draw/display fixes, 30-minute endurance, worker and delayed-response recovery verified | Codex, delegated owner; 2026-09-08 UTC |
+
 New package approvals are recorded before their execution. Package completion and product acceptance depend on evidence, not delegation alone.
