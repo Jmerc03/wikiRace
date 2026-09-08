@@ -12,7 +12,7 @@ Create/join returns a random opaque player token once, stored locally by the ext
 
 ## Rules
 
-Boards are exactly 5x5, with 25 distinct objectives and contiguous positions. Normal completions are private to each player's progress; its persisted winner is the first serialized bingo. Lockout first claims belong to a fixed player/team, with 13 required to win. Team membership freezes when the match starts. All players and spectators agree on the persisted final winner. One navigation may satisfy multiple objectives. Only English Wikipedia article URLs qualify; namespace and special pages are rejected/ignored. Client-supplied page contents are trust-based, not anti-cheat proof.
+Boards are exactly 5x5, with 25 distinct objectives and contiguous positions. Normal completions are tracked independently for each player; its persisted winner is the first serialized bingo. Lockout first claims belong to a fixed player/team, with 13 required to win. Team membership freezes when the match starts. All players and spectators agree on the persisted final winner. One navigation may satisfy multiple objectives. Only English Wikipedia article URLs qualify; namespace and special pages are rejected/ignored. Client-supplied page contents are trust-based, not anti-cheat proof.
 
 ## Consistency and realtime
 

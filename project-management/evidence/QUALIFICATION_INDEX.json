@@ -1,0 +1,180 @@
+{
+  "schema": "wikirace-qualification-index.v1",
+  "status": "draft_pending_sustained_session_closeout",
+  "createdAt": "2026-09-08T00:23:43.450592+00:00",
+  "reviewCheckpoint": "e2616e790175d2c178574c606d3759267f792000",
+  "hostProfile": "local Mac; actual PostgreSQL 18 and Chromium",
+  "rawArtifactsHostLocal": true,
+  "entries": [
+    {
+      "path": ".jes/local/ewp-004/npm-ci.log",
+      "bytes": 143,
+      "sha256": "fe8ac14958cffb32d59fb33c8a19c3078ba34efe56b7424f021a82c378bb1b78"
+    },
+    {
+      "path": ".jes/local/ewp-004/operator/1788823509001/result.json",
+      "bytes": 1920,
+      "sha256": "8bfc9d849bcab7e47a0de01064b5c6cbc355598a167034defe567544f9671886"
+    },
+    {
+      "path": ".jes/local/ewp-005/live/1788824091326/result.json",
+      "bytes": 435,
+      "sha256": "bf0ac9b9cbae37721dc9c8a42a8a200ff827ce45931768d4287407cb78c146ff"
+    },
+    {
+      "path": ".jes/local/ewp-005/live-generated/1788824618210-NORMAL/result.json",
+      "bytes": 2334,
+      "sha256": "59ffb0a49659999b66daa75b0bdc2679d0213e562bbdac1c949018e1add41253"
+    },
+    {
+      "path": ".jes/local/ewp-005/live-generated/1788824625010-LOCKOUT/result.json",
+      "bytes": 4174,
+      "sha256": "9085947ae4a1429f3666b3151b5cc8a250740da3df01901f9ad72b8cbc67b8c6"
+    },
+    {
+      "path": ".jes/local/ewp-005/upgrade/1788824329693/result.json",
+      "bytes": 717,
+      "sha256": "63e55e6ce61a26c172d08c883605408f99e248db45b5544dcb15fe396802472f"
+    },
+    {
+      "path": ".jes/local/ewp-005/endurance/1788824160225/result.json",
+      "bytes": 8656,
+      "sha256": "8b0cd482fbe79cd56bf2511321471f7bba018c57c531082a88ad3dd06952b6fc"
+    },
+    {
+      "path": ".jes/local/ewp-005/endurance/1788824160225/source.json",
+      "bytes": 723,
+      "sha256": "82433d05f81c52347ef97f24d527787867be17597e51ffceed0fe12b30517eb6"
+    },
+    {
+      "path": ".jes/local/ewp-005/endurance/1788824160225/source-final.json",
+      "bytes": 1417,
+      "sha256": "bc56b67c7ff8f47e29bf27b21dc4d2495b9a4011020e5fd2d204fc7369cbddef"
+    },
+    {
+      "path": ".jes/local/ewp-005/worker/1788825325626/result.json",
+      "bytes": 4173,
+      "sha256": "dc3034e03fefcecaec2ec5b32d9bebe62144c7f338e98559124d9f6ce879efb5"
+    },
+    {
+      "path": ".jes/local/ewp-005/recovery/1788825210769/result.json",
+      "bytes": 252,
+      "sha256": "6569d7043ddac11ca14c51a2150d0c561497237cf1356f1a68854907983fcc72"
+    },
+    {
+      "path": ".jes/local/ewp-005/normal-highlight-01.log",
+      "bytes": 4576,
+      "sha256": "23dfcc9427f36c9899b5133e41c89df9aa22ff021423ee6488df84dc60635c1a"
+    },
+    {
+      "path": ".jes/local/ewp-005/normal-highlight-02.log",
+      "bytes": 2796,
+      "sha256": "003089ecbf65a42e395db82dfb26a397055f832965178a2d474d00b5aaf7b024"
+    },
+    {
+      "path": ".jes/local/ewp-005/package/1788825628315/result.json",
+      "bytes": 491,
+      "sha256": "bf1ba8786e306632e9d72a455e9624c461b6aa533f92e25453f61471bd176a66"
+    },
+    {
+      "path": ".jes/local/ewp-006/backup/1788825914463/result.json",
+      "bytes": 869,
+      "sha256": "40d98f94df5d9eeedf5c465307d5190989240429efcb07b7c17df6864a710f28"
+    },
+    {
+      "path": ".jes/local/ewp-006/operator-restore/1788826885309/result.json",
+      "bytes": 540,
+      "sha256": "f44d5a969f41f9f70f42bf7685a1e4cda7cf0132cb999f5e9f79b13970630077"
+    },
+    {
+      "path": ".jes/local/ewp-006/operator-final-setup.log",
+      "bytes": 1864,
+      "sha256": "5d6e051e9e9c33f20368d63f9212968d82bbaeea44bb0d7bcc03ea53d911d096"
+    },
+    {
+      "path": ".jes/local/ewp-006/operator-status-03.log",
+      "bytes": 238,
+      "sha256": "17376dbbf52cf41ee76820b374634d5347f600933b20f7ecdb9bba450f85a33b"
+    },
+    {
+      "path": ".jes/local/ewp-006/final-unit.log",
+      "bytes": 3441,
+      "sha256": "6bd0559f48a24258ef8deb7d9ed766da89754e46027d221896ed11d891372d11"
+    },
+    {
+      "path": ".jes/local/ewp-006/final-integration.log",
+      "bytes": 3876,
+      "sha256": "9357360cb08faf1b41075c0289df4c89a84c679cd24e220bb11b48ecc35cdb02"
+    },
+    {
+      "path": ".jes/local/ewp-006/final-browser.log",
+      "bytes": 2798,
+      "sha256": "c9334a6401c5cc362c723c555cb8803a5c8ea82a535afeed89f234630ab5bec1"
+    },
+    {
+      "path": ".jes/local/ewp-006/final-prisma.log",
+      "bytes": 314,
+      "sha256": "da334c50b233b2511d2868ea462be923f4ab704c5bebd772b56896a38185de0b"
+    },
+    {
+      "path": ".jes/local/ewp-004/browser/1788825116424/full-roster-overlay.png",
+      "bytes": 128370,
+      "sha256": "3cfb48bcc9a4f7948eb5c6311c1d42c138df1633d7f629242e8b0efa44b52e14",
+      "kind": "browser_screenshot"
+    },
+    {
+      "path": ".jes/local/ewp-004/browser/1788825116424/normal-spectator.png",
+      "bytes": 90615,
+      "sha256": "fcd80b740ca897ea09d030d9f8c54310a74b50bb3d00ba79e539342187e64d82",
+      "kind": "browser_screenshot"
+    },
+    {
+      "path": ".jes/local/ewp-004/browser/1788825116424/lockout-spectator.png",
+      "bytes": 90866,
+      "sha256": "fb3a62d4cf763faae5804490b1fed21e8d65bf03f08b10a17ee5a361eddf772f",
+      "kind": "browser_screenshot"
+    },
+    {
+      "path": ".jes/local/ewp-004/browser/1788825116424/mobile-spectator.png",
+      "bytes": 221658,
+      "sha256": "5a7b8becfefe53963702713faec496df197118a9edf50287c8a614755c35581f",
+      "kind": "browser_screenshot"
+    },
+    {
+      "path": ".jes/local/ewp-004/browser/1788825116424/operator-home.png",
+      "bytes": 109230,
+      "sha256": "8e2b9f638602452e853814cd0be74a3b5dedd62b204aabc13c2fb0949fc9806d",
+      "kind": "browser_screenshot"
+    },
+    {
+      "path": ".jes/local/ewp-004/browser/1788825116424/obs-overlay.png",
+      "bytes": 75890,
+      "sha256": "b190255ccce2aabf3e50085eeb2d4d22c902461231e542a5405abc7cc5436893",
+      "kind": "browser_screenshot"
+    },
+    {
+      "path": ".jes/local/ewp-006/operator-browser/1788827299736/result.json",
+      "bytes": 558,
+      "sha256": "f25ee619a646c38c1265569676e55938e7865d80784de62b2ffdc0c9a0619ab4"
+    },
+    {
+      "path": ".jes/local/coordination/1788827457367366000/project-after.receipt.json",
+      "bytes": 2530,
+      "sha256": "823d5bb1fa4d685708fb310ee0be366698f4e9f90ef0fd493e3d3d6e72487be6"
+    },
+    {
+      "path": ".jes/local/coordination/1788827457367366000/repository-after.receipt.json",
+      "bytes": 8127,
+      "sha256": "d48e6dbd8b45212b65fb8c2ceeee5b9ae93d4d5e1a5e220ce0769ec9bc8b046c"
+    },
+    {
+      "path": ".jes/local/coordination/1788827457367366000/observation-restore.receipt.json",
+      "bytes": 2304,
+      "sha256": "6de7b690e1c385a112b39bb7a1006c3ae5f5f0f707e73f7de364d57c2306c8e9"
+    }
+  ],
+  "pending": [
+    "45-minute repeated-session qualification",
+    "Final service/source/JES readback and delegated delivered-use decision"
+  ]
+}

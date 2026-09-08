@@ -25,6 +25,7 @@ Operator-managed local multiplayer Wikipedia bingo on this Mac, using a single F
 - External Wikipedia: actual Science extraction plus wins on unmodified generated Normal/Lockout boards; `.jes/local/ewp-005/live*` result records. Fixture browser tests are a separate profile.
 - Idle/runtime recovery: `.jes/local/ewp-005/endurance/1788824160225`, `worker/1788825325626`, and `recovery/1788825210769`. Measured 30-minute duration and deliberate failure mechanisms are recorded.
 - Migration and restore: original prototype schema upgrade; exact restored data for three games, five players, one team, 75 squares, 16 visits, three Normal completions and 13 Lockout claims. `.jes/local/ewp-006/backup/1788825914463` and `operator-restore/1788826885309`.
+- Default operator path: `.jes/local/ewp-006/operator-browser/1788827299736/result.json`; fresh default extension, real Random article, waiting/start eligibility, full board, read-only watch and synchronized leave passed.
 - Sustained repeated-session operation: running; append completed evidence before final acceptance.
 
 ## Qualification boundaries

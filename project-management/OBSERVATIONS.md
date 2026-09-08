@@ -46,3 +46,14 @@ Captured 2026-09-07 during WR-EWP-005 VERIFICATION. Author: Codex under the user
 - Open questions: none required for this capture.
 - Recommendation, unaccepted: Keep live external-service qualification separate from repeatable fixture checks, and rerun it when Wikipedia extraction or dataset handling changes.
 - Reporting: recorded through the JES 0.3.0 manual Observation API and read back as captured Drafts; exact outbox/receipt in `.jes/reports`. API readback: `.jes/local/coordination/1788824889048327000`.
+
+## WR-OBS-2026-004
+
+- Date: 2026-09-08 UTC (September 7 local). Source: WR-EWP-006 VERIFICATION, `e2616e790175d2c178574c606d3759267f792000`.
+- Category: operator_restore_qualification. Route: project_local_engineering.
+- Fact: logical archive verification passed, while the initial actual public-schema clone restore exposed the pre-existing empty public schema. The original database/profile were preserved.
+- Fact: fresh-target-only clean restore, same-origin saved-session/host verification, rollback and running-profile rejection then passed. Evidence: `.jes/local/ewp-006/operator-restore/1788826885309/result.json`.
+- Assumption: native Mac PostgreSQL 18 profile; no inferred remote/native Windows support.
+- Deferred owner/trigger: project operator when selecting off-machine storage or another host/runtime profile. Open questions: none required for capture.
+- Recommendation, unaccepted: retain complete operator restoration and rollback checks, separately from successful archive creation.
+- JES Draft ID: `JES-OBS-MANUAL-20260908-WR-RESTORE`. Exact input/outbox/receipt: `.jes/local/observation-inputs/WR-OBS-2026-004.json` and `.jes/reports/WR-OBS-2026-004.json`. Capture does not create or approve an improvement proposal. Delivery was recorded and read back as captured Draft in `.jes/local/coordination/1788827457367366000`.
