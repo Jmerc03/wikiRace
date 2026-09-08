@@ -44,7 +44,7 @@ npm run local:stop -- --database
 npm run local:start
 ```
 
-The manager verifies the API instance identity before stopping its recorded PID. It refuses to take over an occupied API/database port. Starting the service restarts its stopped database. API and database restart preserve game state and session tokens. No reset command is part of normal setup/recovery.
+The manager verifies the API instance identity before stopping its recorded PID. Setup rejects database/port changes while that API is running, before creating a database or changing the saved profile. Status reports process ownership, database readiness and whether the running profile matches the saved selection. It refuses to take over an occupied API/database port. Starting the service restarts its stopped database. API and database restart preserve game state and session tokens. No reset command is part of normal setup/recovery.
 
 After source changes, run `npm run build`, then stop/start the managed API to load them. The generated extension must be reloaded through Chrome’s extensions page.
 

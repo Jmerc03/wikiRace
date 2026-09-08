@@ -14,6 +14,10 @@ function run(binary,args,env={}){const result=spawnSync(binary,args,{encoding:"u
 async function managedInstance(){const owner=JSON.parse(await readFile(".local/api-owner.json","utf8"));const response=await fetch(`${origin}/health`,{signal:AbortSignal.timeout(3000)});const health=await response.json();assert.equal(health.instanceId,owner.instanceId);return health.instanceId;}
 try{
   const beforeInstance=await managedInstance();
+  const premature=spawnSync("npm",["run","setup:local"],{encoding:"utf8",env:{...process.env,WIKIRACE_DATABASE_NAME:name}});
+  commands.push({binary:"npm",args:["run","setup:local"],purpose:"reject profile change while API is running",status:premature.status,stdout:premature.stdout,stderr:premature.stderr});
+  assert.notEqual(premature.status,0);assert.match(premature.stderr,/Stop the managed API/);assert.equal(await readFile(configPath,"utf8"),originalText);
+  assert.equal((await source.$queryRawUnsafe(`SELECT datname FROM pg_database WHERE datname='${name}'`)).length,0,"Rejected profile changes must not create a database");
   const response=await fetch(`${origin}/games`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({displayName:"Temporary backup verification"})});assert.equal(response.status,201);marker=await response.json();
   const archive=resolve(output,"operator-verification.dump");run("pg_dump",["--dbname",original.databaseUrl,"--schema","public","--format=custom","--file",archive]);await chmod(archive,0o600);
   // The uniquely created target already has an empty public schema. Clean
@@ -26,7 +30,7 @@ try{
   run("npm",["run","local:stop"]);await writeFile(configPath,originalText,{mode:0o600});run("npm",["run","local:start"]);switching=false;await managedInstance();
   const originalState=await fetch(`${origin}/games/${marker.gameId}/state?playerId=${marker.playerId}`,{headers:{authorization:`Bearer ${marker.playerToken}`}});assert.equal((await originalState.json()).status,"WAITING");
   await source.game.delete({where:{id:marker.gameId}});marker=undefined;assert.equal(await source.game.count(),before);
-  await writeFile(resolve(output,"result.json"),JSON.stringify({passed:true,profile:"actual managed local operator API cut over to restored clone and back to unchanged original database",archiveSha256:createHash("sha256").update(await readFile(archive)).digest("hex"),sameApiOrigin:origin,restoredSavedSessionAuthenticated:true,restoredHostAction:true,sourceUnaffected:true,originalProfileRestored:true,originalGameCount:before,finalGameCount:await source.game.count(),serviceLeftRunning:true},null,2));console.log(`Operator restore verification passed: ${output}`);
+  await writeFile(resolve(output,"result.json"),JSON.stringify({passed:true,profile:"actual managed local operator API cut over to restored clone and back to unchanged original database",archiveSha256:createHash("sha256").update(await readFile(archive)).digest("hex"),sameApiOrigin:origin,prematureProfileChangeRejectedWithoutWrites:true,restoredSavedSessionAuthenticated:true,restoredHostAction:true,sourceUnaffected:true,originalProfileRestored:true,originalGameCount:before,finalGameCount:await source.game.count(),serviceLeftRunning:true},null,2));console.log(`Operator restore verification passed: ${output}`);
 }finally{
   if(switching){run("npm",["run","local:stop"]);await writeFile(configPath,originalText,{mode:0o600});run("npm",["run","local:start"]);}
   if(marker)await source.game.delete({where:{id:marker.gameId}});
