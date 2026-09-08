@@ -1,7 +1,7 @@
-# WikiRace engineering plan v1.2
+# WikiRace engineering plan v1.3
 
 Owner: Codex, delegated Systems Architect/project operator. Updated: 2026-09-07.
-Proposal: [v1.1](../PROJECT_PROPOSAL.md), WR-DEC-009. Planning authority and acceptance: WR-DEC-002; v1.1 refinement accepted by WR-DEC-009; v1.2 recovery qualification accepted by WR-DEC-010. Review: Accepted. JES 0.3.0, POS v0.3.0-dev, EO v0.3-dev.
+Proposal: [v1.2](../PROJECT_PROPOSAL.md), WR-DEC-015. Planning authority and acceptance: WR-DEC-002; v1.1 refinement accepted by WR-DEC-009; v1.2 recovery qualification accepted by WR-DEC-010. v1.3 continuation accepted by WR-DEC-016. Review: Accepted. JES 0.3.0, POS v0.3.0-dev, EO v0.3-dev.
 
 ## Engineering objective and outputs
 
@@ -35,6 +35,7 @@ Consequential cross-component behavior is specified in [GAME_CONTRACT.md](../doc
 | M2 Match integrity | Valid boards, validation errors, isolated identity, atomic claims/wins, stable winner | WR-EWP-002 | Done |
 | M3 Complete player experience | Lobby/host/team lifecycle, leave/resume, configurable backend, resilient extension | WR-EWP-003 | Done |
 | M4 Watch and operate | Spectator/stream pages, documented clean startup, integrated browser/API evidence, delivered-use review | WR-EWP-004 | Done |
+| M6 Recoverable entry and invitations | Exactly one membership after uncertain admission, safe server/game invitation flow, actual browser recovery and bounded integrated operation | WR-EWP-007, WR-EWP-008; further qualification package after findings | Active |
 | M5 Extended qualification | Real Wikipedia, idle/restart, upgrade/draw edges, backup/restore, repeated-session cleanup and final local delivered-use decision | WR-EWP-005, WR-EWP-006 | Done |
 
 ## Validation readiness and dependencies
@@ -59,3 +60,13 @@ WR-EWP-001 establishes the baseline and persistence tests before transactional o
 ## v1.1 qualification refinement
 
 WR-EWP-005 implements an explicit draw when all 25 Lockout squares are claimed without a 13-square owner. Persist `BOARD_EXHAUSTED` with no winner and expose the same result to player/spectator clients. No Normal rule or majority threshold changes. Migration recovery retires unusable prototype sessions while preserving history and allows one new authenticated host to resume unfinished games.
+
+## v1.3 continuation architecture and validation readiness
+
+Current gap: create/join responses contain the sole newly issued credential. A committed request with a lost response leaves the extension without that identity. Planned correction: persist a cryptographically random private admission key in extension storage before sending, use it as the requested player token, retain only its hash plus a canonical request fingerprint in PostgreSQL, serialize matching admission keys before game locks, and return the same membership/current state on an exact replay. Unkeyed older clients retain their existing behavior. Never expose keys through public state, invitation URLs, logs, or UI snapshots. Pending retries retain their original server and request across worker/browser restarts; changing intent is blocked until resolution or explicit abandonment. Additive nullable metadata preserves old records; deploy commands accompany migration.
+
+Invitation work carries only server origin and game ID. Parsing is strict; the player explicitly approves any needed origin permission and joins. Pasting a link must not enroll, navigate, or silently switch an existing session. The local runtime remains loopback by default. Existing System/Subsystem ownership is unchanged.
+
+Validation readiness: actual local PostgreSQL, HTTP/WebSocket and isolated Chromium extension profiles are available. Reproduce committed-response loss before the fix; then cover concurrent same-key requests, mismatched payloads/targets, departed-session replay, browser/worker restart while pending, stale credentials, and successful retry with exactly one stored membership. Existing Normal/Lockout checks remain required. Invitation browser tests must exercise a second server origin and prove user-content/token boundaries. Native Windows, Docker runtime, second-machine routing, public deployment and actual OBS remain separate evidence profiles. Docker client is installed but its daemon was unavailable at continuation intake; no Docker success is assumed.
+
+Codex owns engineering and delegated product review. No human/physical action is needed for this local continuation. The next product decision is v1.2 local use after the M6 evidence; original v1.1 acceptance remains historical. Cutoff: 2026-09-08 03:10:09 UTC.

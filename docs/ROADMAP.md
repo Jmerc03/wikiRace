@@ -15,6 +15,10 @@ The accepted plan and evidence are in [ENGINEERING_PLAN.md](../project-managemen
 
 All five milestones and six packages are Done. [Local delivered use is accepted](../project-management/DELIVERY_ACCEPTANCE.md) under delegated-owner decision WR-DEC-013. Real Wikipedia and runtime/recovery profiles remain distinct from deterministic fixture tests. Source and host-local evidence hashes are recorded in the qualification index.
 
+## Active continuation
+
+M6 improves recoverable lobby entry and explicit server/game invitations under proposal v1.2 and plan v1.3. Historical M1–M5 acceptance remains unchanged; see current EWP records for continuation results.
+
 ## Future product decisions
 
 Public lobbies, matchmaking, friends, daily boards, speedruns, tournaments, rankings, statistics and AI boards remain future work. Public hosting, native Windows qualification and multi-process realtime require their own actual evidence and scoped delivery decision.

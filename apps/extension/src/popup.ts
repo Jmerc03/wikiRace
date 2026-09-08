@@ -70,6 +70,10 @@ document.getElementById("save-server")?.addEventListener("click", async () => {
     await action({type:"SET_API_ORIGIN",apiOrigin});
   } catch(error) {showError(error);}
 });
+document.getElementById("retry-admission")?.addEventListener("click", () => void action({type:"RETRY_ADMISSION"}));
+document.getElementById("forget-admission")?.addEventListener("click", () => {
+  if (confirm("The server may already have created your player. Forget this pending entry and lose its recovery key?")) void action({type:"FORGET_ADMISSION"});
+});
 if (new URLSearchParams(location.search).get("view") === "board") document.body.classList.add("full-view");
 chrome.runtime.onMessage.addListener(message => {
   if(message.type === "GAME_STATE_UPDATED") void chrome.runtime.sendMessage({type:"GET_GAME_STATE"}).then(result=>{latest=result; if(!busy) renderState(result);}).catch(showError);
@@ -81,8 +85,11 @@ function renderState(state: GameState) {
   if (!state) { showError(new Error("No state was returned by the extension.")); return; }
   latest = state;
   const hasSession = Boolean(state.gameId);
+  const pending = Boolean(state.pendingAdmission);
+  const entryLocked = hasSession || pending;
   const isHost = state.hostPlayerId === state.playerId;
   const setHidden = (id: string, hidden: boolean) => { const el=document.getElementById(id); if(el) el.hidden=hidden; };
+  setHidden("pending-entry", !pending);
   setHidden("start-match", !(hasSession && isHost && state.status === "WAITING"));
   setHidden("host-end", !(hasSession && isHost && state.status !== "FINISHED"));
   setHidden("forget-game", !(hasSession && (state.error || state.invalidSession)));
@@ -105,12 +112,15 @@ function renderState(state: GameState) {
   const connectionEl = document.getElementById("connection");
   if (connectionEl) connectionEl.textContent = `${state.connection === "live" ? "Live updates connected" : state.connection === "reconnecting" ? "Reconnecting…" : state.connection === "connecting" ? "Connecting…" : "Offline"} · ${state.apiOrigin}`;
   const apiInput=document.getElementById("api-origin");
-  if(apiInput instanceof HTMLInputElement) { if(document.activeElement!==apiInput) apiInput.value=state.apiOrigin; apiInput.disabled=hasSession; }
+  if(apiInput instanceof HTMLInputElement) { if(document.activeElement!==apiInput) apiInput.value=state.apiOrigin; apiInput.disabled=entryLocked; }
   const saveServer=document.getElementById("save-server");
-  if(saveServer instanceof HTMLButtonElement) saveServer.disabled=hasSession;
-  if(joinGameBtn instanceof HTMLButtonElement) joinGameBtn.disabled=hasSession;
-  if(joinGameInput instanceof HTMLInputElement) joinGameInput.disabled=hasSession;
-  if(playerNameInput instanceof HTMLInputElement) playerNameInput.disabled=hasSession;
+  if(saveServer instanceof HTMLButtonElement) saveServer.disabled=entryLocked;
+  if(joinGameBtn instanceof HTMLButtonElement) joinGameBtn.disabled=entryLocked;
+  if(joinGameInput instanceof HTMLInputElement) joinGameInput.disabled=entryLocked;
+  if(playerNameInput instanceof HTMLInputElement) playerNameInput.disabled=entryLocked;
+  if(startButton instanceof HTMLButtonElement) startButton.disabled=entryLocked;
+  if(gameModeSelect instanceof HTMLSelectElement) gameModeSelect.disabled=entryLocked;
+  if(difficultySelect instanceof HTMLSelectElement) difficultySelect.disabled=entryLocked;
   statusEl.classList.toggle("error-status", Boolean(state.error));
 
   if (!state?.gameId || !state.board) {

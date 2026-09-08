@@ -30,3 +30,14 @@ This explicit delegation takes precedence over skill defaults that would request
 | WR-DEC-013 | DELIVERY_ACCEPTANCE.md v1.0 | Accepted for the stated native Mac local multiplayer intended use; PR-001 through PR-008 adjudicated with separate deterministic, real-site, recovery and endurance profiles; deployment/platform limits retained | Codex, delegated owner; 2026-09-08 UTC |
 
 New package approvals are recorded before their execution. Package completion and product acceptance depend on evidence, not delegation alone.
+
+## Two-hour continuation
+
+On 2026-09-08 UTC the user said “ok you may continue for another 2 hours”, continuing the prior owner/operator authority. Observed start: 01:10:09 UTC; cutoff: 03:10:09 UTC. Historical accepted artifacts remain preserved.
+
+| Decision | Exact artifact/action | Decision and rationale | Actor/date |
+| --- | --- | --- | --- |
+| WR-DEC-014 | Two-hour continuation | Execution/planning/review delegation continues through the recorded new cutoff | Jaxson Mercer instruction; 2026-09-08 UTC |
+| WR-DEC-015 | PROJECT_PROPOSAL.md v1.2 | Approved: recover uncertain admission and share explicit server/game invitations under the existing local product boundary | Codex, delegated owner; 2026-09-08 UTC |
+| WR-DEC-016 | ENGINEERING_PLAN.md v1.3 | EO planning separately authorized, reviewed and Accepted: M6 with unchanged ownership, admission contract and available local validators | Codex, delegated owner; 2026-09-08 UTC |
+| WR-DEC-017 | WR-EWP-007 r1 | Execution approved: recoverable create/join with durable private intent and exact replay, additive migration, API/browser regression and closeout | Codex, delegated owner; 2026-09-08 UTC |

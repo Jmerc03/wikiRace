@@ -3,6 +3,8 @@ import type { ExtensionState, ConnectionStatus } from "./client-types.js";
 import { isArticleUrl, normalizeApiOrigin } from "./wikipedia.js";
 
 type Session = { gameId: string; playerId: string; playerToken: string };
+type PendingAdmission = { kind: "create" | "join"; key: string; apiOrigin: string; path: string; body: unknown; displayName?: string; gameId?: string };
+let pendingAdmission: PendingAdmission | null = null;
 let session: Session | null = null;
 let state: GameStateResponse | null = null;
 let apiOrigin = "http://localhost:4000";
@@ -16,7 +18,7 @@ let retryAttempt = 0;
 let syncFlight: { generation: number; again: boolean; promise: Promise<ExtensionState> } | null = null;
 let mutationQueue: Promise<unknown> = Promise.resolve();
 
-const ready = chrome.storage.local.get(["gameId", "playerId", "playerToken", "apiOrigin"]).then(saved => {
+const ready = chrome.storage.local.get(["gameId", "playerId", "playerToken", "apiOrigin", "pendingAdmission"]).then(saved => {
   if (typeof saved.apiOrigin === "string") {
     try { apiOrigin = normalizeApiOrigin(saved.apiOrigin); } catch { /* Retain safe default for invalid old settings. */ }
   }
@@ -24,32 +26,44 @@ const ready = chrome.storage.local.get(["gameId", "playerId", "playerToken", "ap
     session = { gameId: saved.gameId, playerId: saved.playerId, playerToken: typeof saved.playerToken === "string" ? saved.playerToken : "" };
     if (!session.playerToken) { invalidSession = true; lastError = "This older session has no private token. Forget it and join again."; }
   }
+  if (!session && saved.pendingAdmission && typeof saved.pendingAdmission === "object") {
+    const pending = saved.pendingAdmission as PendingAdmission;
+    if (["create", "join"].includes(pending.kind) && /^[A-Za-z0-9_-]{43}$/.test(pending.key) && typeof pending.path === "string") {
+      try {
+        pending.apiOrigin = normalizeApiOrigin(pending.apiOrigin);
+        pendingAdmission = pending;
+        apiOrigin = pending.apiOrigin;
+        lastError = "Lobby entry is unfinished. Retry to recover the same player.";
+      } catch { /* Invalid old storage cannot select an arbitrary server. */ }
+    }
+  }
 });
 
 class ApiError extends Error {
-  constructor(message: string, public status = 0) { super(message); }
+  constructor(message: string, public status = 0, public definitive = false) { super(message); }
 }
 function snapshot(): ExtensionState {
   return { ...(state ?? {}), gameId: session?.gameId ?? null, playerId: session?.playerId ?? null,
     board: state?.board ?? null, completedSquareIds: state?.completedSquareIds ?? [],
-    apiOrigin, connection, error: lastError, invalidSession };
+    apiOrigin, connection, error: lastError, invalidSession,
+    ...(pendingAdmission ? { pendingAdmission: { kind: pendingAdmission.kind, displayName: pendingAdmission.displayName, gameId: pendingAdmission.gameId } } : {}) };
 }
 async function notifyPopup() {
   try { await chrome.runtime.sendMessage({ type: "GAME_STATE_UPDATED" }); } catch { /* Popup is closed. */ }
 }
 function reportError(error: unknown) {
   lastError = error instanceof Error ? error.message : "Something went wrong. Please try again.";
-  if (error instanceof ApiError && [401,404].includes(error.status)) invalidSession = true;
+  if (session && error instanceof ApiError && [401,404].includes(error.status)) invalidSession = true;
   if (!(error instanceof ApiError) || error.status === 0 || error.status >= 500) connection = "offline";
   void notifyPopup();
   return snapshot();
 }
-async function request<T>(path: string, body?: unknown, identity: Session | null = session): Promise<T> {
+async function request<T>(path: string, body?: unknown, identity: Session | null = session, admissionKey?: string): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${apiOrigin}${path}`, {
       method: body === undefined ? "GET" : "POST",
-      headers: { "Content-Type": "application/json", ...(identity?.playerToken ? { Authorization: `Bearer ${identity.playerToken}` } : {}) },
+      headers: { "Content-Type": "application/json", ...(identity?.playerToken ? { Authorization: `Bearer ${identity.playerToken}` } : {}), ...(admissionKey ? { "Idempotency-Key": admissionKey } : {}) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(10000),
     });
@@ -60,7 +74,7 @@ async function request<T>(path: string, body?: unknown, identity: Session | null
   try { result = await response.json(); } catch { throw new ApiError("The server returned an unreadable response.", response.status); }
   if (!response.ok) {
     const details = result.details?.map((item: any) => item.message).join("; ");
-    throw new ApiError(details || result.error || `Request failed (${response.status})`, response.status);
+    throw new ApiError(details || result.error || `Request failed (${response.status})`, response.status, true);
   }
   return result as T;
 }
@@ -138,15 +152,18 @@ function connectWebSocket() {
 }
 async function installSession(result: PlayerSessionResponse) {
   if (!result.gameId || !result.playerId || !result.playerToken || !result.board) throw new ApiError("The server did not return a complete player session.");
+  const identity = { gameId: result.gameId, playerId: result.playerId, playerToken: result.playerToken };
+  // Persist identity and resolve the pending key together before exposing success.
+  await chrome.storage.local.set({ ...identity, pendingAdmission: null });
+  pendingAdmission = null;
   generation++;
   disconnectWebSocket();
-  session = { gameId: result.gameId, playerId: result.playerId, playerToken: result.playerToken };
+  session = identity;
   // Keep the one-time token only in session storage, never in state sent to UI.
   const { playerToken: _token, ...publicState } = result;
   state = publicState;
   lastError = undefined;
   invalidSession = false;
-  await chrome.storage.local.set(session);
   connectWebSocket();
   return snapshot();
 }
@@ -182,8 +199,35 @@ async function sendPageVisit(data: any) {
     return snapshot();
   } catch (error) { return generation === expectedGeneration ? reportError(error) : snapshot(); }
 }
+async function clearPendingAdmission() {
+  await chrome.storage.local.remove("pendingAdmission");
+  pendingAdmission = null;
+}
+async function retryAdmission() {
+  if (!pendingAdmission) throw new Error("There is no pending lobby entry.");
+  const pending = pendingAdmission;
+  if (apiOrigin !== pending.apiOrigin) throw new Error("Return to the original server to recover this entry.");
+  try {
+    const readiness = await request<{ capabilities?: string[] }>("/ready", undefined, null);
+    if (!readiness.capabilities?.includes("recoverable-admission-v1")) throw new ApiError("This server needs an update before it can recover lobby entries. Ask the host to update it, then retry.");
+    const result = await request<PlayerSessionResponse>(pending.path, pending.body, null, pending.key);
+    if (result.playerToken !== pending.key) throw new ApiError("This server does not support recoverable entry. Update the server before retrying.");
+    return await installSession(result);
+  } catch (error) {
+    if (error instanceof ApiError && error.definitive && [400, 401, 403, 404, 409].includes(error.status)) await clearPendingAdmission();
+    throw error;
+  }
+}
+
 async function handleMutation(message: any): Promise<ExtensionState> {
   await ready;
+  if (message.type === "RETRY_ADMISSION") return retryAdmission();
+  if (message.type === "FORGET_ADMISSION") {
+    await clearPendingAdmission();
+    lastError = undefined;
+    return snapshot();
+  }
+  if (pendingAdmission) throw new Error("Recover or forget the pending lobby entry before changing games or servers.");
   if (message.type === "FORGET_GAME") return forgetSession();
   if (message.type === "SET_API_ORIGIN") {
     if (session) throw new Error("Leave your current game before changing servers.");
@@ -196,10 +240,17 @@ async function handleMutation(message: any): Promise<ExtensionState> {
   }
   if (message.type === "START_GAME" || message.type === "JOIN_GAME") {
     if (session) throw new Error("Leave your current game before creating or joining another.");
-    const result = message.type === "START_GAME"
-      ? await request<PlayerSessionResponse>("/games", { mode: message.mode, boardConfig: message.boardConfig, displayName: message.displayName }, null)
-      : await request<PlayerSessionResponse>(`/games/${encodeURIComponent(String(message.gameId).trim())}/players`, { displayName: message.displayName }, null);
-    return installSession(result);
+    const kind = message.type === "START_GAME" ? "create" : "join";
+    const gameId = kind === "join" ? String(message.gameId).trim() : undefined;
+    const key = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const pending: PendingAdmission = JSON.parse(JSON.stringify({
+      kind, key, apiOrigin, gameId, displayName: message.displayName,
+      path: kind === "create" ? "/games" : `/games/${encodeURIComponent(gameId!)}/players`,
+      body: kind === "create" ? { mode: message.mode, boardConfig: message.boardConfig, displayName: message.displayName } : { displayName: message.displayName },
+    }));
+    await chrome.storage.local.set({ pendingAdmission: pending });
+    pendingAdmission = pending;
+    return retryAdmission();
   }
   if (!session) throw new Error("Create or join a game first.");
   if (message.type === "CLEAR_GAME" || message.type === "LEAVE_GAME") {

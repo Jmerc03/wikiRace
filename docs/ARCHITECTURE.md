@@ -191,3 +191,7 @@ local profile, verifies process/database identity before stopping anything, and
 preserves data across restarts. `scripts/test-integration.mjs` creates and removes
 only its own random schema. The distributable extension archive is generated
 from built assets with fixed entry timestamps and excludes source maps.
+
+## Recoverable lobby entry
+
+Current clients persist a private random admission key before create/join. The API serializes that key in PostgreSQL before any game lock and binds it to the normalized request using nullable Player admission metadata. Exact retries recover the same membership and current state without new revision/broadcasts. Pending intent is separate from installed player state and survives browser restart. See GAME_CONTRACT.md v1.2 for protocol, compatibility and explicit abandonment behavior.

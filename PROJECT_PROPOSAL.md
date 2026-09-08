@@ -11,11 +11,11 @@
 
 ## Proposal Version
 
-Version 1.1. Version 1.0 was approved by WR-DEC-001. This refinement explicitly ends an exhausted Lockout board as a draw when no owner reaches 13; all other scope remains unchanged. Existing product documents and implementation are preserved as the input baseline.
+Version 1.2. Prior v1.1 is preserved in Git at `1f501ae7bfc376e023e2c715a279943986e7b2c2` and in the baseline archive. This refinement makes uncertain create/join recovery and shareable server/game invitations explicit under PR-001/005/007. Existing scoring rules and the local deployment boundary remain unchanged. Existing product documents and implementation are preserved as the input baseline.
 
 ## Status
 
-Approved. Phase 1A: PROPOSAL_APPROVED. Decision WR-DEC-009 (v1.1); original v1.0 decision WR-DEC-001.
+Approved. Phase 1A: PROPOSAL_APPROVED. Decision WR-DEC-015 (v1.2); prior decisions WR-DEC-009/001.
 
 ## Project Idea
 
@@ -33,11 +33,11 @@ A low-friction social game whose progress is clear to players and stream audienc
 
 ### In Scope
 
-- PR-001: Create and join named multiplayer games with a valid 25-square board and understandable objectives.
+- PR-001: Create and join named multiplayer games with a valid 25-square board and understandable objectives. Shareable invitations identify the intended server and game; joining remains an explicit player action.
 - PR-002: Normal mode preserves independent progress; the first player with a row, column, or diagonal wins. Everyone sees the same final winner.
 - PR-003: Lockout preserves exclusive first ownership; individual players or teams win with 13 squares. Ownership cannot be stolen or changed by switching teams after play starts. If all 25 squares are claimed without a majority, the match ends as a draw.
 - PR-004: Players can form/join/leave teams before play, use a waiting lobby, start/end a match as host, and leave a game without corrupting its history.
-- PR-005: Navigation updates everyone promptly. Reload, reconnect, temporary backend failure, and extension restart preserve recoverable sessions and show useful status.
+- PR-005: Navigation updates everyone promptly. Reload, reconnect, temporary backend failure, and extension restart preserve recoverable sessions and show useful status. An uncertain create/join request can be retried to recover the same membership without creating duplicate players or lobbies.
 - PR-006: A read-only spectator view and a stream-friendly browser view show the board, roster, scores, match state, and winner.
 - PR-007: An operator can install, start, validate, configure a backend address, and recover the local product using documented commands.
 - PR-008: Project plans, bounded execution, and evidence use JES 0.3.0 with traceable decisions and honest qualification limits.
@@ -68,7 +68,7 @@ Install/start the service and extension; create a lobby; share its game ID; choo
 
 ### Assumptions
 
-Initial supported use is an operator-managed local service and English Wikipedia in Chrome. The reset cutoff is 2026-09-08 01:00 UTC (6 p.m. Pacific daylight time, 8 p.m. Chicago) unless the user corrects it. Browser automation may provide actual software evidence; subjective play enjoyment remains unknown.
+Initial supported use is an operator-managed local service and English Wikipedia in Chrome. The original cutoff was met. The user extended this task for two hours; the continuation cutoff is 2026-09-08 03:10:09 UTC, based on the observed continuation start. Browser automation may provide actual software evidence; subjective play enjoyment remains unknown.
 
 ### Open Product Questions
 
@@ -85,9 +85,11 @@ First establish the baseline and real persistence tests, then protect match inte
 - Owner refinement: use existing product intent and roadmap, prioritize reliable play over future social features.
 - Version 1.1 refinement: three-or-more-owner Lockout can exhaust the board without 13 claims for any owner. Explicit draw termination removes an otherwise unrecoverable active match; accepted by WR-DEC-009.
 
+- Version 1.2 refinement: admission acknowledgement loss and server/game invitation ambiguity are addressed without expanding public hosting or scoring rules. Evaluated complete and consistent by the delegated Product Owner; accepted by WR-DEC-015.
+
 ## Approval Record
 
-- Decision: Approved, WR-DEC-009 (v1.1), 2026-09-07. Original approval WR-DEC-001 (v1.0).
+- Decision: Approved, WR-DEC-015 (v1.2), 2026-09-08 UTC. Prior approvals WR-DEC-009/001 remain historical.
 - Approver: Codex acting under Jaxson Mercer's explicit project-owner delegation in this task, not a claimed new human approval.
 - Conditions: scope and evidence boundaries above; preserve existing work; stop at the stated reset cutoff.
 - Rationale: the user expressly authorized editing/approving the proposal and plan, creating milestones/EWPs, and executing/testing them to make the product functional.
@@ -97,4 +99,4 @@ First establish the baseline and real persistence tests, then protect match inte
 - Source idea/evidence: existing docs and checkout at `7c164a4`; exact dirty baseline retained in `.jes/local/baseline/`.
 - Key decisions: [approval ledger](project-management/APPROVAL_LEDGER.md).
 - Systems Architecture handoff: [engineering plan](project-management/ENGINEERING_PLAN.md), [interface/lifecycle specification](docs/GAME_CONTRACT.md).
-- Delivered-product decision: accepted for the declared local intended use by WR-DEC-013; see [DELIVERY_ACCEPTANCE.md](project-management/DELIVERY_ACCEPTANCE.md).
+- Delivered-product decision: v1.1 local use accepted by WR-DEC-013; v1.2 refinements await their evidence and a new bounded decision. See [DELIVERY_ACCEPTANCE.md](project-management/DELIVERY_ACCEPTANCE.md).

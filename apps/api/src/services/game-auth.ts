@@ -3,8 +3,7 @@ import type { FastifyRequest } from "fastify";
 import type { Prisma } from "@prisma/client";
 import { GameError } from "../game-errors.js";
 
-export function createPlayerSession() {
-  const playerToken = randomBytes(32).toString("base64url");
+export function createPlayerSession(playerToken = randomBytes(32).toString("base64url")) {
   return { playerToken, sessionTokenHash: hashToken(playerToken) };
 }
 function hashToken(token: string) { return createHash("sha256").update(token).digest("hex"); }

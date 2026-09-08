@@ -10,7 +10,9 @@ import { spectatorRoutes } from "./routes/spectator.routes.js";
 
 export function buildApp() {
   const app = Fastify({
-    logger: process.env.NODE_ENV !== "test",
+    logger: process.env.NODE_ENV === "test" ? false : {
+      redact: ["req.headers.authorization", "req.headers['idempotency-key']"],
+    },
   });
 
   app.register(websocket, { options: { maxPayload: 4096 } });

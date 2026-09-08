@@ -6,9 +6,10 @@ import { generateBoard, evaluateSquare, getWinningLineResult } from "@bingo/game
 import { isArticleUrl, type BoardSquare } from "@bingo/shared";
 import { prisma } from "../db/prisma.js";
 import { GameError } from "../game-errors.js";
-import { createPlayerSession, requirePlayer } from "../services/game-auth.js";
+import { requirePlayer } from "../services/game-auth.js";
 import { buildGameState, gameInclude } from "../services/game-state.js";
 import { mutateGame } from "../services/game-mutations.js";
+import { admitPlayer } from "../services/game-admission.js";
 import { getLockoutWinningOwnerResult } from "./games.helpers.js";
 
 const PLAYER_COLORS = ["rgba(255,107,107,0.35)", "rgba(77,171,247,0.35)", "rgba(81,207,102,0.35)", "rgba(252,196,25,0.35)", "rgba(177,151,252,0.35)", "rgba(255,146,43,0.35)"];
@@ -43,10 +44,9 @@ async function readableState(gameId: string, playerId: string | null) {
 export async function gameRoutes(app: FastifyInstance) {
   app.post("/", async (request, reply) => {
     const body = createGameSchema.parse(request.body ?? {});
-    const board = generateBoard(body.boardConfig);
-    const session = createPlayerSession();
-    const playerId = randomUUID();
-    const state = await prisma.$transaction(async tx => {
+    const state = await admitPlayer(request, body, null, async (tx, session) => {
+      const board = generateBoard(body.boardConfig);
+      const playerId = randomUUID();
       const game = await tx.game.create({ data: {
         mode: body.mode, status: "WAITING", hostPlayerId: playerId,
         boardConfig: body.boardConfig,
@@ -54,11 +54,11 @@ export async function gameRoutes(app: FastifyInstance) {
           position: square.position, type: square.type, label: square.label,
           condition: square.condition as Prisma.InputJsonValue, difficulty: square.difficulty,
         })) } } },
-        players: { create: { id: playerId, displayName: body.displayName, color: PLAYER_COLORS[0], sessionTokenHash: session.sessionTokenHash } },
+        players: { create: { id: playerId, displayName: body.displayName, color: PLAYER_COLORS[0], sessionTokenHash: session.sessionTokenHash, admissionRequestHash: session.admissionRequestHash } },
       } });
       return buildGameState(tx, game.id, playerId);
     });
-    return reply.code(201).send({ ...state, id: state!.gameId, playerToken: session.playerToken });
+    return reply.code(201).send({ ...state, id: state.gameId });
   });
 
   // Database player rows include secret hashes; only public summaries are sent.
@@ -88,18 +88,17 @@ export async function gameRoutes(app: FastifyInstance) {
   app.post("/:gameId/players", async request => {
     const { gameId } = gameParams.parse(request.params);
     const body = z.object({ displayName: displayName.optional() }).parse(request.body ?? {});
-    return mutateGame(gameId, async (tx, touch) => {
+    return admitPlayer(request, body, gameId, async (tx, session) => {
       const game = await tx.game.findUniqueOrThrow({ where: { id: gameId }, include: { players: true } });
       if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
       if (game.players.filter(p => !p.leftAt).length >= 32) throw new GameError(409, "This game is full (32 players)");
-      const session = createPlayerSession();
-      await touch();
+      await tx.game.update({ where: { id: gameId }, data: { revision: { increment: 1 } } });
       const player = await tx.player.create({ data: { gameId, displayName: body.displayName ?? `Player ${game.players.length + 1}`,
-        color: PLAYER_COLORS[game.players.length % PLAYER_COLORS.length], sessionTokenHash: session.sessionTokenHash } });
+        color: PLAYER_COLORS[game.players.length % PLAYER_COLORS.length], sessionTokenHash: session.sessionTokenHash, admissionRequestHash: session.admissionRequestHash } });
       // A migrated game can retain history without an authenticated host.
       // The first new member becomes host while the row lock serializes joins.
       if (!game.hostPlayerId) await tx.game.update({ where: { id: gameId }, data: { hostPlayerId: player.id } });
-      return { ...await buildGameState(tx, gameId, player.id), playerToken: session.playerToken };
+      return buildGameState(tx, gameId, player.id);
     });
   });
 

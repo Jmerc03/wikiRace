@@ -61,6 +61,7 @@ model Player {
   color       String?
   joinedAt    DateTime @default(now())
   sessionTokenHash String? @unique
+  admissionRequestHash String?
   leftAt DateTime?
 
   game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
