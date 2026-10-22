@@ -1,0 +1,87 @@
+{
+  "package": "WR-EWP-017 r1",
+  "at": "2026-10-22T20:06:50.877Z",
+  "engineeringStatus": "home-hosting preparation complete",
+  "publicLaunch": "pending",
+  "sourceBaseline": "50bca4094b8085d21320498d13faedcfd21f95d2",
+  "extensionVersion": "1.10.0",
+  "sourceInventory": ".jes/local/ewp-017/source-inventory.json",
+  "sourceInventorySha256": "d17c449d91799a47dc481c7024e71f1186da78853163c63bd39bf1712bd98779",
+  "sourceFileCount": 192,
+  "checks": {
+    "build": true,
+    "unit": 58,
+    "integration": 87,
+    "browser": 41,
+    "finalPrivacyTargeted": 10,
+    "arm64ContainerBuildAndHealthy": true,
+    "amd64ContainerBuildAndHealthy": true,
+    "identicalCrossArchitectureExtensionSha256": "4ad00be4182ad1eb3bdac7419eabf3ea930ae104ef1e5fea8abb4201ff77f3fd",
+    "packageOrigin": "non-deployed fixture; not an upload candidate",
+    "httpWebsocketAndRestart": {
+      "checkedAt": "2026-10-22T20:02:32.892Z",
+      "platform": "Linux ARM64 containers on macOS",
+      "origin": "http://127.0.0.1:4100",
+      "publicOrigin": "non-deployed fixture only",
+      "modes": [
+        {
+          "mode": "NORMAL",
+          "websocketMessages": 6
+        },
+        {
+          "mode": "LOCKOUT",
+          "websocketMessages": 6
+        }
+      ],
+      "backupRestore": {
+        "games": 4,
+        "players": 8,
+        "migrations": 13
+      },
+      "restartIdentityAndBoard": "passed",
+      "operatorLocalReady": true,
+      "publicTunnel": "not started",
+      "windowsHardware": "not tested",
+      "priorAttempt": "Retained first failure: Node rehearsal reused a stale pooled HTTP connection across stop/start; second rehearsal uses one connection per request. Earlier fixture games retained."
+    },
+    "cloudflaredTokenFileHelp": true,
+    "ciYamlParsed": true,
+    "windowsCi": "prepared; execution not yet verified",
+    "operatorDatabase": {
+      "counts": {
+        "Board": 0,
+        "BoardSquare": 0,
+        "Game": 0,
+        "PageVisitEvent": 0,
+        "Player": 0,
+        "SquareClaim": 0,
+        "SquareCompletion": 0,
+        "Team": 0,
+        "_prisma_migrations": 13
+      },
+      "schemas": []
+    },
+    "noNewSchema": true
+  },
+  "logRoot": ".jes/local/ewp-017/",
+  "paidResourcesCreated": false,
+  "publicTunnelStarted": false,
+  "windowsHardwareTested": false,
+  "retainedAttempts": [
+    {
+      "file": "container-first-attempt.log",
+      "result": "Harness reused stale Node pooled HTTP connection after container restart; repeat with fresh connections passes without app changes."
+    },
+    {
+      "result": "Initial sandboxed integration attempt could not reach the database; permitted isolated full run passed."
+    }
+  ],
+  "externalGates": [
+    "Native Windows prerequisites, install and reboot",
+    "Stable domain and actual Cloudflare route",
+    "Two-network play and trusted client attribution",
+    "Whole-laptop recovery",
+    "Chrome registration, tester setup, submission and approval"
+  ],
+  "jesCoreReporting": "pending; Core API unavailable"
+}

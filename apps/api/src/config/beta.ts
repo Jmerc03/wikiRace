@@ -5,6 +5,7 @@ export type BetaConfig = {
   trustProxyHops: number;
   maxGames: number;
   retentionDays: number;
+  hostingProvider?: "render" | "home-cloudflare";
 };
 
 export function betaConfig(env: NodeJS.ProcessEnv = process.env): BetaConfig | undefined {
@@ -21,5 +22,7 @@ export function betaConfig(env: NodeJS.ProcessEnv = process.env): BetaConfig | u
   if (!operatorName || operatorName.length > 120) throw new Error("Beta requires WIKIRACE_OPERATOR_NAME (1–120 characters)");
   const hops = Number(env.WIKIRACE_TRUST_PROXY_HOPS ?? "0");
   if (!Number.isInteger(hops) || hops < 0 || hops > 3) throw new Error("WIKIRACE_TRUST_PROXY_HOPS must be 0–3");
-  return { publicOrigin: origin.origin, supportEmail, operatorName, trustProxyHops: hops, maxGames: 200, retentionDays: 30 };
+  const hostingProvider = env.WIKIRACE_HOSTING_PROVIDER ?? "render";
+  if (hostingProvider !== "render" && hostingProvider !== "home-cloudflare") throw new Error("Unknown beta hosting provider");
+  return { publicOrigin: origin.origin, supportEmail, operatorName, trustProxyHops: hops, maxGames: 200, retentionDays: 30, hostingProvider };
 }

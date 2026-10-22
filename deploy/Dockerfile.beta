@@ -1,0 +1,15 @@
+FROM node:24.15.0-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY packages ./packages
+COPY apps ./apps
+COPY scripts ./scripts
+RUN npm ci
+ARG WIKIRACE_PUBLIC_ORIGIN
+RUN DATABASE_URL=postgresql://build:build@localhost/build npm run prisma:generate
+RUN WIKIRACE_EXTENSION_TARGET=beta WIKIRACE_PUBLIC_ORIGIN=$WIKIRACE_PUBLIC_ORIGIN npm run build
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=4000
+USER node
+EXPOSE 4000
+CMD ["node", "scripts/home-beta-entrypoint.mjs"]

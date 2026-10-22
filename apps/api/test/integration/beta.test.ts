@@ -32,6 +32,19 @@ test("beta blocks foreign HTTP origins and handles extension CORS without exposi
   assert.ok(privacy.body.includes("30 days")); assert.equal(privacy.headers["cache-control"], "no-store");
 });
 
+test("home hosting discloses the selected operator infrastructure and backup retention", async () => {
+  const home = buildApp({ beta: { ...beta, hostingProvider: "home-cloudflare" }, retention: false, roundTimers: false });
+  try {
+    const policy = (await home.inject("/privacy")).body;
+    assert.match(policy, /Cloudflare/);
+    assert.match(policy, /personally managed/);
+    assert.doesNotMatch(policy, /Render/);
+    assert.match(policy, /operator removes those copies/);
+    assert.equal((await home.inject("/deployment")).json().hostingProvider, "home-cloudflare");
+    assert.equal((await app.inject("/deployment")).json().hostingProvider, "render");
+  } finally { await home.close(); }
+});
+
 test("beta bounds concurrent HTTP work and releases capacity after responses", async () => {
   const bounded = buildApp({ beta, retention: false, roundTimers: false });
   let release!: () => void;

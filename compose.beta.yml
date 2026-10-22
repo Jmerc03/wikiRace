@@ -1,0 +1,78 @@
+name: wikirace-home-beta
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wikirace
+      POSTGRES_DB: wikirace_beta
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes:
+      - beta_pgdata:/var/lib/postgresql/data
+    networks: [database]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U wikirace -d wikirace_beta"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: 5m, max-file: "2" }
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.beta
+      args:
+        WIKIRACE_PUBLIC_ORIGIN: ${WIKIRACE_PUBLIC_ORIGIN:?Configure the beta origin first}
+    restart: unless-stopped
+    init: true
+    environment:
+      HOST: 0.0.0.0
+      PORT: "4000"
+      NODE_ENV: production
+      WIKIRACE_DEPLOYMENT: beta
+      WIKIRACE_HOSTING_PROVIDER: home-cloudflare
+      WIKIRACE_PUBLIC_ORIGIN: ${WIKIRACE_PUBLIC_ORIGIN:?Configure the beta origin first}
+      WIKIRACE_SUPPORT_EMAIL: jaxmerc03@gmail.com
+      WIKIRACE_OPERATOR_NAME: WikiRace
+      WIKIRACE_TRUST_PROXY_HOPS: "1"
+    secrets: [postgres_password]
+    ports: ["127.0.0.1:${WIKIRACE_HOME_PORT:-4100}:4000"]
+    networks: [database, edge]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4000/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 8s
+      retries: 12
+      start_period: 60s
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options: { max-size: 5m, max-file: "2" }
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.0
+    profiles: [public]
+    restart: unless-stopped
+    command: [tunnel, --no-autoupdate, --loglevel, warn, run, --token-file, /run/secrets/tunnel_token]
+    secrets: [tunnel_token]
+    networks: [edge]
+    depends_on:
+      api: { condition: service_healthy }
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options: { max-size: 2m, max-file: "2" }
+networks:
+  database: { internal: true }
+  edge: {}
+volumes:
+  beta_pgdata: {}
+secrets:
+  postgres_password:
+    file: .local/home-beta/postgres-password
+  tunnel_token:
+    file: .local/home-beta/tunnel-token

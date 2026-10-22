@@ -1,5 +1,6 @@
 export function validateBetaOrigin(raw) {
   if (!raw) throw new Error("Set WIKIRACE_PUBLIC_ORIGIN to the deployed HTTPS origin first. No placeholder ZIP is released.");
+  if (typeof raw !== "string" || /\s/.test(raw)) throw new Error("Use an HTTPS origin without whitespace");
   let url;
   try { url = new URL(raw); } catch { throw new Error("Use a valid public HTTPS origin"); }
   const hostname = url.hostname.replace(/\.$/, "");

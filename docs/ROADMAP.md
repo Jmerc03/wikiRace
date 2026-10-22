@@ -88,6 +88,14 @@ and [presence evidence](../project-management/evidence/PRESENCE_20261022.json).
 
 ## Future product decisions
 
+WR-EWP-017 prepares the user's selected Windows 11 home-hosting path. Paid Render
+provisioning is paused. Portable operations, private database, opt-in tunnel,
+backup/restore rehearsal and hosting disclosures are delivered with 58 unit,
+87 integration and 41 browser checks. ARM64 and AMD64 Linux container builds
+pass. Actual Windows installation, domain, public networking and store review
+remain pending. See [HOME_BETA.md](HOME_BETA.md). The earlier Render checkpoint
+`50bca40` is public and its first GitHub CI run passed.
+
 WR-EWP-016 prepares extension 1.10.0 for an ad-free Render beta. It adds a
 one-instance/private-database blueprint, traffic and storage bounds, minimal
 scored-article retention, public privacy contact, restricted hosted packaging,

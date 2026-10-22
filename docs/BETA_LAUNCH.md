@@ -1,5 +1,11 @@
 # WikiRace ad-free beta launch
 
+**Current choice (October 22): Windows 11 home hosting.** The user deferred paid
+Render provisioning. Follow [the Windows home-beta guide](HOME_BETA.md) for the
+selected path. The Render instructions below remain an alternative, not an
+approved purchase. No domain is owned yet. The earlier source `50bca40` was
+publicly pushed with authorization and its [GitHub CI passed](https://github.com/Jmerc03/wikiRace/actions/runs/39840299832).
+
 Target: extension 1.10.0, one Render web service and one private managed
 PostgreSQL database, initially 20–50 invited testers. That is a recruitment
 target, not a measured hosted concurrency capacity. Daily challenge is deferred.

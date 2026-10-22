@@ -5,6 +5,8 @@
 node_modules
 **/node_modules
 **/dist
+**/dist-beta
+release
 **/.env
 **/.env.*
 apps/api/public/downloads

@@ -9,6 +9,9 @@ const settings = { WIKIRACE_DEPLOYMENT: "beta", WIKIRACE_PUBLIC_ORIGIN: "https:/
 test("beta configuration fails closed on missing contacts, unsafe origins and proxy values", () => {
   assert.equal(betaConfig({}), undefined);
   assert.equal(betaConfig(settings)?.maxGames, 200);
+  assert.equal(betaConfig(settings)?.hostingProvider, "render");
+  assert.equal(betaConfig({ ...settings, WIKIRACE_HOSTING_PROVIDER: "home-cloudflare" })?.hostingProvider, "home-cloudflare");
+  assert.throws(() => betaConfig({ ...settings, WIKIRACE_HOSTING_PROVIDER: "unknown" }));
   for (const overrides of [ { WIKIRACE_PUBLIC_ORIGIN: "http://game.example.com" }, { WIKIRACE_PUBLIC_ORIGIN: "https://game.example.com/path" },
     { WIKIRACE_SUPPORT_EMAIL: "" }, { WIKIRACE_OPERATOR_NAME: "" }, { WIKIRACE_TRUST_PROXY_HOPS: "true" }, { WIKIRACE_DEPLOYMENT: "typo" }]) {
     assert.throws(() => betaConfig({ ...settings, ...overrides }));

@@ -1,7 +1,8 @@
 # Setup and operation
 
-For the ad-free hosted beta, use [BETA_LAUNCH.md](BETA_LAUNCH.md) and the root
-`render.yaml`. The instructions below describe the existing local profile.
+For the selected Windows 11 home beta, use [HOME_BETA.md](HOME_BETA.md).
+[BETA_LAUNCH.md](BETA_LAUNCH.md) and `render.yaml` retain the alternative Render
+deployment. The instructions below describe the existing local profile.
 Hosted beta and local developer ZIPs have different permissions and server
 configuration; only `npm run release:beta` produces a checked store candidate.
 
