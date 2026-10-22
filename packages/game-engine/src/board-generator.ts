@@ -3,7 +3,10 @@ import type {
   BoardSquare,
   Difficulty,
   BoardGenerationConfig,
+  BoardDifficulty,
+  BoardSetupOptions,
 } from "@bingo/shared";
+import { DEFAULT_BOARD_CONFIG, boardSetupIssue } from "@bingo/shared";
 import { vitalArticles, type VitalArticle } from "./vital-articles.js";
 
 const genericSquareTemplates: Omit<BoardSquare, "id" | "position">[] = [
@@ -93,15 +96,28 @@ const genericSquareTemplates: Omit<BoardSquare, "id" | "position">[] = [
   })),
 ];
 
-const defaultBoardConfig: BoardGenerationConfig = {
-  difficulty: "MIXED",
-  vitalArticleTileCount: 15,
-  genericTileCount: 10,
-  maxTilesPerTopic: 3,
-};
+// Capacity reporting and selection must use the same distinct, eligible catalog.
+const eligibleCatalog = Object.fromEntries((["EASY", "MIXED", "HARD"] as const).map(difficulty => {
+  const titles = new Map<string, VitalArticle>();
+  for (const article of vitalArticles) {
+    if (!articleMatchesDifficulty(article, difficulty)) continue;
+    const key = article.title.trim().toLocaleLowerCase("en");
+    if (!titles.has(key)) titles.set(key, article);
+  }
+  return [difficulty, [...titles.values()]];
+})) as Record<BoardDifficulty, VitalArticle[]>;
+
+export function getBoardSetupOptions(): BoardSetupOptions {
+  return { articleCapacities: Object.fromEntries(Object.entries(eligibleCatalog).map(([difficulty, articles]) => {
+    const topics = new Map<string, number>();
+    for (const article of articles) topics.set(article.topic ?? "Unknown", (topics.get(article.topic ?? "Unknown") ?? 0) + 1);
+    return [difficulty, Array.from({ length: 25 }, (_, index) => Math.min(25,
+      [...topics.values()].reduce((total, count) => total + Math.min(count, index + 1), 0)))];
+  })) as BoardSetupOptions["articleCapacities"] };
+}
 
 export function generateBoard(
-  config: BoardGenerationConfig = defaultBoardConfig,
+  config: BoardGenerationConfig = DEFAULT_BOARD_CONFIG,
 ): Board {
   if (![config.vitalArticleTileCount, config.genericTileCount].every(
     (count) => Number.isInteger(count) && count >= 0 && count <= 25,
@@ -112,6 +128,8 @@ export function generateBoard(
       config.maxTilesPerTopic > 25 || !["EASY", "MIXED", "HARD"].includes(config.difficulty)) {
     throw new RangeError("Invalid board difficulty or topic limit");
   }
+  const issue = boardSetupIssue(config, getBoardSetupOptions());
+  if (issue) throw new RangeError(issue);
   const selectedSquares = buildTwentyFiveSquares(config);
   if (selectedSquares.length !== 25) {
     throw new RangeError("Not enough distinct articles for this difficulty and topic limit; increase maxTilesPerTopic or choose more generic tiles");
@@ -162,11 +180,7 @@ function selectDiverseVitalArticles(
   count: number,
   config: BoardGenerationConfig,
 ): VitalArticle[] {
-  const shuffledArticles = shuffle(
-    vitalArticles.filter((article) =>
-      articleMatchesDifficulty(article, config),
-    ),
-  );
+  const shuffledArticles = shuffle(eligibleCatalog[config.difficulty]);
 
   const selected: VitalArticle[] = [];
   const selectedTitles = new Set<string>();
@@ -194,13 +208,13 @@ function selectDiverseVitalArticles(
 
 function articleMatchesDifficulty(
   article: VitalArticle,
-  config: BoardGenerationConfig,
+  difficulty: BoardDifficulty,
 ): boolean {
-  if (config.difficulty === "EASY") {
+  if (difficulty === "EASY") {
     return article.level <= 3;
   }
 
-  if (config.difficulty === "HARD") {
+  if (difficulty === "HARD") {
     return article.level >= 3;
   }
 

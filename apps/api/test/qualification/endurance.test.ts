@@ -29,11 +29,12 @@ test("closed-popup extension survives idle periods and API restart while a spect
     const worker=context.serviceWorkers()[0]??await context.waitForEvent("serviceworker");const id=worker.url().split("/")[2];
     const popup=await context.newPage();await popup.goto(`chrome-extension://${id}/popup.html?view=board`);
     await popup.locator("#server-settings summary").click();await popup.locator("#api-origin").fill(origin);await popup.locator("#save-server").click();await expect(popup.locator("#connection")).toContainText(origin);
-    await popup.locator("#player-name").fill("Endurance host");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Lobby ready");
+    await popup.locator("#player-name").fill("Endurance host");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Mark Ready");
     const initial=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));
     const squares=await prisma.boardSquare.findMany({where:{board:{gameId:initial.gameId}}});for(const square of squares)await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",condition:{title:`Never matched control ${square.position}`}}});
     const joined=await app.inject({method:"POST",url:`/games/${initial.gameId}/players`,payload:{displayName:"Periodic visitor"}});assert.equal(joined.statusCode,200);const guest=joined.json();
-    await popup.locator("#start-match").click();await expect(popup.locator("#status")).toContainText("Match active");await expect.poll(async()=>(await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}))).connection).toBe("live");
+    const ready=await app.inject({method:"POST",url:`/games/${initial.gameId}/ready`,headers:{authorization:`Bearer ${guest.playerToken}`},payload:{playerId:guest.playerId,isReady:true}});assert.equal(ready.statusCode,200,ready.body);
+    await popup.locator("#set-ready").click();await popup.locator("#start-match").click();await expect(popup.locator("#status")).toContainText("Match active");await expect.poll(async()=>(await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}))).connection).toBe("live");
     await popup.close(); // No extension page remains open through the idle windows.
     const spectator=await context.newPage();await spectator.goto(`${origin}/spectate/${initial.gameId}`);await expect(spectator.locator(".tile")).toHaveCount(25);
     let sequence=0;

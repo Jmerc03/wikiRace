@@ -1,0 +1,67 @@
+{
+  "package": "WR-EWP-011 r1",
+  "at": "2026-10-22T16:23:36.590Z",
+  "engineeringStatus": "complete",
+  "productOwnerAcceptance": "pending",
+  "authorization": "User selected Lobby ready checks (recommended) in this chat; identifier assigned afterward.",
+  "baselineHead": "15564871f2c5e0cf8276206b2bec5c8e2a39e911",
+  "sourceState": "uncommitted working tree including preserved WR-EWP-010 changes",
+  "sourceInventory": ".jes/local/ewp-011/source-inventory.json",
+  "sourceInventorySha256": "af8c0aeb26d6cdade942d015db206eb85427566983a7f941babc14593cea518c",
+  "sourceFileCount": 109,
+  "extensionVersion": "1.5.0",
+  "profile": "macOS / Node v24.15.0 / dedicated local PostgreSQL / real Chromium extensions and spectator",
+  "checks": {
+    "build": true,
+    "unit": 40,
+    "integration": 47,
+    "browser": 19,
+    "schemaValidation": true,
+    "prototypeAndPreviousSchemaUpgrade": 2,
+    "exactBackupRestore": true,
+    "boundedDatabaseFailure": true,
+    "reproduciblePackage": true,
+    "diffHygiene": true
+  },
+  "logs": {
+    "build": ".jes/local/ewp-011/build-01.log",
+    "unit": ".jes/local/ewp-011/unit-01.log",
+    "integration": ".jes/local/ewp-011/integration-02.log",
+    "browser": ".jes/local/ewp-011/browser-02.log",
+    "upgrade": ".jes/local/ewp-011/upgrade-01.log",
+    "backup": ".jes/local/ewp-011/backup-01.log",
+    "databaseFault": ".jes/local/ewp-011/database-fault-01.log",
+    "prisma": ".jes/local/ewp-011/prisma-validate.log",
+    "package": ".jes/local/ewp-011/package-01.log"
+  },
+  "rawResults": {
+    "browser": ".jes/local/ewp-011/browser/1792686013043",
+    "prototypeUpgrade": ".jes/local/ewp-005/upgrade/1792685929575/result.json",
+    "previousReleaseUpgrade": ".jes/local/ewp-011/upgrade/1792685929904/result.json",
+    "backup": ".jes/local/ewp-006/backup/1792685930104/result.json",
+    "databaseFault": ".jes/local/ewp-009/database-fault/1792685999235/result.json",
+    "package": ".jes/local/ewp-005/package/1792686111697/result.json",
+    "delivery": ".jes/local/ewp-011/delivery-verification.json"
+  },
+  "operator": {
+    "origin": "http://127.0.0.1:4000",
+    "ready": true,
+    "migrations": 11,
+    "preexistingGames": 0,
+    "originalColumnDigestsPreserved": true,
+    "backup": ".local/backups/2026-10-22T16-22-38.281Z-7dadc7fe/wikirace.dump",
+    "temporaryGamesAndSchemasRemoved": true,
+    "installedUserExtensionReloadRequired": true
+  },
+  "zipSha256": "0d7568e4c977e345c0b242c81520fa30feb734aec0a951a599a3100269f1fd02",
+  "retainedFailedAttempts": [
+    "integration-01.log: test incorrectly counted CONNECTED greeting as a game update; corrected event filter",
+    "browser-01.log: old lobby copy assertion and a revision assertion before pending mutation finished; corrected test expectations"
+  ],
+  "limits": [
+    "Readiness is saved intent, not online presence",
+    "No new live-Wikipedia, public network, Windows, OBS, minimum-runtime or long-duration qualification",
+    "No subjective owner playtest or product acceptance claimed",
+    "No new Core execution or approval fabricated; prior Core reporting remains pending"
+  ]
+}

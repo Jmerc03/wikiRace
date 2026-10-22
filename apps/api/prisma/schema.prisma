@@ -42,15 +42,23 @@ model Game {
   winnerPlayerId String?
   winnerTeamId String?
   winningLine Json?
+  timeLimitSeconds Int?
+  expiresAt DateTime?
   startedAt DateTime?
   finishedAt DateTime?
   endReason String?
   revision Int @default(0)
+  isJoinLocked Boolean @default(false)
+  rematchOfGameId String? @unique
+  previousGame Game? @relation("GameRematches", fields: [rematchOfGameId], references: [id], onDelete: SetNull)
+  rematch Game? @relation("GameRematches")
 
   board     Board?
   players   Player[]
   visits    PageVisitEvent[]
   teams     Team[]
+
+  @@index([status, expiresAt])
 }
 
 model Player {
@@ -62,6 +70,9 @@ model Player {
   joinedAt    DateTime @default(now())
   sessionTokenHash String? @unique
   admissionRequestHash String?
+  rematchSourcePlayerId String?
+  isReady Boolean @default(false)
+  removedByHost Boolean @default(false)
   leftAt DateTime?
 
   game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
@@ -71,6 +82,7 @@ model Player {
   completions SquareCompletion[]
 
   @@index([gameId, joinedAt])
+  @@unique([gameId, rematchSourcePlayerId])
 
 }
 
@@ -80,9 +92,11 @@ model Team {
   name      String
   color     String
   createdAt DateTime @default(now())
+  rematchSourceTeamId String?
 
   game    Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   players Player[]
+  @@unique([gameId, rematchSourceTeamId])
 }
 
 model Board {

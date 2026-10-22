@@ -1,0 +1,55 @@
+name: Verify WikiRace
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: wikirace
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: wikirace_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wikirace -d wikirace_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://wikirace:ci-only-password@127.0.0.1:5432/wikirace_ci
+      WIKIRACE_TEST_DATABASE_URL: postgresql://wikirace:ci-only-password@127.0.0.1:5432/wikirace_ci
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.local/browsers
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run prisma:generate
+      - run: npm run prisma:validate
+      - run: npm run build
+      - run: npm test
+      - run: node scripts/test-integration.mjs
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: node scripts/test-integration.mjs --browser
+      - run: npm run test:package
+      - run: npm audit --omit=dev --audit-level=moderate

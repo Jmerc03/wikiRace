@@ -1,0 +1,75 @@
+{
+  "workPackage": "WR-EWP-010 r1",
+  "date": "2026-10-22",
+  "engineeringStatus": "Done",
+  "productAcceptance": "Pending owner decision",
+  "baseline": "15564871f2c5e0cf8276206b2bec5c8e2a39e911",
+  "source": {
+    "state": "Uncommitted working tree",
+    "inventory": ".jes/local/ewp-010/source-inventory.json",
+    "sha256": "aa3e7bfe74dff1e99ae581bdc7a573012246944fa3d8d22bbe40dbfd913e4c75",
+    "fileCount": 106
+  },
+  "runtime": {
+    "node": "v24.15.0",
+    "profile": "macOS; local PostgreSQL; actual Chromium; deterministic article DOM"
+  },
+  "validation": {
+    "build": "Passed",
+    "prismaValidation": "Passed",
+    "unit": {
+      "passed": 40,
+      "log": ".jes/local/ewp-010/unit-final.log"
+    },
+    "integration": {
+      "passed": 39,
+      "log": ".jes/local/ewp-010/integration-03.log"
+    },
+    "browser": {
+      "passed": 16,
+      "log": ".jes/local/ewp-010/browser-final.log",
+      "artifacts": ".jes/local/ewp-010/browser/1792684579449"
+    },
+    "legacyUpgrade": {
+      "passed": true,
+      "log": ".jes/local/ewp-010/upgrade-01.log",
+      "result": ".jes/local/ewp-005/upgrade/1792684201851/result.json"
+    },
+    "backupRestore": {
+      "passed": true,
+      "log": ".jes/local/ewp-010/backup-01.log",
+      "result": ".jes/local/ewp-006/backup/1792684269399/result.json",
+      "authenticatedSessions": 7,
+      "recoveredAdmissions": 5,
+      "recoveredRematches": 2
+    },
+    "package": {
+      "passed": true,
+      "result": ".jes/local/ewp-005/package/1792684549291/result.json",
+      "version": "1.4.0",
+      "sha256": "6134c716dcad765f2fe93323bbf72aef3a6af5647679edb1286c05d2dcf5537b"
+    },
+    "visualInspection": "Extension results, article dialog, compact popup, Lockout spectator screenshots inspected"
+  },
+  "localDelivery": {
+    "origin": "http://127.0.0.1:4000",
+    "ready": true,
+    "migrations": 10,
+    "verification": ".jes/local/ewp-010/delivery-verification.json",
+    "operatorBefore": ".jes/local/ewp-010/operator-before.json",
+    "operatorAfter": ".jes/local/ewp-010/operator-after.json",
+    "operatorRowsAtIntake": 0,
+    "operatorBackup": ".local/backups/2026-10-22T15-52-37.405Z-cf2a03f2/manifest.json",
+    "installedUserExtensionReload": "Required; original profiles untouched",
+    "temporarySchemas": 0,
+    "temporaryRestoreDatabases": 0
+  },
+  "reporting": {
+    "observation": "WR-OBS-2026-008",
+    "state": "Local Draft; Core reporting pending"
+  },
+  "limits": [
+    "No new live-Wikipedia, Windows, public-network, actual OBS, minimum-runtime or long-duration qualification",
+    "Subjective play quality and owner acceptance remain pending"
+  ]
+}

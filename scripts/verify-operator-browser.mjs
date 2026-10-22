@@ -12,11 +12,11 @@ const output=resolve(".jes/local/ewp-006/operator-browser",String(Date.now()));a
 try{
  const extensionPath=resolve("apps/extension/dist");context=await chromium.launchPersistentContext(profile,{channel:"chromium",headless:true,args:[`--disable-extensions-except=${extensionPath}`,`--load-extension=${extensionPath}`],viewport:{width:1280,height:900}});
  const worker=context.serviceWorkers()[0]??await context.waitForEvent("serviceworker");const id=worker.url().split("/")[2];const popup=await context.newPage();await popup.goto(`chrome-extension://${id}/popup.html`);
- await popup.locator("#player-name").fill("Temporary operator browser check");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Lobby ready");
+ await popup.locator("#player-name").fill("Temporary operator browser check");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Mark Ready");
  const initial=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));gameId=initial.gameId;assert.equal(initial.apiOrigin,"http://localhost:4000");
  const nextPage=context.waitForEvent("page");await popup.locator("#open-wikipedia").click();const article=await nextPage;await article.waitForLoadState("domcontentloaded");await expect(article.locator("#firstHeading")).not.toBeEmpty();
  assert.equal(new URL(article.url()).hostname,"en.wikipedia.org");assert.ok(!article.url().includes("Special:Random"));assert.equal(await db.pageVisitEvent.count({where:{gameId}}),0,"The waiting lobby must not score the open article");
- await article.bringToFront();await popup.evaluate(()=>document.getElementById("start-match").click());
+ await popup.locator("#set-ready").click();await expect(popup.locator("#start-match")).toBeEnabled();await article.bringToFront();await popup.evaluate(()=>document.getElementById("start-match").click());
  await expect.poll(()=>db.pageVisitEvent.count({where:{gameId}}),{timeout:20000}).toBeGreaterThan(0);
  const visit=await db.pageVisitEvent.findFirstOrThrow({where:{gameId}});assert.equal(visit.title,(await article.locator("#firstHeading").textContent()).trim());
  const fullPage=context.waitForEvent("page");await popup.locator("#open-board").click();const full=await fullPage;await expect(full.locator("body")).toHaveClass(/full-view/);await expect(full.locator(".square")).toHaveCount(25);

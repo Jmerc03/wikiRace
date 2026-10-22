@@ -17,6 +17,8 @@
       <section id="invitation" class="panel" hidden>
         <p class="eyebrow">YOU’RE INVITED</p><h1 id="invite-title">Join the race.</h1>
         <p id="invite-details" role="status">Checking the lobby…</p>
+        <p id="invite-timer" class="small"></p>
+        <p id="invite-board-settings" class="small"></p>
         <label for="invite-url">Invitation link</label>
         <div class="input-row"><input id="invite-url" readonly><button id="copy-invitation" class="button primary">Copy invitation</button></div>
         <p id="invite-feedback" class="small" role="status"></p>
@@ -32,13 +34,32 @@
     <section id="viewer" hidden>
       <div class="match-heading"><div><p class="eyebrow" id="mode-label">LIVE MATCH</p><h1 id="match-title">Loading the board…</h1><p id="match-subtitle" class="muted"></p></div><div class="viewer-tools"><label id="follow-label" for="follow-player">Follow player</label><select id="follow-player"></select><button id="copy-link" class="button">Copy spectator link</button><button id="copy-overlay" class="button">Copy OBS link</button></div></div>
       <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+      <p id="round-timer" role="timer" aria-live="off" aria-label="Round timer"></p>
+      <p id="board-settings" class="small"></p>
+      <p id="joining-access" class="small" hidden></p>
+      <div id="lobby-readiness" class="lobby-readiness" aria-label="Lobby readiness" hidden></div>
+      <details id="player-connections" class="player-connections">
+        <summary>Player connections</summary>
+        <p class="small">Online means a connected extension, not attention or browsing activity. Ready is a separate choice.</p>
+        <div id="connection-roster" class="lobby-readiness" aria-label="Player connections"></div>
+      </details>
+      <nav class="round-links" aria-label="Match rounds"><a id="previous-round" class="button" hidden>Previous results</a><a id="next-round" class="button" hidden>Watch next round</a></nav>
+      <section id="match-results" class="results-heading" hidden aria-labelledby="results-title">
+        <p class="eyebrow">MATCH RESULTS</p><h2 id="results-title"></h2>
+        <p id="results-duration" class="muted"></p><p id="results-note" class="small"></p>
+      </section>
       <div id="scoreboard" class="scoreboard" aria-label="Scores"></div>
       <input id="copy-fallback" aria-label="Link to copy" readonly hidden>
       <p id="overlay-summary" class="overlay-summary" hidden></p>
       <div class="board-wrap"><div id="board" class="board" role="list" aria-label="Game board"></div></div>
+      <details id="scored-articles"><summary id="history-count">Scored articles</summary><p id="history-hint" class="small"></p><ul id="history-list"></ul></details>
+      <dialog id="article-dialog" aria-labelledby="article-objective">
+        <h2 id="article-objective"></h2><p id="article-link"></p><p id="article-scorer"></p><p id="article-time" class="small"></p>
+        <button id="close-article" class="button">Close</button>
+      </dialog>
       <p class="viewer-footnote" id="view-note">Spectating only · Updates appear automatically.</p>
     </section>
   </main>
-  <footer>WikiRace <span>Built for curious competitors.</span><a href="https://en.wikipedia.org" target="_blank" rel="noreferrer">Explore Wikipedia ↗</a></footer>
+  <footer>WikiRace <span>Built for curious competitors.</span><a href="/privacy">Privacy</a><a href="https://en.wikipedia.org" target="_blank" rel="noreferrer">Explore Wikipedia ↗</a></footer>
 </body>
 </html>

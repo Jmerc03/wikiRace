@@ -90,3 +90,34 @@ Captured 2026-09-07/08 during WR-EWP-005 through WR-EWP-009 verification. Author
 - Open question: the exact display-transition/socket-close mechanism remains unproven. Deferred owner: project operator when a broader power-state qualification is required. Final local-use adjudication is a separate delegated-owner decision after measured results and cleanup.
 - Recommendation, unaccepted: retain host power-transition evidence and distinguish continuous-connection qualification from automatic state-preserving recovery.
 - JES Draft ID: `JES-OBS-MANUAL-20260908-WR-DISPLAY`; exact input `.jes/local/observation-inputs/WR-OBS-2026-007.json`, recorded outbox `.jes/reports/WR-OBS-2026-007.json`. The capture does not approve a qualification exception or create an improvement proposal.
+
+## WR-OBS-2026-008
+
+- Date: 2026-10-22. Source: WR-EWP-010 r1; working-tree source/test inventory SHA-256 `aa3e7bfe74dff1e99ae581bdc7a573012246944fa3d8d22bbe40dbfd913e4c75` in `.jes/local/ewp-010/source-inventory.json`.
+- Category: round_transition_recovery. Route: project_local_engineering. State: local Draft; reporting to JES Core pending (API connection refused at intake).
+- Confirmed facts: final review identified that queued old-popup actions needed a game-ID guard across rematch session installation. The guard and actual Chromium rejection tests now pass. A pending-rematch marker retains the source credentials across browser restart; host and guest committed-response-loss tests recover the exact next membership, including after the next match starts. Explicitly staying in the previous round does not prevent recovery of an already-created next membership.
+- Evidence: `.jes/local/ewp-010/browser-final.log`, `browser/1792684579449/recovery-result.json`, `browser/1792684579449/guest-recovery-result.json`; 40 unit/39 integration/16 browser checks passed.
+- Evidence classification: code-review finding plus actual software qualification with deterministic Wikipedia DOM and real local PostgreSQL/HTTP/WebSockets. No live-site or human-playtest claim.
+- Assumptions: the source extension session is retained until the replacement is saved; deliberately discarding the profile still loses credentials. No new centralized account recovery is provided.
+- Deferred decision: owner acceptance of subjective multiplayer flow; owner Jaxson Mercer, trigger first local playtest of the delivered build. No blocking engineering question remains.
+- Recommendation, unaccepted: qualify cross-round action targeting separately from stale async response filtering. No policy change, improvement proposal, Core Execution, or human-attributed approval was created.
+
+## WR-OBS-2026-009
+
+- Date: 2026-10-22. Source: WR-EWP-015 r1; 128-file source/test inventory SHA-256 `52c53af66a17d18618c3a3cc59a7eb1379993a99ab0bd50cdf9fc5a81d31d397` in `.jes/local/ewp-015/source-inventory.json`.
+- Category: asynchronous_browser_action_completion. Route: project_local_engineering. State: local Draft; Core reporting has not been performed for this observation.
+- Confirmed facts: the expanded browser suite passed all five presence cases but an older invitation test reloaded its one-shot page before the host's End Match request finished. The page still showed Join the race. An isolated diagnostic passed. Waiting for confirmed FINISHED state before reload makes the final 40-case suite pass without changing invitation behavior.
+- Evidence: `.jes/local/ewp-015/browser-02.log`, `invitation-diagnostic.log`, `browser-final.log`; exact index `evidence/PRESENCE_20261022.json`. The failed run remains retained.
+- Evidence classification: actual Chromium with deterministic article DOM and local PostgreSQL/HTTP/WebSockets. No human playtest or external-site claim.
+- Assumption: completing a browser click does not establish completion of the asynchronous request it starts. No additional product change is needed for this test-order issue.
+- Recommendation, unaccepted: wait for an observable committed state before testing a separate one-shot page that depends on the action. No policy change or general test timeout increase is proposed.
+- Deferred decision: owner acceptance of connection-label clarity during a multiplayer playtest; owner Jaxson Mercer. No blocking engineering question remains.
+
+## WR-OBS-2026-010
+
+- Date: 2026-10-22. Source: WR-EWP-016 r1. Category: hosted_profile_evidence. Route: project_local_engineering. State: local Draft; JES Core reporting pending while its local API is unavailable.
+- Confirmed facts: the beta can evaluate article facts without retaining unscored browsing or category/link payloads. Real PostgreSQL tests preserve original earning evidence and quota recovery in both modes; retention cascades expired rounds while keeping newer rematches. Local HTTPS Chromium verifies the restricted extension. A clean-build release rehearsal matches checksums and preserves an earlier candidate on mismatch.
+- Evidence: `evidence/BETA_20261022.json`; 153-file product/source inventory SHA-256 `ddb2e3705966ee9f0e579f9529842b9b52b92c8bbdd87d6c539f5f4c7ed2c76e`; `.jes/local/ewp-016/integration-closeout.log`, `browser-final.log`, `release-cli-result.json`, `render-validation.json`.
+- Evidence boundary: synthetic browser pages, a local TLS proxy, mocked release-preflight responses and schema validation are software preparation. They do not establish actual Render proxy attribution, public-network availability, provider bills, cloud restore or store approval.
+- Deferred decisions: account/provisioning and displayed charges; network/recovery qualification; private beta submission and product acceptance. Owner: Jaxson Mercer; triggers: hosting account access and final configured deployment. No paid resource or public publication was created.
+- Recommendation, unaccepted: retain distinct local-preparation and hosted-launch status in later release records. No policy change, Core execution or human-attributed approval is inferred.

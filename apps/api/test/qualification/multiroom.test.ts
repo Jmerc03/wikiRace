@@ -44,6 +44,7 @@ test("four simultaneous games preserve 64 player views through 128 sockets and o
       const mode=roomIndex%2?"LOCKOUT":"NORMAL";const host=await post("/games",{mode,displayName:`Room ${roomIndex} host`});const players=[host,...await Promise.all(Array.from({length:15},(_,i)=>post(`/games/${host.gameId}/players`,{displayName:`Room ${roomIndex} player ${i+1}`})))];
       const squares=await prisma.boardSquare.findMany({where:{board:{gameId:host.gameId}},orderBy:{position:"asc"}});
       for(const square of squares)await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",condition:{title:`Control ${square.position}`}}});
+      for(const player of players)await post(`/games/${host.gameId}/ready`,{playerId:player.playerId,isReady:true},player);
       await post(`/games/${host.gameId}/start`,{playerId:host.playerId},host);
       for(let i=0;i<players.length;i++)await post(`/games/${host.gameId}/events/page-visit`,{playerId:players[i].playerId,title:`Control ${mode==="NORMAL"?i:0}`,url:`https://en.wikipedia.org/wiki/Control_${mode==="NORMAL"?i:0}`},players[i]);
       const room={id:host.gameId,mode,host,players,revision:(await prisma.game.findUniqueOrThrow({where:{id:host.gameId}})).revision};rooms.push(room);

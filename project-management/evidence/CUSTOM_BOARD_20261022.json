@@ -1,0 +1,114 @@
+{
+  "package": "WR-EWP-013 r1",
+  "at": "2026-10-22T17:00:18.457Z",
+  "engineeringStatus": "complete",
+  "productOwnerAcceptance": "pending",
+  "authorization": "User selected Custom board setup: article/objective mix and topic variety (recommended); identifier assigned afterward.",
+  "baselineHead": "15564871f2c5e0cf8276206b2bec5c8e2a39e911",
+  "sourceState": "uncommitted working tree preserving WR-EWP-010/011/012",
+  "sourceInventory": ".jes/local/ewp-013/source-inventory.json",
+  "sourceInventorySha256": "b2a51961a8f5125b0ba10354b841ea29cbb104cadadffab8bac0d4fb41fd9560",
+  "sourceFileCount": 117,
+  "extensionVersion": "1.7.0",
+  "profile": "macOS / Node v24.15.0 / dedicated PostgreSQL / actual Chromium extension, spectator and invitation views",
+  "checks": {
+    "build": true,
+    "unit": 43,
+    "generatorMatrix": {
+      "combinations": 1950,
+      "completeValidBoards": 1899,
+      "explicitlyRejected": 51
+    },
+    "integration": 59,
+    "browser": 30,
+    "exactCustomConfigurationBackupRestore": true,
+    "reproduciblePackage": true,
+    "diffHygiene": true,
+    "schemaChanged": false
+  },
+  "logs": {
+    "build": ".jes/local/ewp-013/build-02.log",
+    "unit": ".jes/local/ewp-013/unit-01.log",
+    "integration": ".jes/local/ewp-013/integration-final.log",
+    "browser": ".jes/local/ewp-013/browser-final.log",
+    "backup": ".jes/local/ewp-013/backup-01.log",
+    "package": ".jes/local/ewp-013/package-final.log"
+  },
+  "rawResults": {
+    "browser": ".jes/local/ewp-013/browser/1792688348925",
+    "archiveRestore": ".jes/local/ewp-006/backup/1792688159138/result.json",
+    "package": ".jes/local/ewp-005/package/1792688268483/result.json",
+    "delivery": ".jes/local/ewp-013/delivery-verification.json",
+    "operatorBefore": ".jes/local/ewp-013/operator-before.json",
+    "operatorAfter": ".jes/local/ewp-013/operator-after.json"
+  },
+  "retainedAttempts": [
+    {
+      "path": ".jes/local/ewp-013/integration-01.log",
+      "result": "57/59; new global row-count assertions raced with concurrent fixtures; scoped assertions to owned records."
+    },
+    {
+      "path": ".jes/local/ewp-013/integration-02.log",
+      "result": "58/59; pre-existing global row-count assertion had the same race; remaining global fixture assertions were scoped to their own games."
+    },
+    {
+      "path": ".jes/local/ewp-013/browser-01.log",
+      "result": "29/29 before adding the delayed previous-server capability check."
+    },
+    {
+      "path": ".jes/local/ewp-013/browser-02.log",
+      "result": "28/30; older tests relied on transient copy confirmation and an arbitrary visit. Check actual clipboard; edit the earning event and advance fixture revision."
+    }
+  ],
+  "runtime": {
+    "origin": "http://127.0.0.1:4000",
+    "ready": true,
+    "migrations": 12,
+    "originalProfilePreserved": true,
+    "operatorOriginalRowsUnchanged": true,
+    "operatorGameCountBefore": 0,
+    "populatedRetentionEvidence": "Separate four-game/eight-player archive fixture; the empty operator comparison is not population evidence.",
+    "ownedSmokeGamesRemoved": true,
+    "temporarySchemas": 0,
+    "temporaryRestoreDatabases": 0
+  },
+  "servedAssets": [
+    {
+      "url": "/assets/viewer.js",
+      "file": "apps/api/public/viewer.js",
+      "sha256": "ccfd56b65d9bc3047db7f2c14cd50702393fe505dd02f28bc04a7128ccd0ac2b"
+    },
+    {
+      "url": "/assets/viewer.css",
+      "file": "apps/api/public/viewer.css",
+      "sha256": "795c24c18e4789bcefec1abfac3f4180e1bb1d23bfde6d2f4c8132456b1d0871"
+    },
+    {
+      "url": "/assets/board-setup.js",
+      "file": "packages/shared/dist/board-setup.js",
+      "sha256": "b2494891058a9945e0616150ee3e3ea8e4c8fa944810bf4af395479916373e9e"
+    },
+    {
+      "url": "/assets/results.js",
+      "file": "packages/shared/dist/results.js",
+      "sha256": "3aff320857886f06372860388b51d1e6dfbdb21b4baf21ecefc113e61adbecdd"
+    },
+    {
+      "url": "/assets/navigation.js",
+      "file": "packages/shared/dist/navigation.js",
+      "sha256": "b37fad8e82b6f4cbbb89f32330b23ca13e58653d0cddd34acfa17b7899e831eb"
+    },
+    {
+      "url": "/downloads/wikirace-extension.zip",
+      "file": "apps/api/public/downloads/wikirace-extension.zip",
+      "sha256": "ae38b8a4ed88972baf13d26a0ba64d682696e9c13bfd2d355fad475bdc0ee638"
+    }
+  ],
+  "limits": [
+    "No installed user browser profile was changed; reload extension 1.7.0.",
+    "No new migration; previous migration qualification remains historical.",
+    "No new live-Wikipedia, native Windows, public deployment, actual OBS, minimum-runtime or long-duration qualification was claimed.",
+    "Subjective owner acceptance and prior Core reporting remain pending."
+  ],
+  "documentationRepair": "Restored original architecture text after an earlier variable-reuse copy error, retaining legitimate feature sections and adding custom setup architecture."
+}

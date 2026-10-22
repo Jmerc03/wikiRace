@@ -33,6 +33,7 @@ try {
   const status=JSON.parse(local("status").stdout);assert.equal(status.ready,true);assert.equal(status.profileMatches,true);assert.equal(status.apiHost,"0.0.0.0");assert.ok(status.connectionAddresses.includes(`http://${address}:${port}`));
   const ready=await request("/ready");assert.ok(ready.capabilities.includes("recoverable-admission-v1"));
   const host=await request("/games",{displayName:"Local-interface host"});const guest=await request(`/games/${host.gameId}/players`,{displayName:"Local-interface guest"});
+  for(const player of [host,guest])await request(`/games/${host.gameId}/ready`,{playerId:player.playerId,isReady:true},player);
   socket=new WebSocket(`ws://${address}:${port}/ws/${host.gameId}`);await Promise.race([once(socket,"open"),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Network WebSocket timeout")),5000).unref())]);
   const update=new Promise(resolve=>socket.on("message",data=>{if(JSON.parse(String(data)).type==="GAME_STATE_UPDATED")resolve();}));await request(`/games/${host.gameId}/start`,{playerId:host.playerId},host);await update;
   assert.equal((await request(`/games/${host.gameId}/state?playerId=${guest.playerId}`,undefined,guest)).status,"ACTIVE");

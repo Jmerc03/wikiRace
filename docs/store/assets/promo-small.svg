@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
+  <rect width="440" height="280" fill="#07594f"/>
+  <circle cx="415" cy="285" r="205" fill="#087f75"/>
+  <text x="28" y="70" fill="#f6f5e9" font-family="Georgia,serif" font-weight="bold" font-size="49">WikiRace</text>
+  <g fill="#f6f5e9" font-family="Arial,sans-serif" font-size="21">
+    <text x="30" y="124">Wikipedia bingo.</text>
+    <text x="30" y="154">Explore with friends.</text>
+  </g>
+  <rect x="29" y="219" width="137" height="28" rx="14" fill="#f4bc4c"/>
+  <text x="97.5" y="238" text-anchor="middle" fill="#173e36" font-family="Arial,sans-serif" font-size="11" font-weight="bold" letter-spacing="1.4">AD-FREE BETA</text>
+  <g transform="translate(273 99) rotate(8 64 64)">
+    <rect x="0" y="0" width="132" height="132" rx="24" fill="#f6f5e9"/>
+    <g fill="#087f75">
+      <rect x="19" y="19" width="26" height="26" rx="6"/><rect x="53" y="19" width="26" height="26" rx="6"/><rect x="87" y="19" width="26" height="26" rx="6"/>
+      <rect x="19" y="53" width="26" height="26" rx="6"/><rect x="53" y="53" width="26" height="26" rx="6"/><rect x="87" y="53" width="26" height="26" rx="6"/>
+      <rect x="19" y="87" width="26" height="26" rx="6"/><rect x="53" y="87" width="26" height="26" rx="6"/><rect x="87" y="87" width="26" height="26" rx="6"/>
+    </g>
+    <path d="M32 32 66 66 100 100" fill="none" stroke="#f4bc4c" stroke-width="14" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -25,6 +25,11 @@ async function createGame(mode = "NORMAL", active = true) {
   return { gameId: game.id, playerId: game.playerId, game };
 }
 async function start(gameId: string, playerId: string) {
+  const current = await state(gameId, playerId);
+  if (current.status === "WAITING") for (const player of current.players.filter((p: any) => !p.leftAt)) {
+    const ready = await app.inject({method:"POST",url:`/games/${gameId}/ready`,headers:auth(player.id),payload:{playerId:player.id,isReady:true}});
+    assert.equal(ready.statusCode,200,ready.body);
+  }
   const response = await app.inject({method:"POST",url:`/games/${gameId}/start`,headers:auth(playerId),payload:{playerId}});
   assert.equal(response.statusCode,200,response.body);
   return response.json();
@@ -192,14 +197,14 @@ test("invalid counts, payloads and non-article pages return 400 without writes",
 
 test("unknown, forged, and foreign sessions cannot mutate or read player state", async () => {
   const host=await createGame(); const other=await createGame();
-  const before=await prisma.player.count();
+  const before=await prisma.player.count({where:{gameId:host.gameId}});
   for (const [playerId,headers] of [[randomUUID(),auth(host.playerId)], [host.playerId,{}], [host.playerId,auth(other.playerId)], [other.playerId,auth(other.playerId)]] as const) {
     const response=await app.inject({method:"POST",url:`/games/${host.gameId}/events/page-visit`,headers,payload:{playerId,title:"Fixture 0",url:"https://en.wikipedia.org/wiki/Fixture_0"}});
     assert.equal(response.statusCode,401,response.body);
   }
   const unauthorized=await app.inject({url:`/games/${host.gameId}/state?playerId=${host.playerId}`});
   assert.equal(unauthorized.statusCode,401);
-  assert.equal(await prisma.player.count(),before);
+  assert.equal(await prisma.player.count({where:{gameId:host.gameId}}),before);
   assert.equal(await prisma.pageVisitEvent.count({where:{gameId:host.gameId}}),0);
 });
 
@@ -215,7 +220,7 @@ test("session hashes and tokens never appear in public game or ordinary state re
 test("spectator reads follow only players in that game and never enroll or score", async () => {
   const host=await createGame(); const guest=await join(host.gameId); const foreign=await createGame();
   await visit(host.gameId,host.playerId,0);
-  const playerCount=await prisma.player.count(); const visitCount=await prisma.pageVisitEvent.count();
+  const playerCount=await prisma.player.count({where:{gameId:host.gameId}}); const visitCount=await prisma.pageVisitEvent.count({where:{gameId:host.gameId}});
   const defaultView=await app.inject({url:`/games/${host.gameId}/spectator`});
   assert.equal(defaultView.statusCode,200); assert.equal(defaultView.json().spectator,true);
   assert.equal(defaultView.json().completedSquareIds.length,1);
@@ -223,7 +228,7 @@ test("spectator reads follow only players in that game and never enroll or score
   assert.equal(guestView.statusCode,200); assert.equal(guestView.json().completedSquareIds.length,0);
   for(const id of [foreign.playerId,randomUUID()]) assert.equal((await app.inject({url:`/games/${host.gameId}/spectator?playerId=${id}`})).statusCode,404);
   assert.equal((await app.inject({url:`/games/${randomUUID()}/spectator`})).statusCode,404);
-  assert.equal(await prisma.player.count(),playerCount); assert.equal(await prisma.pageVisitEvent.count(),visitCount);
+  assert.equal(await prisma.player.count({where:{gameId:host.gameId}}),playerCount); assert.equal(await prisma.pageVisitEvent.count({where:{gameId:host.gameId}}),visitCount);
 });
 
 test("readiness checks the database schema and the operator page has an explicit content policy", async () => {
@@ -281,7 +286,7 @@ test("a database failure rolls back the visit, claim, and revision together", as
     assert.equal(response.statusCode,500);
     assert.equal(await prisma.pageVisitEvent.count({where:{gameId:host.gameId}}),0);
     assert.equal(await prisma.squareClaim.count({where:{gameId:host.gameId}}),0);
-    assert.equal((await prisma.game.findUniqueOrThrow({where:{id:host.gameId}})).revision,1);
+    assert.equal((await prisma.game.findUniqueOrThrow({where:{id:host.gameId}})).revision,2);
   } finally { await prisma.$executeRawUnsafe('ALTER TABLE "SquareClaim" DROP CONSTRAINT wr_injected_failure'); }
   assert.equal((await visit(host.gameId,host.playerId,0)).completedSquareIds.length,1);
 });

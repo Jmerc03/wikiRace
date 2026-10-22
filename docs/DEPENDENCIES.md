@@ -7,3 +7,17 @@ Prisma's configuration helper pins deepmerge-ts 7.1.5, affected by [GHSA-ggr8-5v
 npm 11.12.1 can drop overrides reached only through workspace links, matching [npm/cli #9659](https://github.com/npm/cli/issues/9659). Prisma CLI therefore belongs to root development tooling and API scripts resolve that same installation. `npm ls deepmerge-ts` must show `8.0.0 overridden`. An override declaration without the matching installed/locked version is not proof of remediation.
 
 No Prisma downgrade, preview major release, manual node_modules patch, or global npm replacement is used. Revisit the override when Prisma's supported configuration dependency adopts the upstream fix. The retained audit result is `.jes/local/ewp-004/audit-final.json`; final clean-install verification is recorded in the EWP closeout.
+
+## October 22 beta preparation
+
+The compatible lockfile refresh selects Fastify 5.12.7 and fast-uri 3.1.9/4.2.3.
+It addresses the current Fastify
+[request handling](https://github.com/advisories/GHSA-4mh8-r7rc-xpvc) and
+[logging](https://github.com/advisories/GHSA-389g-gv7q-r4x8) advisories and
+[fast-uri validation advisory](https://github.com/advisories/GHSA-hrr3-gc8f-f4qj).
+The beta uses Fastify's LogController to suppress request access logs and emits
+sanitized error names. Local logging remains available. No dependency major
+upgrade was introduced. The retained production audit has zero findings in
+`.jes/local/ewp-016/dependency-audit-verified.json`; isolated clean installation,
+Prisma generation and full beta build also pass on Node 24.15.0. Render pins that
+tested runtime. Recheck advisories before a later release; this is dated evidence.

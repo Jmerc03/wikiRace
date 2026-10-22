@@ -12,7 +12,7 @@ test("a forcibly stopped extension worker recovers its saved game through the al
   try{
     const extensionPath=resolve("apps/extension/dist");context=await chromium.launchPersistentContext(profile,{channel:"chromium",headless:true,args:[`--disable-extensions-except=${extensionPath}`,`--load-extension=${extensionPath}`]});const worker=context.serviceWorkers()[0]??await context.waitForEvent("serviceworker");const id=worker.url().split("/")[2];
     const popup=await context.newPage();await popup.goto(`chrome-extension://${id}/popup.html?view=board`);await popup.locator("#server-settings summary").click();await popup.locator("#api-origin").fill(origin);await popup.locator("#save-server").click();await expect(popup.locator("#connection")).toContainText(origin);
-    await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Lobby ready");const initial=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));await expect.poll(()=>app.websocketServer.clients.size).toBe(1);
+    await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Mark Ready");const initial=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));await expect.poll(()=>app.websocketServer.clients.size).toBe(1);
     const control=await context.newPage();const cdp=await context.newCDPSession(control);let versionId:string|undefined;
     cdp.on("ServiceWorker.workerVersionUpdated",event=>{events.push({time:new Date().toISOString(),versions:event.versions});const own=event.versions.find(version=>version.scriptURL.startsWith(`chrome-extension://${id}/`));if(own)versionId=own.versionId;});
     await cdp.send("ServiceWorker.enable");await expect.poll(()=>versionId).toBeTruthy();await popup.close();
@@ -20,8 +20,9 @@ test("a forcibly stopped extension worker recovers its saved game through the al
     // No runtime message, popup or Wikipedia navigation wakes the worker here.
     await expect.poll(()=>app.websocketServer.clients.size,{timeout:90000,intervals:[1000]}).toBe(1);
     const recoveredAfterSeconds=(Date.now()-stoppedAt)/1000;
-    const restored=await context.newPage();await restored.goto(`chrome-extension://${id}/popup.html?view=board`);await expect(restored.locator("#status")).toContainText("Lobby ready");const current=await restored.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));assert.equal(current.gameId,initial.gameId);assert.equal(current.playerId,initial.playerId);assert.equal(current.apiOrigin,origin);assert.equal(current.connection,"live");
-    await writeFile(resolve(output,"result.json"),JSON.stringify({passed:true,profile:"actual Chromium MV3 worker stopped through DevTools protocol; alarm recovery without an extension page or content-script wakeup",recoveredAfterSeconds,persistentIdentity:true,persistentOrigin:true,liveConnection:true,events},null,2));
+    const restored=await context.newPage();await restored.goto(`chrome-extension://${id}/popup.html?view=board`);await expect(restored.locator("#status")).toContainText("Mark Ready");const current=await restored.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));assert.equal(current.gameId,initial.gameId);assert.equal(current.playerId,initial.playerId);assert.equal(current.apiOrigin,origin);assert.equal(current.connection,"live");
+    await expect(restored.locator(`#player-roster [data-player-id="${initial.playerId}"] .player-presence`)).toHaveText("Online");
+    await writeFile(resolve(output,"result.json"),JSON.stringify({passed:true,profile:"actual Chromium MV3 worker stopped through DevTools protocol; alarm recovery without an extension page or content-script wakeup",recoveredAfterSeconds,persistentIdentity:true,persistentOrigin:true,liveConnection:true,authenticatedPresenceRecovered:true,events},null,2));
   }catch(error){await writeFile(resolve(output,"failure.json"),JSON.stringify({passed:false,error:String(error),events},null,2));throw error;}
   finally{await context?.close();await app.close();await prisma.$disconnect();await rm(profile,{recursive:true,force:true});}
 });

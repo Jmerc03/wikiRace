@@ -18,11 +18,11 @@ test("real Wikipedia article navigation is extracted and scored by the installed
     const popup=await context.newPage();await popup.goto(`chrome-extension://${id}/popup.html?view=board`);
     await popup.locator("#server-settings summary").click();await popup.locator("#api-origin").fill(origin);await popup.locator("#save-server").click();
     await expect(popup.locator("#connection")).toContainText(origin);
-    await popup.locator("#player-name").fill("Live Wikipedia qualification");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Lobby ready");
+    await popup.locator("#player-name").fill("Live Wikipedia qualification");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Mark Ready");
     const initial=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));
     const squares=await prisma.boardSquare.findMany({where:{board:{gameId:initial.gameId}}});
     for(const square of squares)await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",label:square.position===0?"Visit Science":`Qualification control ${square.position}`,condition:{title:square.position===0?"Science":`Unmatched qualification ${square.position}`}}});
-    await popup.locator("#start-match").click();await expect(popup.locator("#status")).toContainText("Match active");
+    await popup.locator("#set-ready").click();await popup.locator("#start-match").click();await expect(popup.locator("#status")).toContainText("Match active");
     const article=await context.newPage();
     const response=await article.goto("https://en.wikipedia.org/wiki/Science",{waitUntil:"domcontentloaded",timeout:60000});
     assert.ok(response?.ok(),`Wikipedia HTTP status ${response?.status()}`);

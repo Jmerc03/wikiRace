@@ -26,9 +26,9 @@ for(const mode of ["NORMAL","LOCKOUT"] as const)test(`an unmodified generated ${
     const extensionPath=resolve("apps/extension/dist");context=await chromium.launchPersistentContext(profile,{channel:"chromium",headless:true,args:[`--disable-extensions-except=${extensionPath}`,`--load-extension=${extensionPath}`],viewport:{width:1280,height:900}});
     const worker=context.serviceWorkers()[0]??await context.waitForEvent("serviceworker");const id=worker.url().split("/")[2];const popup=await context.newPage();await popup.goto(`chrome-extension://${id}/popup.html?view=board`);
     await popup.locator("#server-settings summary").click();await popup.locator("#api-origin").fill(origin);await popup.locator("#save-server").click();await expect(popup.locator("#connection")).toContainText(origin);
-    await popup.locator("#player-name").fill(`Live ${mode} player`);await popup.locator("#game-mode").selectOption(mode);await popup.locator("#difficulty").selectOption("MIXED");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Lobby ready");
+    await popup.locator("#player-name").fill(`Live ${mode} player`);await popup.locator("#game-mode").selectOption(mode);await popup.locator("#difficulty").selectOption("MIXED");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Mark Ready");
     const initial=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));await writeFile(resolve(output,"original-board.json"),JSON.stringify(initial.board,null,2));
-    await popup.locator("#start-match").click();const article=await context.newPage();
+    await popup.locator("#set-ready").click();await popup.locator("#start-match").click();const article=await context.newPage();
     const targets=mode==="NORMAL"?initial.board.squares.filter((square:any)=>square.position<5):initial.board.squares;
     for(const square of targets){
       const before=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));if(before.winner)break;if(before.completedSquareIds.includes(square.id))continue;

@@ -16,7 +16,11 @@ async function fixture(mode="NORMAL"){
   const created=await app.inject({method:"POST",url:"/games",payload:{mode,displayName:"Ada"}});assert.equal(created.statusCode,201);const host=created.json();
   for(const square of host.board.squares)await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",label:`Visit ${titles[square.position]}`,condition:{title:titles[square.position]}}});
   const joined=await app.inject({method:"POST",url:`/games/${host.gameId}/players`,payload:{displayName:"<img src=x onerror=alert(1)>"}});const guest=joined.json();
-  await app.inject({method:"POST",url:`/games/${host.gameId}/start`,headers:{authorization:`Bearer ${host.playerToken}`},payload:{playerId:host.playerId}});
+  for (const player of [host,guest]) {
+    const ready=await app.inject({method:"POST",url:`/games/${host.gameId}/ready`,headers:{authorization:`Bearer ${player.playerToken}`},payload:{playerId:player.playerId,isReady:true}});assert.equal(ready.statusCode,200,ready.body);
+  }
+  const started=await app.inject({method:"POST",url:`/games/${host.gameId}/start`,headers:{authorization:`Bearer ${host.playerToken}`},payload:{playerId:host.playerId}});
+  assert.equal(started.statusCode,200,started.body);
   return {host,guest};
 }
 async function visit(player:any,position:number){const response=await app.inject({method:"POST",url:`/games/${player.gameId}/events/page-visit`,headers:{authorization:`Bearer ${player.playerToken}`},payload:{playerId:player.playerId,title:titles[position],url:`https://en.wikipedia.org/wiki/${titles[position]}`}});assert.equal(response.statusCode,200,response.body);}
@@ -65,8 +69,14 @@ test("operator landing, extension archive, unavailable game and Lockout winner v
     await expect(page.getByRole("heading",{name:"A race through knowledge."})).toContainText("A race through");
     await page.screenshot({path:resolve(output,"operator-home.png"),fullPage:true});
     const archive=await app.inject({url:"/downloads/wikirace-extension.zip"});assert.equal(archive.statusCode,200,archive.body.slice(0,100));
-    const files=unzipSync(archive.rawPayload);assert.deepEqual(Object.keys(files).sort(),["background.js","content.js","manifest.json","popup.html","popup.js"]);
+    const files=unzipSync(archive.rawPayload);assert.deepEqual(Object.keys(files).sort(),["background.js","content.js","icon-128.png","icon-16.png","icon-32.png","icon-48.png","manifest.json","popup.html","popup.js"]);
     assert.equal(JSON.parse(new TextDecoder().decode(files["manifest.json"])).manifest_version,3);
+    for(const size of [16,32,48,128]) {
+      const png=Buffer.from(files[`icon-${size}.png`]); assert.equal(png.toString("hex",0,8),"89504e470d0a1a0a");
+      assert.equal(png.readUInt32BE(16),size); assert.equal(png.readUInt32BE(20),size);
+    }
+    const checksum=await app.inject({url:"/downloads/checksums.json"});assert.equal(checksum.statusCode,200);
+    assert.match(checksum.json().sha256,/^[a-f0-9]{64}$/);assert.equal(checksum.json().profile,"local");
     await page.goto(`${origin}/spectate/${host.gameId}`);await expect(page.locator("#notice")).toContainText("Ada won by majority");await expect(page.locator(".tile.completed")).toHaveCount(13);
     await expect(page.locator("#follow-player")).toBeHidden();
     await page.screenshot({path:resolve(output,"lockout-spectator.png"),fullPage:true});

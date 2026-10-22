@@ -1,10 +1,19 @@
-import { parseGameInvitation, gameInvitationUrl, isLocalOnlyOrigin, type PlayerSummary, type TeamSummary } from "@bingo/shared";
+import { boardConfigSummary, parseGameInvitation, gameInvitationUrl, isLocalOnlyOrigin, type PlayerSummary, type TeamSummary } from "@bingo/shared";
 import type { ExtensionState as GameState } from "./client-types.js";
 import { normalizeApiOrigin } from "./wikipedia.js";
+import { renderMatchDetails, showArticle } from "./match-details.js";
+import { playerPresence } from "@bingo/shared";
+import { createBoardSetup } from "./board-setup.js";
+import { createServerClock, roundRemaining, roundTimerText, roundLimitLabel } from "@bingo/shared";
+import { BETA_BUILD, DEFAULT_API_ORIGIN } from "./build-config.js";
 
 const gameModeSelect = document.getElementById("game-mode");
+document.getElementById("privacy-policy")?.addEventListener("click", () => {
+  void chrome.tabs.create({ url: `${latest?.apiOrigin ?? DEFAULT_API_ORIGIN}/privacy` });
+});
 const playerNameInput = document.getElementById("player-name");
 const difficultySelect = document.getElementById("difficulty");
+const roundLimitSelect = document.getElementById("round-limit") as HTMLSelectElement;
 const startButton = document.getElementById("start");
 const refreshButton = document.getElementById("refresh");
 const endGameButton = document.getElementById("end-game");
@@ -25,6 +34,28 @@ const teamRostersEl = document.getElementById("team-rosters");
 const boardEl = document.getElementById("board");
 let latest: GameState | undefined;
 let busy = false;
+const boardSetup = createBoardSetup(() => { if (latest && !busy) renderState(latest); });
+let serverClock = createServerClock();
+let clockOrigin = "";
+let clockSyncPending = false;
+let lastClockSync = -Infinity;
+function renderClock() {
+  const el = document.getElementById("round-timer")!;
+  el.hidden = !latest?.board;
+  if (!latest?.board) return;
+  const remaining = roundRemaining(latest, serverClock.now());
+  el.textContent = remaining === 0 && latest.connection !== "live" ? "Time’s up · Reconnect to confirm results" : roundTimerText(latest, serverClock.now());
+  el.classList.toggle("time-up", remaining === 0 || latest.endReason === "TIME_LIMIT");
+}
+const clockTicker = setInterval(() => {
+  renderClock();
+  if (!latest?.gameId || busy || latest.invalidSession || clockSyncPending || roundRemaining(latest, serverClock.now()) !== 0 || performance.now() - lastClockSync < 3000) return;
+  const gameId = latest.gameId; clockSyncPending = true; lastClockSync = performance.now();
+  void chrome.runtime.sendMessage({ type: "SYNC_GAME_STATE" }).then(result => {
+    if (result && latest?.gameId === gameId) { latest = result; if (!busy) renderState(result); }
+  }).catch(showError).finally(() => { clockSyncPending = false; });
+}, 250);
+addEventListener("pagehide", () => clearInterval(clockTicker));
 
 function nameValue() { return playerNameInput instanceof HTMLInputElement ? playerNameInput.value.trim() || undefined : undefined; }
 function valueOf(element: HTMLElement | null) { return element instanceof HTMLInputElement || element instanceof HTMLSelectElement ? element.value.trim() : ""; }
@@ -35,7 +66,7 @@ async function action(message: object) {
   document.body.setAttribute("aria-busy", "true");
   document.querySelectorAll<HTMLButtonElement>("button").forEach(button => { button.disabled = true; });
   try {
-    const result = await chrome.runtime.sendMessage(message);
+    const result = await chrome.runtime.sendMessage(latest?.gameId ? { ...message, expectedGameId: latest.gameId } : message);
     if (!result) throw new Error("The extension did not respond. Reload it and retry.");
     latest = result;
   } catch (error) { showError(error); }
@@ -46,11 +77,14 @@ async function action(message: object) {
     if (latest) renderState(latest);
   }
 }
-startButton?.addEventListener("click", () => void action({type:"START_GAME",displayName:nameValue(),mode:valueOf(gameModeSelect),boardConfig:{difficulty:valueOf(difficultySelect),vitalArticleTileCount:15,genericTileCount:10,maxTilesPerTopic:3}}));
+startButton?.addEventListener("click", () => {
+  if (boardSetup.valid()) void action({type:"START_GAME",displayName:nameValue(),mode:valueOf(gameModeSelect),boardConfig:boardSetup.read(),timeLimitSeconds:Number(roundLimitSelect.value) || null});
+});
 joinGameBtn?.addEventListener("click", async () => {
   if (busy || latest?.gameId || latest?.pendingAdmission) return;
   try {
-    const invitation = parseGameInvitation(valueOf(joinGameInput), latest?.apiOrigin ?? "http://localhost:4000");
+    const invitation = parseGameInvitation(valueOf(joinGameInput), latest?.apiOrigin ?? DEFAULT_API_ORIGIN);
+    if (BETA_BUILD && invitation.apiOrigin !== DEFAULT_API_ORIGIN) throw new Error("This invitation belongs to a different server than this beta.");
     const permitted = await chrome.permissions.request({origins:[`${invitation.apiOrigin}/*`]});
     if (!permitted) throw new Error("Server access was not granted. Your current server is unchanged.");
     await action({type:"JOIN_GAME", ...invitation, displayName:nameValue()});
@@ -59,7 +93,20 @@ joinGameBtn?.addEventListener("click", async () => {
 refreshButton?.addEventListener("click", () => void action({type:"SYNC_GAME_STATE"}));
 endGameButton?.addEventListener("click", () => void action({type:"LEAVE_GAME"}));
 document.getElementById("start-match")?.addEventListener("click", () => void action({type:"START_MATCH"}));
+document.getElementById("set-ready")?.addEventListener("click", () => {
+  const player = latest?.players?.find(p => p.id === latest?.playerId);
+  if (player) void action({type:"SET_READY", isReady: !player.isReady});
+});
 document.getElementById("host-end")?.addEventListener("click", () => void action({type:"END_MATCH"}));
+document.getElementById("join-lock")?.addEventListener("click", () => void action({type:"SET_JOIN_LOCK", isJoinLocked: !latest?.isJoinLocked}));
+document.getElementById("rematch")?.addEventListener("click", () => void action({type:"REMATCH"}));
+document.getElementById("retry-rematch")?.addEventListener("click", () => void action({type:"RETRY_REMATCH"}));
+document.getElementById("forget-rematch")?.addEventListener("click", () => {
+  if (confirm("You may already have a place in the next lobby. Stay in the previous match? You can retry the rematch later while you keep this session.")) void action({type:"FORGET_REMATCH"});
+});
+document.getElementById("previous-results")?.addEventListener("click", () => {
+  if (latest?.previousGameId) void chrome.tabs.create({url:`${latest.apiOrigin}/spectate/${latest.previousGameId}`});
+});
 document.getElementById("forget-game")?.addEventListener("click", () => void action({type:"FORGET_GAME"}));
 createTeamBtn?.addEventListener("click", () => { const name=valueOf(teamNameInput); if(name) void action({type:"CREATE_TEAM",name}); else showError(new Error("Enter a team name.")); });
 joinTeamBtn?.addEventListener("click", () => { const teamId=valueOf(teamSelect); if(teamId) void action({type:"JOIN_TEAM",teamId}); });
@@ -98,20 +145,63 @@ function renderState(state: GameState) {
   if (!statusEl || !boardEl) return;
   if (!state) { showError(new Error("No state was returned by the extension.")); return; }
   latest = state;
+  renderMatchDetails(state);
   const hasSession = Boolean(state.gameId);
   const pending = Boolean(state.pendingAdmission);
   const entryLocked = hasSession || pending;
   const isHost = state.hostPlayerId === state.playerId;
   const setHidden = (id: string, hidden: boolean) => { const el=document.getElementById(id); if(el) el.hidden=hidden; };
   setHidden("pending-entry", !pending);
+  setHidden("pending-rematch", !state.pendingRematch);
+  setHidden("previous-results", !state.previousGameId);
+  const canRematch = state.status === "FINISHED" && (isHost || Boolean(state.rematchGameId));
+  setHidden("rematch", !canRematch || Boolean(state.pendingRematch) || Boolean(state.invalidSession));
+  const rematch = document.getElementById("rematch") as HTMLButtonElement;
+  rematch.textContent = state.rematchGameId
+    ? state.rematchJoinLocked || state.rematchStatus && state.rematchStatus !== "WAITING" ? "Recover Rematch" : "Join Rematch"
+    : "Open Rematch Lobby";
+  setHidden("rematch-hint", state.status !== "FINISHED");
+  document.getElementById("rematch-hint")!.textContent = state.rematchJoinLocked
+    ? "Joining the next round is locked. Recover it if you already joined; otherwise ask the host to reopen joining."
+    : state.rematchStatus && state.rematchStatus !== "WAITING"
+    ? "The next round has started or finished. Recover it if you already joined; otherwise ask the host for the next invitation."
+    : state.rematchGameId ? "The next lobby is open. Join to carry over your name, color, and team."
+    : isHost ? "Open a fresh board for this group. Players join the next lobby individually; these results stay available."
+    : "Waiting for the host to open a rematch lobby.";
   setHidden("start-match", !(hasSession && isHost && state.status === "WAITING"));
-  setHidden("host-end", !(hasSession && isHost && state.status !== "FINISHED"));
+  const lobbyPlayers = (state.players ?? []).filter(player => !player.leftAt);
+  const readyCount = lobbyPlayers.filter(player => player.isReady).length;
+  const allReady = lobbyPlayers.length > 0 && readyCount === lobbyPlayers.length;
+  const ownReady = lobbyPlayers.find(player => player.id === state.playerId)?.isReady === true;
+  const readyButton = document.getElementById("set-ready") as HTMLButtonElement;
+  setHidden("set-ready", !(hasSession && state.status === "WAITING") || Boolean(state.invalidSession));
+  readyButton.textContent = ownReady ? "Ready — click to undo" : "Mark Ready";
+  readyButton.setAttribute("aria-pressed", String(ownReady));
+  readyButton.disabled = Boolean(state.pendingRematch);
+  const startMatch = document.getElementById("start-match") as HTMLButtonElement;
+  startMatch.disabled = !allReady || Boolean(state.invalidSession);
+  startMatch.title = allReady ? "Start the match for everyone" : "Every player, including the host, must be ready";
+  document.getElementById("lobby-hint")!.textContent = `${readyCount}/${lobbyPlayers.length} ready. ${allReady ? "Everyone is ready. The host can start." : "Choose your team, then mark Ready. The host can start when everyone is ready."} Changing teams clears your readiness.`;
+  setHidden("host-end", !(hasSession && isHost && state.status !== "FINISHED") || Boolean(state.invalidSession));
+  setHidden("join-lock", !(hasSession && isHost && state.status && state.status !== "FINISHED") || Boolean(state.invalidSession));
+  const joinLock = document.getElementById("join-lock") as HTMLButtonElement;
+  joinLock.textContent = state.isJoinLocked ? "Reopen Joining" : "Lock Joining";
+  joinLock.setAttribute("aria-pressed", String(Boolean(state.isJoinLocked)));
+  setHidden("joining-access", !hasSession || state.status === "FINISHED" || Boolean(state.invalidSession));
+  document.getElementById("joining-access")!.textContent = state.isJoinLocked
+    ? "Joining locked · Existing players can reconnect."
+    : "Joining open · New players can use the invitation.";
+  setHidden("host-roster-hint", !(isHost && state.status === "WAITING") || Boolean(state.invalidSession));
   setHidden("forget-game", !(hasSession && (state.error || state.invalidSession)));
-  setHidden("lobby-hint", state.status !== "WAITING");
+  setHidden("lobby-hint", state.status !== "WAITING" || Boolean(state.invalidSession));
+  setHidden("player-roster", Boolean(state.invalidSession));
+  setHidden("session-unavailable-note", !state.invalidSession);
   setHidden("setup-fields", hasSession);
   setHidden("join-section", hasSession);
-  setHidden("team-controls", state.status !== "WAITING");
+  setHidden("team-controls", state.status !== "WAITING" || Boolean(state.invalidSession));
   setHidden("match-details", !hasSession);
+  setHidden("board-settings", !hasSession || !state.board);
+  document.getElementById("board-settings")!.textContent = boardConfigSummary(state.boardConfig);
   setHidden("watch-game", !hasSession);
   setHidden("copy-invite", !hasSession);
   const playerRoster=document.getElementById("player-roster");
@@ -120,10 +210,32 @@ function renderState(state: GameState) {
     for(const player of state.players ?? []) {
       const chip=document.createElement("span");
       chip.className=`player-chip${player.id===state.playerId ? " you" : ""}${player.leftAt ? " departed" : ""}`;
-      chip.textContent=`${player.displayName}${player.id===state.playerId ? " (you)" : ""}${player.isHost ? " · host" : ""}${player.leftAt ? " · left" : ""} · ${player.score ?? 0}`;
+      chip.dataset.playerId = player.id;
+      const label=document.createElement("span");
+      label.textContent=`${player.displayName}${player.id===state.playerId ? " (you)" : ""}${player.isHost ? " · host" : ""}${player.leftAt ? player.removedByHost ? " · removed" : " · left" : ""} · ${state.status === "WAITING" && !player.leftAt ? player.isReady ? "Ready" : "Not Ready" : player.score ?? 0}`;
+      chip.append(label);
+      if (!player.leftAt) {
+        const status = playerPresence(player, state.presence);
+        const badge = document.createElement("span");
+        badge.className = `player-presence ${status.status}`;
+        badge.textContent = status.label;
+        badge.title = "Connection to the game server; separate from Ready and activity on Wikipedia.";
+        chip.append(badge);
+      }
+      if(isHost && state.status === "WAITING" && !state.invalidSession && !player.leftAt && player.id !== state.playerId) {
+        const remove=document.createElement("button");
+        remove.className="remove-player danger-action"; remove.textContent="Remove";
+        remove.setAttribute("aria-label", `Remove ${player.displayName} from lobby`);
+        remove.addEventListener("click", () => {
+          if(confirm(`Remove ${player.displayName} from this lobby? Their saved session will end.`)) void action({type:"REMOVE_PLAYER",targetPlayerId:player.id});
+        });
+        chip.append(remove);
+      }
+      chip.classList.toggle("ready", state.status === "WAITING" && !player.leftAt && player.isReady);
       playerRoster.appendChild(chip);
     }
   }
+  setHidden("presence-hint", !hasSession || Boolean(state.invalidSession));
   const connectionEl = document.getElementById("connection");
   if (connectionEl) connectionEl.textContent = `${state.connection === "live" ? "Live updates connected" : state.connection === "reconnecting" ? "Reconnecting…" : state.connection === "connecting" ? "Connecting…" : "Offline"} · ${state.apiOrigin}`;
   const apiInput=document.getElementById("api-origin");
@@ -136,6 +248,12 @@ function renderState(state: GameState) {
   if(startButton instanceof HTMLButtonElement) startButton.disabled=entryLocked;
   if(gameModeSelect instanceof HTMLSelectElement) gameModeSelect.disabled=entryLocked;
   if(difficultySelect instanceof HTMLSelectElement) difficultySelect.disabled=entryLocked;
+  boardSetup.render(state, busy);
+  roundLimitSelect.disabled = entryLocked;
+  if (state.pendingAdmission?.kind === "create") roundLimitSelect.value = String(state.pendingAdmission.timeLimitSeconds ?? 0);
+  if (clockOrigin !== state.apiOrigin) { clockOrigin = state.apiOrigin; serverClock = createServerClock(); }
+  serverClock.sync(state.serverTime);
+  renderClock();
   statusEl.classList.toggle("error-status", Boolean(state.error));
 
   if (!state?.gameId || !state.board) {
@@ -186,8 +304,8 @@ function renderState(state: GameState) {
 
   statusEl.textContent = state.error ?? (winnerMessage
     ? `${winnerMessage}.`
-    : state.status === "WAITING" ? (isHost ? "Lobby ready. Start when everyone has joined." : "Waiting for the host to start.")
-      : state.status === "FINISHED" ? (state.endReason === "BOARD_EXHAUSTED" ? "Draw! The board is full and no owner reached 13 squares." : "Match ended. Leave to create or join another game.")
+    : state.status === "WAITING" ? (allReady ? isHost ? "Everyone is ready. Start the match when your group is here." : "Everyone is ready. Waiting for the host to start." : ownReady ? "You’re ready. Waiting for the other players." : "Mark Ready when you’re ready to play.")
+      : state.status === "FINISHED" ? (state.endReason === "TIME_LIMIT" ? "Time’s up. No winner was declared; final scores and rematch options are below." : state.endReason === "BOARD_EXHAUSTED" ? "Draw! The board is full and no owner reached 13 squares." : "Match ended. Results and rematch options are below.")
       : "Match active — explore Wikipedia to complete your board.");
   statusEl.classList.toggle("winner-status", Boolean(winnerMessage));
 
@@ -207,7 +325,7 @@ function renderState(state: GameState) {
   const gameFinished = state.status !== "WAITING";
 
   if (teamSection instanceof HTMLElement) {
-    teamSection.hidden = state.mode !== "LOCKOUT" || (state.status !== "WAITING" && !state.teams?.length);
+    teamSection.hidden = Boolean(state.invalidSession) || state.mode !== "LOCKOUT" || (state.status !== "WAITING" && !state.teams?.length);
   }
 
   if (teamSelect instanceof HTMLSelectElement) {
@@ -336,6 +454,15 @@ function renderState(state: GameState) {
       div.appendChild(claimEl);
     }
 
+    if (state.squareEvidence?.some(e => e.squareId === square.id)) {
+      const button = document.createElement("button");
+      button.className = "evidence-button";
+      button.textContent = "View article";
+      button.setAttribute("aria-label", `View article for ${square.label}`);
+      button.addEventListener("click", () => showArticle(square.id));
+      div.append(button);
+    }
+
     boardEl.appendChild(div);
   }
 }
@@ -457,11 +584,12 @@ function renderGameInfo(state: GameState, statusText: string) {
   gameInfoEl.replaceChildren();
 
   appendInfoRow(gameInfoEl, "Mode", state.mode ?? "Unknown");
+  appendInfoRow(gameInfoEl, "Round timer", roundLimitLabel(state.timeLimitSeconds));
   appendInfoRow(gameInfoEl, "Game state", state.status ?? "Unknown");
   appendInfoRow(
     gameInfoEl,
-    "Difficulty",
-    state.boardConfig?.difficulty ?? "Unknown",
+    "Board setup",
+    boardConfigSummary(state.boardConfig),
   );
   appendInfoRow(
     gameInfoEl,

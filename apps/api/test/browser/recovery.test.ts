@@ -15,12 +15,12 @@ test("a late old-game response cannot replace a newly created extension session"
   try{
     context=await chromium.launchPersistentContext(profile,{channel:"chromium",headless:true,args:[`--disable-extensions-except=${extensionPath}`,`--load-extension=${extensionPath}`]});const worker=context.serviceWorkers()[0]??await context.waitForEvent("serviceworker");const id=worker.url().split("/")[2];const popup=await context.newPage();await popup.goto(`chrome-extension://${id}/popup.html?view=board`);
     await popup.locator("#server-settings summary").click();await popup.locator("#api-origin").fill(origin);await popup.locator("#save-server").click();await expect(popup.locator("#connection")).toContainText(origin);
-    await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Lobby ready");const old=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));
+    await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Mark Ready");const old=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));
     await expect.poll(async()=>(await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}))).connection).toBe("live");
     heldGame=old.gameId;
     const late=popup.evaluate(()=>chrome.runtime.sendMessage({type:"SYNC_GAME_STATE"}));await intercepted;
     await popup.locator("#end-game").click();await expect(popup.locator("#status")).toContainText("Create a lobby");
-    await popup.locator("#player-name").fill("New session owner");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Lobby ready");
+    await popup.locator("#player-name").fill("New session owner");await popup.locator("#start").click();await expect(popup.locator("#status")).toContainText("Mark Ready");
     const fresh=await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));assert.notEqual(fresh.gameId,old.gameId);assert.notEqual(fresh.playerId,old.playerId);
     release();await late;
     await expect.poll(async()=>(await popup.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}))).connection).toBe("live");

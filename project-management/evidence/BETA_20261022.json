@@ -1,0 +1,124 @@
+{
+  "package": "WR-EWP-016 r1",
+  "at": "2026-10-22T19:22:52.245Z",
+  "engineeringStatus": "local launch preparation complete",
+  "productOwnerAcceptance": "pending",
+  "publicLaunch": "pending",
+  "authorization": "User prioritized ad-free beta over daily challenge, selected Render preparation, and supplied public support email.",
+  "baselineHead": "15564871f2c5e0cf8276206b2bec5c8e2a39e911",
+  "sourceState": "Local release checkpoint includes preserved WR-EWP-010 through WR-EWP-015; public push pending",
+  "sourceInventory": ".jes/local/ewp-016/source-inventory.json",
+  "sourceInventorySha256": "ddb2e3705966ee9f0e579f9529842b9b52b92c8bbdd87d6c539f5f4c7ed2c76e",
+  "sourceFileCount": 153,
+  "extensionVersion": "1.10.0",
+  "gameContract": "v1.9",
+  "profile": "macOS / Node 24.15.0 / local PostgreSQL / actual Chromium with synthetic Wikipedia DOM and local HTTPS proxy",
+  "checks": {
+    "build": true,
+    "unit": 55,
+    "integration": 86,
+    "browser": 41,
+    "betaScreenshotFixtureRecheck": true,
+    "disconnectedRequestCapacityRecovery": true,
+    "forcedWorkerRecovery": true,
+    "boundedDatabaseFailure": true,
+    "cleanInstall": true,
+    "cleanPrismaGeneration": true,
+    "cleanBetaBuild": true,
+    "reproducibleLocalPackage": true,
+    "renderSchemaValidation": true,
+    "releaseCLIPositiveSimulation": true,
+    "releaseCLIMismatchPreservesPrevious": true,
+    "productionAudit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "originalOperatorRowsPreserved": true,
+    "migrations": 13,
+    "noNewSchemaChange": true,
+    "remainingTestSchemas": [],
+    "servedLocalZipMatches": true,
+    "storeImagesVisuallyInspected": true,
+    "ciYamlParsed": true,
+    "hostedCIExecuted": false
+  },
+  "logs": {
+    "build": "final-build.log",
+    "unit": "final-unit.log",
+    "integration": "integration-closeout.log",
+    "browser": "browser-final.log",
+    "betaAssets": "beta-assets-final.log",
+    "disconnectCharacterization": "disconnect-characterization.log",
+    "worker": "worker.log",
+    "databaseFault": "database-fault.log",
+    "package": "final-package.log",
+    "audit": "dependency-audit-verified.json",
+    "cleanInstall": "clean-install.log",
+    "cleanGenerate": "clean-generate-verified.log",
+    "cleanBetaBuild": "clean-beta-build.log",
+    "releaseRehearsal": "release-cli-rehearsal.log",
+    "releaseNegative": "release-cli-mismatch.log",
+    "releaseResult": "release-cli-result.json",
+    "render": "render-validation.json",
+    "prisma": "prisma-validation.log",
+    "delivery": "delivery-verification.json",
+    "operatorBefore": "operator-before.json",
+    "operatorAfter": "operator-after.json"
+  },
+  "logRoot": ".jes/local/ewp-016",
+  "artifacts": {
+    "apps/api/public/downloads/wikirace-extension.zip": {
+      "sha256": "8e02ed0c320aa2ad57282d3b043f7d301f2e5a5a6d8f8de94cc5bcd7f30adcba"
+    },
+    "apps/extension/public/icon-128.png": {
+      "sha256": "c4a094bbf7b5d7c88738199962d34a29646b4540d338e14b09cc5d89a4281d64"
+    },
+    "docs/store/assets/01-live-game.png": {
+      "sha256": "81b716b6f89de73a36322f4102ac5fc6275d114374b2db283d45b0f822a4cafb"
+    },
+    "docs/store/assets/02-player-board.png": {
+      "sha256": "b9e96b99027c22007636fb0bbabdf3debba3d67f71a916c51ea43cc9b71271d9"
+    },
+    "docs/store/assets/promo-small.png": {
+      "sha256": "630ec99e406d960eed7a2009e14177c5d69be92c8b6b5bccb4fddde0cd9f4bac"
+    },
+    "render.yaml": {
+      "sha256": "5d83cde66347e78fa261b4d3f640c8ccb2105dec7e8a8f8f5220945502724a1f"
+    }
+  },
+  "retainedAttempts": [
+    {
+      "path": "beta-browser.log",
+      "result": "Failed test selector clicked Leave Game instead of End Match; corrected selector passes."
+    },
+    {
+      "path": "browser-verified.log",
+      "result": "40/41; obsolete five-file ZIP expectation updated for four new PNG icons; final 41/41 passes."
+    },
+    {
+      "path": "clean-generate.log",
+      "result": "Missing DATABASE_URL in first rehearsal; configured run retained separately."
+    },
+    {
+      "path": "clean-generate-configured.log",
+      "result": "Sandbox denied Prisma engine cache touch; configured permitted rerun passed."
+    },
+    {
+      "path": "release-cli-mismatch.log",
+      "result": "Intentional hosted checksum mismatch; prior simulated candidate preserved."
+    }
+  ],
+  "externalGates": [
+    "Reviewed exact source push and first hosted CI run",
+    "Render account, displayed charges and deployment",
+    "Two external networks, actual edge-client attribution and live Wikipedia",
+    "Managed database restore rehearsal",
+    "Chrome developer registration, tester list, submission and approval"
+  ],
+  "jesCoreReporting": "pending; local Core API unavailable",
+  "dailyChallenge": "deferred by user"
+}

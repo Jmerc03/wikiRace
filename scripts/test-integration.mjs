@@ -12,6 +12,8 @@ const url = new URL(databaseUrl);
 url.searchParams.set("schema", schema);
 const browser = process.argv.includes("--browser");
 const qualification = process.argv.find(arg => arg.startsWith("--qualification="))?.split("=")[1];
+const file = process.argv.find(arg => arg.startsWith("--file="))?.split("=")[1];
+if (file && (!/^[a-z0-9-]+$/.test(file) || qualification)) throw new Error("Use --file=<test basename> with integration or browser tests only");
 if (qualification && !["live", "live-generated", "endurance", "upgrade", "worker", "sessions", "backup", "database-fault", "multiroom"].includes(qualification)) throw new Error("Unknown qualification profile");
 const env = { ...process.env, DATABASE_URL: url.href, NODE_ENV: "test",
   PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH ?? `${root}.local/browsers` };
@@ -29,8 +31,10 @@ try {
   created = true;
   console.log(`Isolated integration schema: ${schema}`);
   run([requireApi.resolve("prisma/build/index.js"), "migrate", "deploy"], `${root}apps/api`);
-  const tests = qualification ? `apps/api/test/qualification/${qualification}.test.ts` : browser ? "apps/api/test/browser/*.test.ts" : "apps/api/test/integration/*.test.ts";
-  run(["--import", "tsx", "--test", tests]);
+  const tests = qualification ? `apps/api/test/qualification/${qualification}.test.ts` : `apps/api/test/${browser ? "browser" : "integration"}/${file ?? "*"}.test.ts`;
+  // Each file owns a server; timer sweeps must not act on another file's
+  // deadline fixtures in this run's schema. Explicit race tests remain concurrent.
+  run(["--import", "tsx", "--test", "--test-concurrency=1", tests]);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

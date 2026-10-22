@@ -197,3 +197,100 @@ from built assets with fixed entry timestamps and excludes source maps.
 Current clients persist a private random admission key before create/join. The API serializes that key in PostgreSQL before any game lock and binds it to the normalized request using nullable Player admission metadata. Exact retries recover the same membership and current state without new revision/broadcasts. Pending intent is separate from installed player state and survives browser restart. See GAME_CONTRACT.md v1.2 for protocol, compatibility and explicit abandonment behavior.
 
 The API normalizes its PostgreSQL URL with bounded connect/pool/query defaults before creating Prisma. Explicit operator values are preserved. An isolated established-connection stall test verifies liveness, bounded readiness failure, transaction rollback and restoration; see WR-EWP-009 for the measured profile.
+
+## Results and linked rounds
+
+Explicit state summaries include final standings inputs and the original scored
+article for each earned square. Normal evidence follows the authenticated or
+spectator-selected player; Lockout evidence follows exclusive claims. Shared
+pure presentation helpers keep extension and spectator results consistent.
+
+A unique Game.rematchOfGameId links rounds. The host opens one fresh board with
+the same generation settings and copied teams; each member opts in separately.
+Source then destination row locks serialize creation and recovery. Derived private
+credentials permit exact recovery without exposing source credentials in state.
+
+## Persisted lobby readiness
+
+`Player.isReady` records each member's explicit choice. The ready setter, host
+start gate, team-reset and roster transitions share the existing game-row lock;
+only effective changes increment revision and broadcast. This adds no new socket
+protocol, presence service or separate authority. The extension and spectator
+render public summaries; the server checks active membership at start even if a
+client is stale. New and rematch players default unready, while reconnects retain
+their saved choice. See GAME_CONTRACT.md v1.4 and WR-EWP-011.
+
+## Joining locks and membership removal
+
+Host access controls extend the same game-row serialization. Ordinary and rematch
+admissions check `Game.isJoinLocked` only after recovering any existing identity.
+Host removal marks the retained player row as departed with a removal flag; token
+validation precedes the specific revocation explanation. No ban store or socket
+membership authority is introduced. Next-round lock changes notify the prior room.
+An invalid extension session disconnects and ignores late state responses until
+it is explicitly replaced. See GAME_CONTRACT.md v1.5 and WR-EWP-012.
+
+## Catalog-derived custom setup
+
+The engine builds one distinct eligible article catalog per difficulty and uses
+it for both capacity reporting and board selection. The public board-options
+route reports capacities without database access. Shared pure configuration
+validation/summary helpers serve extension and spectator presentation. The popup
+loads capabilities from the selected API through its existing background owner,
+ignores superseded responses, and keeps setup failures separate from session
+revocation. Existing Game.boardConfig JSON, keyed admission and rematch copying
+provide persistence; no new tables or state authority are introduced.
+
+## Server-owned round deadlines
+
+Nullable duration/deadline fields extend Game; a status/deadline index supports
+expiry scans. The existing row-lock mutation wrapper commits due expiry before
+re-entering the requested operation, keeping expiry independent of validation
+rollback. Admission and rematch recovery also check their locked destination.
+The background sweep performs a bounded atomic UPDATE with SKIP LOCKED and sends
+post-commit invalidations. One in-flight sweep per API instance avoids overlap;
+startup and normal shutdown are tied to Fastify lifecycle hooks.
+
+Raw comparisons convert the Date parameter to UTC timestamp-without-time-zone,
+matching Prisma's stored DateTime representation regardless of database timezone.
+Server time travels in an HTTP header, keeping state snapshots/revisions stable
+and avoiding artificial mutations for clock ticks. Shared clock/text helpers use
+monotonic elapsed time in extension and spectator; local countdowns cannot end a
+round. Read paths stay read-only, and scoring stays serialized by the API.
+
+## Authenticated ephemeral presence
+
+Each Fastify instance owns a separate in-memory presence tracker passed to game
+and realtime routes. A private socket frame authenticates existing membership
+under the game-row lock; committed leave/removal revokes bound sockets. The
+tracker aggregates sockets by player, tracks a ten-second disconnect grace and
+publishes snapshots only to opted-in viewers. Disposal clears its timers and maps.
+No database rows, revisions or readiness flags record connection state.
+
+Shared parsing/presentation helpers serve the extension and spectator. Presence
+travels separately from authoritative game snapshots, with socket/session/game
+identity guards and unknown state on observation loss. Server native heartbeats
+and client application-message watchdogs bound stale labels during normal awake
+operation. Existing HTTP state and legacy WebSocket notifications remain intact.
+
+## Ad-free hosted beta profile
+
+`WIKIRACE_DEPLOYMENT=beta` enables fail-closed public origin/contact configuration,
+bounded process-local request and socket admission, and a five-connection database
+pool default. A database advisory lock serializes the 200-game storage cap across
+fresh games and rematches. Existing credential recovery is evaluated before the
+storage cap. The existing game-row lock bounds each game's lifetime memberships.
+
+Scoring still evaluates the full eligible article payload under the game lock.
+The beta persists only visits earning a new square, keeping title/URL/time and
+discarding categories and outgoing links. Startup/hourly cleanup deletes finished
+games older than 30 days through existing cascades; no Prisma schema change is
+needed. Local profile persistence remains unchanged.
+
+The beta extension embeds one HTTPS origin and removes optional server access and
+the broad tabs permission. `/deployment`, `/privacy`, and download checksums let
+the release command verify the hosted profile and exact package identity before
+emitting an upload candidate. Render is configured for one API process and a new
+private PostgreSQL database. Rolling deployment overlap is still a realtime
+limitation; hosted operation and provider recovery require separate evidence.
+See [BETA_LAUNCH.md](BETA_LAUNCH.md).

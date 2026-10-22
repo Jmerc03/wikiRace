@@ -2,15 +2,19 @@ import type { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { generateBoard, evaluateSquare, getWinningLineResult } from "@bingo/game-engine";
-import { isArticleUrl, type BoardSquare } from "@bingo/shared";
+import { generateBoard, getBoardSetupOptions, evaluateSquare, getWinningLineResult } from "@bingo/game-engine";
+import { DEFAULT_BOARD_CONFIG, isArticleUrl, type BoardSquare } from "@bingo/shared";
 import { prisma } from "../db/prisma.js";
 import { GameError } from "../game-errors.js";
 import { requirePlayer } from "../services/game-auth.js";
 import { buildGameState, gameInclude } from "../services/game-state.js";
 import { mutateGame } from "../services/game-mutations.js";
 import { admitPlayer } from "../services/game-admission.js";
+import { enterRematch } from "../services/game-rematch.js";
 import { getLockoutWinningOwnerResult } from "./games.helpers.js";
+import type { PlayerPresence } from "../realtime/player-presence.js";
+import type { BetaConfig } from "../config/beta.js";
+import { requireGameCapacity, requirePlayerCapacity } from "../services/beta-storage.js";
 
 const PLAYER_COLORS = ["rgba(255,107,107,0.35)", "rgba(77,171,247,0.35)", "rgba(81,207,102,0.35)", "rgba(252,196,25,0.35)", "rgba(177,151,252,0.35)", "rgba(255,146,43,0.35)"];
 const TEAM_COLORS = ["rgba(224,49,49,0.35)", "rgba(25,113,194,0.35)", "rgba(47,158,68,0.35)", "rgba(240,140,0,0.35)", "rgba(103,65,217,0.35)", "rgba(194,37,92,0.35)"];
@@ -24,7 +28,9 @@ const boardConfigSchema = z.object({
 const createGameSchema = z.object({
   mode: z.enum(["NORMAL", "LOCKOUT"]).default("NORMAL"),
   displayName: displayName.default("Player 1"),
-  boardConfig: boardConfigSchema.default({ difficulty:"MIXED", vitalArticleTileCount:15, genericTileCount:10, maxTilesPerTopic:3 }),
+  // Keep omission distinct from explicit null for pre-upgrade admission hashes.
+  timeLimitSeconds: z.number().int().min(60).max(7200).nullable().optional(),
+  boardConfig: boardConfigSchema.default(DEFAULT_BOARD_CONFIG),
 });
 const playerBody = z.object({ playerId: z.uuid() });
 const gameParams = z.object({ gameId: z.uuid() });
@@ -41,15 +47,18 @@ async function readableState(gameId: string, playerId: string | null) {
   return prisma.$transaction(tx => buildGameState(tx, gameId, playerId), { isolationLevel: "RepeatableRead" });
 }
 
-export async function gameRoutes(app: FastifyInstance) {
+export async function gameRoutes(app: FastifyInstance, { presence, beta }: { presence: PlayerPresence; beta?: BetaConfig }) {
+  app.get("/board-options", async () => getBoardSetupOptions());
   app.post("/", async (request, reply) => {
     const body = createGameSchema.parse(request.body ?? {});
     const state = await admitPlayer(request, body, null, async (tx, session) => {
+      await requireGameCapacity(tx, beta);
       const board = generateBoard(body.boardConfig);
       const playerId = randomUUID();
       const game = await tx.game.create({ data: {
         mode: body.mode, status: "WAITING", hostPlayerId: playerId,
         boardConfig: body.boardConfig,
+        timeLimitSeconds: body.timeLimitSeconds ?? null,
         board: { create: { size: board.size, squares: { create: board.squares.map(square => ({
           position: square.position, type: square.type, label: square.label,
           condition: square.condition as Prisma.InputJsonValue, difficulty: square.difficulty,
@@ -91,7 +100,9 @@ export async function gameRoutes(app: FastifyInstance) {
     return admitPlayer(request, body, gameId, async (tx, session) => {
       const game = await tx.game.findUniqueOrThrow({ where: { id: gameId }, include: { players: true } });
       if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
+      if (game.isJoinLocked) throw new GameError(409, "Joining is locked. Ask the host to reopen joining.");
       if (game.players.filter(p => !p.leftAt).length >= 32) throw new GameError(409, "This game is full (32 players)");
+      await requirePlayerCapacity(tx, gameId, beta);
       await tx.game.update({ where: { id: gameId }, data: { revision: { increment: 1 } } });
       const player = await tx.player.create({ data: { gameId, displayName: body.displayName ?? `Player ${game.players.length + 1}`,
         color: PLAYER_COLORS[game.players.length % PLAYER_COLORS.length], sessionTokenHash: session.sessionTokenHash, admissionRequestHash: session.admissionRequestHash } });
@@ -128,13 +139,66 @@ export async function gameRoutes(app: FastifyInstance) {
       const team = teamId ? await tx.team.findFirst({ where: { id: teamId, gameId } }) : null;
       if (teamId && !team) throw new GameError(404, "Team not found");
       if (leaving && !player.teamId) throw new GameError(409, "Player is not on a team");
+      if (player.teamId === teamId) return buildGameState(tx, gameId, playerId);
       await touch();
-      await tx.player.update({ where: { id: playerId }, data: { teamId, color: team?.color ?? PLAYER_COLORS[game.players.findIndex(p=>p.id===playerId) % PLAYER_COLORS.length] } });
+      await tx.player.update({ where: { id: playerId }, data: { teamId, isReady: false, color: team?.color ?? PLAYER_COLORS[game.players.findIndex(p=>p.id===playerId) % PLAYER_COLORS.length] } });
       return buildGameState(tx, gameId, playerId);
     });
   }
   app.post("/:gameId/teams/:teamId/join", request => changeTeam(request, false));
   app.post("/:gameId/teams/leave", request => changeTeam(request, true));
+
+  app.post("/:gameId/join-lock", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const { playerId, isJoinLocked } = playerBody.extend({ isJoinLocked: z.boolean() }).parse(request.body);
+    return mutateGame(gameId, async (tx, touch) => {
+      await requirePlayer(tx, request, gameId, playerId);
+      const game = await tx.game.findUniqueOrThrow({ where: { id: gameId } });
+      if (game.hostPlayerId !== playerId) throw new GameError(403, "Only the host can change joining access");
+      if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
+      if (game.isJoinLocked !== isJoinLocked) {
+        await touch();
+        await tx.game.update({ where: { id: gameId }, data: { isJoinLocked } });
+      }
+      return buildGameState(tx, gameId, playerId);
+    });
+  });
+
+  app.post("/:gameId/players/:targetPlayerId/remove", async request => {
+    const { gameId, targetPlayerId } = gameParams.extend({ targetPlayerId: z.uuid() }).parse(request.params);
+    const { playerId } = playerBody.parse(request.body);
+    const result = await mutateGame(gameId, async (tx, touch) => {
+      await requirePlayer(tx, request, gameId, playerId);
+      const game = await tx.game.findUniqueOrThrow({ where: { id: gameId } });
+      if (game.hostPlayerId !== playerId) throw new GameError(403, "Only the host can remove a player");
+      if (game.status !== "WAITING") throw new GameError(409, "Players can only be removed before the match starts");
+      if (targetPlayerId === playerId) throw new GameError(409, "Use Leave Game to leave your own lobby");
+      const target = await tx.player.findFirst({ where: { id: targetPlayerId, gameId } });
+      if (!target) throw new GameError(409, "That player is not in this lobby");
+      if (!target.leftAt) {
+        await touch();
+        await tx.player.update({ where: { id: targetPlayerId }, data: { leftAt: new Date(), removedByHost: true, isReady: false } });
+      }
+      return buildGameState(tx, gameId, playerId);
+    });
+    presence.revoke(gameId, targetPlayerId);
+    return result;
+  });
+
+  app.post("/:gameId/ready", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const { playerId, isReady } = playerBody.extend({ isReady: z.boolean() }).parse(request.body);
+    return mutateGame(gameId, async (tx, touch) => {
+      const player = await requirePlayer(tx, request, gameId, playerId);
+      const game = await tx.game.findUniqueOrThrow({ where: { id: gameId } });
+      if (game.status !== "WAITING") throw new GameError(409, "Readiness can only change in the lobby");
+      if (player.isReady !== isReady) {
+        await touch();
+        await tx.player.update({ where: { id: playerId }, data: { isReady } });
+      }
+      return buildGameState(tx, gameId, playerId);
+    });
+  });
 
   app.post("/:gameId/start", async request => {
     const { gameId } = gameParams.parse(request.params);
@@ -145,8 +209,12 @@ export async function gameRoutes(app: FastifyInstance) {
       if (game.hostPlayerId !== playerId) throw new GameError(403, "Only the host can start the match");
       if (game.status === "FINISHED") throw new GameError(409, "Game is already finished");
       if (game.status === "WAITING") {
+        const notReady = await tx.player.count({ where: { gameId, leftAt: null, isReady: false } });
+        if (notReady) throw new GameError(409, `Everyone must be ready before starting (${notReady} not ready)`);
         await touch();
-        await tx.game.update({ where: { id: gameId }, data: { status: "ACTIVE", startedAt: new Date() } });
+        const startedAt = new Date();
+        await tx.game.update({ where: { id: gameId }, data: { status: "ACTIVE", startedAt,
+          expiresAt: game.timeLimitSeconds === null ? null : new Date(startedAt.getTime() + game.timeLimitSeconds * 1000) } });
       }
       return buildGameState(tx, gameId, playerId);
     });
@@ -167,9 +235,15 @@ export async function gameRoutes(app: FastifyInstance) {
     });
   });
 
+  app.post("/:gameId/rematch", async request => {
+    const { gameId } = gameParams.parse(request.params);
+    const { playerId } = playerBody.parse(request.body);
+    return enterRematch(request, gameId, playerId, beta);
+  });
+
   app.post("/:gameId/players/:playerId/leave", async request => {
     const { gameId, playerId } = gameParams.extend({ playerId: z.uuid() }).parse(request.params);
-    return mutateGame(gameId, async (tx, touch) => {
+    const result = await mutateGame(gameId, async (tx, touch) => {
       const player = await requirePlayer(tx, request, gameId, playerId, true);
       if (!player.leftAt) {
         await touch();
@@ -183,6 +257,8 @@ export async function gameRoutes(app: FastifyInstance) {
       }
       return { gameId, playerId, left: true };
     });
+    presence.revoke(gameId, playerId);
+    return result;
   });
 
   app.post("/:gameId/events/page-visit", async request => {
@@ -194,9 +270,16 @@ export async function gameRoutes(app: FastifyInstance) {
       if (!game.board) throw new GameError(404, "Board not found");
       if (game.status === "FINISHED") return buildGameState(tx, gameId, player.id);
       if (game.status !== "ACTIVE") throw new GameError(409, "The host has not started this game");
-      await touch();
-      const visit = await tx.pageVisitEvent.create({ data: { gameId, ...event } });
       const matched = game.board.squares.filter(square => evaluateSquare(square as BoardSquare, event));
+      if (beta) {
+        const earned = game.mode === "LOCKOUT"
+          ? await tx.squareClaim.findMany({ where: { gameId }, select: { squareId: true } })
+          : await tx.squareCompletion.findMany({ where: { gameId, playerId: player.id }, select: { squareId: true } });
+        const earnedIds = new Set(earned.map(row => row.squareId));
+        if (!matched.some(square => !earnedIds.has(square.id))) return { ...await buildGameState(tx, gameId, player.id), completedSquares: [] };
+      }
+      await touch();
+      const visit = await tx.pageVisitEvent.create({ data: { gameId, ...event, ...(beta ? { categories: [], links: [] } : {}) } });
       let newlyCompleted: typeof matched = [];
 
       if (game.mode === "LOCKOUT") {

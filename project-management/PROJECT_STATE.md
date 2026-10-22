@@ -1,6 +1,22 @@
 # WikiRace project state
 
-Updated: 2026-09-08 UTC (September 7 local). Operator: Codex under Jaxson Mercer's explicit delegation.
+Updated: 2026-10-22. Current operator: Codex under the user's explicit feature selection. Historical delegated M1–M6 decisions remain scoped to their original delivery.
+
+- **Latest batch: WR-EWP-016 r1 Done for local launch preparation.** Ad-free beta 1.10.0 has a Render blueprint, application/storage limits, minimal scored-article retention, privacy contact, hosted-only extension, store assets and checked release packaging. Build, 55 unit, 86 integration and 41 Chromium checks pass, plus worker/database recovery, clean beta build, reproducible packaging and zero production audit findings. The local API is ready on 1.10.0 with unchanged rows and thirteen migrations. Public hosting, hosted CI, real-network/proxy verification, managed restore and Chrome approval remain pending. See `BETA_DELIVERY_REVIEW.md`, `evidence/BETA_20261022.json` and `.jes/local/ewp-016`. Daily challenge is deferred by the user.
+
+- **Presence batch: WR-EWP-015 r1 Done.** Player connection indicators are delivered in 1.9.0: authenticated presence, ten-second reconnect grace, stale-observation clearing, public rosters and team counts. Build, 48 unit, 77 integration and 40 actual Chromium workflows pass, along with forced-worker recovery, bounded database failure and reproducible packaging. The original loopback API was ready with thirteen existing migrations and unchanged operator rows. Historical 128-file inventory and evidence: `evidence/PRESENCE_20261022.json` and `.jes/local/ewp-015`.
+
+- **Timed-round batch: WR-EWP-014 r1 Done.** Optional timed rounds were delivered in 1.8.0: server-owned deadlines, shared countdowns, no-winner expiry, offline confirmation and fresh rematch clocks. Full build, Prisma validation, 46 unit, 70 integration, 35 actual Chromium workflows, four upgrade cases, populated archive/restore, bounded database-failure recovery and reproducible packaging passed. Exact 123-file inventory and historical evidence: `evidence/TIMED_ROUNDS_20261022.json` and `.jes/local/ewp-014`.
+
+- **Custom-board batch: WR-EWP-013 r1 Done.** Custom board setup was delivered in 1.7.0: named/flexible mix, per-topic caps, validated complete boards, shared summaries and unchanged rematch settings. Build, 43 unit tests (1,950-case generator matrix), 59 integration cases, 30 actual Chromium workflows, custom-config archive/restore and reproducible packaging passed. Exact 117-file inventory and historical evidence: `evidence/CUSTOM_BOARD_20261022.json` and `.jes/local/ewp-013`.
+
+- **Earlier host-control batch: WR-EWP-012 r1 Done.** The user-selected host lobby controls are implemented and verified. Build, 40 unit, 55 integration and 24 Chromium checks pass, with three migration cases, lock/revocation archive/restore and reproducible packaging. Extension 1.6.0 and migration 12 are delivered; the original loopback API is running/ready. Reload the extension for host lock/reopen and waiting-player removal. Exact 112-file source inventory and evidence: `evidence/HOST_CONTROLS_20261022.json` and `.jes/local/ewp-012`. Source remains uncommitted over `1556487`, preserving WR-EWP-010/011.
+- **Ready-check batch: WR-EWP-011 r1 Done.** Delivered in 1.5.0 with 40 unit/47 integration/19 browser checks, prior-schema upgrades, mixed-readiness restore and bounded database failure. Historical evidence remains in `evidence/READY_CHECKS_20261022.json` and `.jes/local/ewp-011`; current suites retain its workflows.
+- **Earlier feature batch: WR-EWP-010 r1 Done.** Results, scored-article history and rematches were delivered in 1.4.0 with 40 unit/39 integration/16 browser checks. Its evidence is preserved in `evidence/FEATURES_20261022.json` and `.jes/local/ewp-010`; the expanded current suites include these features. Owner acceptance of these new feature batches remains pending in `FEATURE_DELIVERY_REVIEW.md`; M6 acceptance remains historical.
+- Current cutoff: 2026-10-22 15:00 America/Chicago. Six feature batches and local beta preparation completed before the cutoff. Additional features require a scoped user instruction; no new general owner delegation is inferred.
+- JES Core was unavailable during this continuation; WR-OBS-2026-008 is a local Draft pending supported API reporting. Existing Core state was not fabricated or silently updated.
+
+## Historical M1–M6 delivery
 
 - Product baseline: PROJECT_PROPOSAL.md v1.2, Approved (WR-DEC-015); v1.1 remains accepted historical local use.
 - Engineering plan: ENGINEERING_PLAN.md v1.5, Accepted (WR-DEC-020); all six milestones Done; delivery review v1.1 Accepted by WR-DEC-024.

@@ -13,3 +13,7 @@ test("explicit operator timeout settings and other connection parameters remain 
 test("invalid database configuration fails clearly without echoing a credential-bearing URL",()=>{
   for(const input of [undefined,"not a URL","https://example.invalid","postgresql://u:p@localhost/db?socket_timeout=-1","postgresql://u:p@localhost/db?pool_timeout=forever"])assert.throws(()=>runtimeDatabaseUrl(input),error=>error instanceof Error&&!error.message.includes("u:p"));
 });
+test("a beta pool default bounds connections without replacing an explicit operator limit", () => {
+  assert.equal(new URL(runtimeDatabaseUrl("postgresql://user@localhost/db", 5)).searchParams.get("connection_limit"), "5");
+  assert.equal(new URL(runtimeDatabaseUrl("postgresql://user@localhost/db?connection_limit=3", 5)).searchParams.get("connection_limit"), "3");
+});

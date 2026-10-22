@@ -100,3 +100,67 @@ First establish the baseline and real persistence tests, then protect match inte
 - Key decisions: [approval ledger](project-management/APPROVAL_LEDGER.md).
 - Systems Architecture handoff: [engineering plan](project-management/ENGINEERING_PLAN.md), [interface/lifecycle specification](docs/GAME_CONTRACT.md).
 - Delivered-product decision: v1.1 local use remains historically accepted by WR-DEC-013; proposal v1.2 local use is accepted by WR-DEC-024 through delivery review v1.1, with explicit qualification boundaries and retained negative evidence. See [DELIVERY_ACCEPTANCE.md](project-management/DELIVERY_ACCEPTANCE.md).
+
+## User-authorized feature continuation — 2026-10-22
+
+The owner explicitly selected "Results, scored-article history, and rematches
+(recommended)" for implementation before 15:00 America/Chicago. This bounded
+addendum extends PR-004/006 with final standings and duration, the original
+earning article for each displayed square, and a fresh linked lobby that carries
+the group forward through explicit individual opt-in. Old match records and
+Normal/Lockout rules must remain intact. No other future product features or
+general owner delegation are inferred.
+
+Implementation and verification are tracked in WR-EWP-010 r1 and the engineering
+plan's feature continuation. The accepted v1.2 delivery above remains historical;
+acceptance of these additional features will be a separate owner decision.
+
+### Additional explicit selection — lobby ready checks
+
+After WR-EWP-010, the owner selected "Lobby ready checks (recommended)" in the
+same chat. WR-EWP-011 extends lobby coordination: each member explicitly readies,
+the host starts only when all active members are ready, and the group sees saved
+readiness across reconnects. New/rematch members start unready; team changes clear
+that player's choice, and departures stop blocking start. Scoring and historical
+results remain intact. This bounded implementation instruction does not imply
+acceptance of the resulting feature or approval of unrelated future features.
+
+### Additional explicit selection — host lobby controls
+
+The owner subsequently selected "Host lobby controls: remove players and lock
+joining (recommended)". WR-EWP-012 adds confirmed removal of other waiting players
+and host-controlled joining locks during waiting/active play. Existing-session
+recovery must remain possible while locked, and removed session history must be
+retained. This is membership revocation, not a permanent identity ban. Existing
+scoring and prior product-acceptance records remain unchanged.
+
+## Custom board setup continuation — 2026-10-22
+
+The user selected article/objective mix and topic variety in this chat. Execute
+the bounded scope in WR-EWP-013 r1: validated 25-square custom setup, shared
+configuration visibility and unchanged rematch settings. This selection does
+not approve broader product scope or establish owner acceptance.
+
+## Optional timed rounds — 2026-10-22
+
+The user selected optional timed rounds. WR-EWP-014 r1 implements a fixed optional
+duration, server-authoritative expiry, visible countdown and fresh rematch clocks.
+Existing win rules remain; time expiry records no winner. This instruction does
+not imply acceptance or additional product scope.
+
+## Player connection indicators — 2026-10-22
+
+The user selected player connection indicators. WR-EWP-015 r1 adds authenticated
+live presence, a brief reconnect grace and offline/unknown labels in player and
+spectator views. Presence does not change readiness, scoring or host ownership.
+This scoped instruction does not imply product acceptance or broader authorization.
+
+## Ad-free beta preparation — 2026-10-22
+
+The user explicitly prioritized launch preparation over the daily challenge,
+selected Render with no existing hosting, and supplied jaxmerc03@gmail.com as
+the public support address. WR-EWP-016 r1 records this bounded added scope:
+prepare deployment, privacy, abuse/storage bounds, a hosted-only extension and
+store submission materials. Historical local-use acceptance stays scoped to
+its original evidence. Paid provisioning, public operation, cloud recovery and
+Chrome approval remain pending external launch steps.

@@ -1,0 +1,136 @@
+{
+  "package": "WR-EWP-015 r1",
+  "at": "2026-10-22T17:54:20.617Z",
+  "engineeringStatus": "complete",
+  "productOwnerAcceptance": "pending",
+  "authorization": "User selected Player connection indicators (recommended); identifier assigned afterward.",
+  "baselineHead": "15564871f2c5e0cf8276206b2bec5c8e2a39e911",
+  "sourceState": "uncommitted working tree preserving WR-EWP-010 through WR-EWP-014",
+  "sourceInventory": ".jes/local/ewp-015/source-inventory.json",
+  "sourceInventorySha256": "52c53af66a17d18618c3a3cc59a7eb1379993a99ab0bd50cdf9fc5a81d31d397",
+  "sourceFileCount": 128,
+  "extensionVersion": "1.9.0",
+  "gameContract": "v1.8",
+  "profile": "macOS / Node v24.15.0 / dedicated PostgreSQL / actual Chromium extensions, spectator and overlay",
+  "checks": {
+    "build": true,
+    "unit": 48,
+    "integration": 77,
+    "browser": 40,
+    "realNativeHeartbeatExpiry": true,
+    "actualTenSecondReconnectGrace": true,
+    "actualApplicationMessageFreshnessTimeout": true,
+    "authenticatedWorkerRecovery": true,
+    "boundedDatabaseFailure": true,
+    "reproduciblePackage": true,
+    "unchangedOperatorRows": true,
+    "noNewMigration": true,
+    "diffHygiene": true
+  },
+  "logs": {
+    "build": ".jes/local/ewp-015/build-final.log",
+    "unit": ".jes/local/ewp-015/unit-final.log",
+    "integration": ".jes/local/ewp-015/integration-01.log",
+    "browser": ".jes/local/ewp-015/browser-final.log",
+    "worker": ".jes/local/ewp-015/worker-01.log",
+    "databaseFault": ".jes/local/ewp-015/database-fault-01.log",
+    "package": ".jes/local/ewp-015/package-final.log",
+    "operatorFinalStatus": ".jes/local/ewp-015/operator-status-final.log"
+  },
+  "rawResults": {
+    "browser": ".jes/local/ewp-015/browser/1792691472882",
+    "worker": ".jes/local/ewp-005/worker/1792691135352/result.json",
+    "databaseFault": ".jes/local/ewp-009/database-fault/1792691134484/result.json",
+    "package": ".jes/local/ewp-005/package/1792691132053/result.json",
+    "delivery": ".jes/local/ewp-015/delivery-verification.json",
+    "operatorBefore": ".jes/local/ewp-015/operator-before.json",
+    "operatorAfter": ".jes/local/ewp-015/operator-after.json"
+  },
+  "retainedAttempts": [
+    {
+      "path": ".jes/local/ewp-015/browser-01.log",
+      "result": "39/39 before adding the application-message freshness watchdog and its fifth presence workflow. Viewer source changed while the run finished; final stable-source suite is recorded separately."
+    },
+    {
+      "path": ".jes/local/ewp-015/browser-02.log",
+      "result": "39/40. All five presence cases passed. An older invitation fixture reloaded its one-shot page before the host end-match request committed; added an explicit FINISHED-state wait."
+    },
+    {
+      "path": ".jes/local/ewp-015/invitation-diagnostic.log",
+      "result": "1/1 isolated diagnostic before the missing end-match wait was added, confirming timing sensitivity rather than a deterministic failure."
+    }
+  ],
+  "workerRecovery": {
+    "recoveredAfterSeconds": 60.348,
+    "authenticatedPresenceRecovered": true,
+    "profile": "actual Chromium MV3 worker stopped through DevTools protocol; alarm recovery without an extension page or content-script wakeup"
+  },
+  "runtime": {
+    "origin": "http://127.0.0.1:4000",
+    "ready": true,
+    "migrations": 13,
+    "originalProfilePreserved": true,
+    "operatorOriginalRowsUnchanged": true,
+    "operatorGameCountBefore": 0,
+    "authenticatedPresenceSmoke": true,
+    "duplicateSocketAndGraceRecovery": true,
+    "revocationClearsPresence": true,
+    "presenceDoesNotChangeRevision": true,
+    "runningTimedCreationIdleExpiryLateVisitAndRematchSmoke": true,
+    "acceleratedOwnedSmokeDeadline": true,
+    "ownedSmokeGamesRemoved": true,
+    "temporarySchemas": 0,
+    "temporaryRestoreDatabases": 0
+  },
+  "servedAssets": [
+    {
+      "url": "/assets/viewer.js",
+      "file": "apps/api/public/viewer.js",
+      "sha256": "8ee6c131ddcebc72d9b2153781b84b70bc6cd200e543cc330ff4c557e96c63ad"
+    },
+    {
+      "url": "/assets/viewer.css",
+      "file": "apps/api/public/viewer.css",
+      "sha256": "bccea6620c21f13f64d7ac2fa4acb083125d3dc9e2fe143fe9de9df3e17e6e62"
+    },
+    {
+      "url": "/assets/round-timer.js",
+      "file": "packages/shared/dist/round-timer.js",
+      "sha256": "3c249a9459e140fe17f9748f85ca3b692a41eea80fd69b02c667218067fba102"
+    },
+    {
+      "url": "/assets/board-setup.js",
+      "file": "packages/shared/dist/board-setup.js",
+      "sha256": "b2494891058a9945e0616150ee3e3ea8e4c8fa944810bf4af395479916373e9e"
+    },
+    {
+      "url": "/assets/results.js",
+      "file": "packages/shared/dist/results.js",
+      "sha256": "f4e7ace7b9893e7668073ea1ad0d8e357292d618ca505415b4dd635f09601238"
+    },
+    {
+      "url": "/assets/navigation.js",
+      "file": "packages/shared/dist/navigation.js",
+      "sha256": "b37fad8e82b6f4cbbb89f32330b23ca13e58653d0cddd34acfa17b7899e831eb"
+    },
+    {
+      "url": "/downloads/wikirace-extension.zip",
+      "file": "apps/api/public/downloads/wikirace-extension.zip",
+      "sha256": "30ec2568b843869b404700c9fa6cca3d31c7df2843b53cc4d113ab6d3deda0f1"
+    },
+    {
+      "url": "/assets/presence.js",
+      "file": "packages/shared/dist/presence.js",
+      "sha256": "2dc2de99c78c48f1149952fc0cb9bb78f48e406cf4fb75cdb0b4d4d8b563d962"
+    }
+  ],
+  "limits": [
+    "No installed user browser profile was changed; reload extension 1.9.0 on each player.",
+    "Presence is transient and single-process, not a persisted last-seen record or proof of attention.",
+    "Heartbeat/freshness timing is measured during awake execution, not OS sleep.",
+    "Old extensions do not authenticate presence and may appear offline; an old server leaves indicators unknown.",
+    "No schema change. Previous migration/backup qualification remains historical; this batch verifies exact operator-row preservation and restored worker identity.",
+    "No new live-Wikipedia, native Windows, public deployment, actual OBS, minimum-runtime or endurance qualification was claimed.",
+    "Subjective owner acceptance and prior Core reporting remain pending."
+  ]
+}

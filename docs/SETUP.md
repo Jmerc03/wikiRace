@@ -1,5 +1,10 @@
 # Setup and operation
 
+For the ad-free hosted beta, use [BETA_LAUNCH.md](BETA_LAUNCH.md) and the root
+`render.yaml`. The instructions below describe the existing local profile.
+Hosted beta and local developer ZIPs have different permissions and server
+configuration; only `npm run release:beta` produces a checked store candidate.
+
 ## Local quick start
 
 Use Node.js 22.12 or newer. On macOS, put PostgreSQL tools (`pg_ctl`, `initdb`, `psql`, `createdb`) on PATH. Alternatively, run Docker Desktop and select Docker database mode.
@@ -52,10 +57,88 @@ After source changes, run `npm run build`, then stop/start the managed API to lo
 
 1. Open the operator page and download/unzip the extension, or use `apps/extension/dist` directly.
 2. Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the folder containing `manifest.json`.
-3. Open WikiRace, enter a name, and **Create Lobby**. Share the game ID with another player using the same server.
-4. In Lockout, create/join teams in the lobby. The host selects **Start Match**.
+3. Open WikiRace, enter a name, choose your board setup, and **Create Lobby**. Share the game ID with another player using the same server.
+4. In Lockout, create/join teams in the lobby. Every player, including the host, selects **Mark Ready**. When everyone is ready, the host selects **Start Match**.
 5. Browse English Wikipedia article pages. **Open Wikipedia** chooses a random starting article. **Open Full Board** keeps the board in a normal browser tab.
 6. **Leave Game** updates membership. **End Match** is a host action affecting everyone.
+
+Player rosters show **Online**, **Reconnecting** or **Offline** independently of
+Ready. Online means the extension is connected, not that its owner is browsing.
+The last socket closing starts a ten-second reconnect grace. Silent failures may
+take about fifty seconds to become Offline; your own lost observation shows
+**Connection unknown**. Nothing automatically removes or unreadies a disconnected
+player. Spectators see individual statuses and team connection counts. Expand
+**Player connections** for the full spectator roster.
+
+Updating 1.8.0 to 1.9.0 needs `npm run build`, a managed API restart and reloading
+the extension on each player; there is no new migration. An older server stays
+playable with unknown indicators. Older extensions do not announce presence and
+may appear offline until reloaded. Presence is not stored in database backups;
+it is rebuilt from authenticated connections after restart.
+
+**Round timer** is optional: Untimed, 1, 5, 10, 15, 30 or 60 minutes. It starts
+with Start Match, stays fixed through reconnects/host transfer, and carries into
+rematches with a fresh deadline. On expiry, final scores appear with no winner
+unless a bingo or majority already ended play. An offline zero says to reconnect
+for confirmation; it does not pretend the server has finished. All clients should
+reload 1.9.0 to see the countdown and connection indicators, and the extension blocks timed creation
+when a server lacks support, retaining the saved request for retry.
+
+To update 1.7.0 for timers, back up the database, stop the managed API, apply
+`npm run prisma:migrate:deploy` with the selected DATABASE_URL, then run
+`npm run prisma:generate`, `npm run prisma:validate`, and `npm run build`.
+Start the API and reload the extension. Migration
+`20261022171500_timed_rounds` adds nullable duration/deadline columns and an index;
+existing waiting/active/finished rounds remain untimed, and saved entry recovery
+still works. No reset is needed.
+
+**Board mix** selects 0–25 named articles; flexible objectives fill the remaining
+squares. **Topic variety** caps named articles per catalog topic at 1, 2, 3, 5 or
+unrestricted. **Article difficulty** affects only named articles. All-flexible
+boards disable the two unused controls. **Reset board settings** restores Mixed,
+15 named / 10 flexible, max 3 per topic. The current catalog supports at most
+11 named articles with cap 1 and 22 with cap 2; choose fewer articles or a higher
+cap if the popup explains that your combination is unavailable.
+
+Board options load from the selected server. If loading fails, update/restart the
+server or check its address, then choose **Reload board options**. Joining an
+existing match remains available. Shared settings appear in the lobby, match
+details, spectator and invitation; a rematch keeps them on a newly generated
+board. Updating from 1.6.0 to 1.7.0 needs only build, managed API restart and
+extension reload, with no new database migration.
+
+After play, **Match results** shows the final outcome, duration, and standings.
+Select **View article** on a completed square, or expand **Scored articles**, to
+inspect the original earning article. Spectators can inspect the followed
+player's evidence in Normal or every claim in Lockout.
+
+The finished match's host selects **Open Rematch Lobby**. Others select **Join
+Rematch** when it appears automatically. Names/colors/teams carry over as each
+player opts in; the board is new and the old results remain available through
+**Previous Results**. Everyone starts Not Ready and must ready again. The host should wait for the group before starting because
+new rematch opt-ins require a waiting lobby. If a response is lost, **Retry
+Rematch** recovers the same identity after a restart. **Stay in Previous Match**
+abandons the pending transition locally without undoing a server membership.
+If the next round has already started, **Recover Rematch** can restore a place
+you already joined; it cannot admit a new player with a team after play starts.
+
+Upgrade to these features with the selected database URL and
+`npm run prisma:migrate:deploy`, `npm run prisma:generate`, and `npm run build`.
+The additive `20261022154000_match_rematches` and
+`20261022162000_lobby_ready_checks` / `20261022163500_host_lobby_controls` migrations preserve existing games and sessions.
+Existing waiting players start Not Ready after this upgrade; active and finished
+rounds retain their status and results. Restart the managed API and reload the unpacked extension
+in Chrome; the new package is version **1.9.0**. All players need the updated extension to
+mark Ready in a waiting lobby. Changing teams clears only your readiness;
+reconnecting retains it. Departed players do not block the host.
+
+The host can **Lock Joining** or **Reopen Joining** before or during play.
+Locked invitations show the restriction; existing players can reconnect. A
+waiting lobby also shows **Remove** beside other players, with confirmation.
+Removed sessions are revoked and shown in the roster; they can use **Forget Local
+Session** to leave that local identity. Removal is not a ban on a fresh identity:
+lock joining to prevent new arrivals. The host cannot remove players during play.
+Locks survive host transfer and restart; a fresh rematch starts open.
 
 The extension retains identity and progress across browser restarts and server outages. If creating or joining loses its response, **Retry Lobby Entry** recovers the same player with the original request. Pending entry survives browser restarts and blocks changing games or servers. **Forget Pending Entry** deliberately discards its recovery key; a player already created on the server may remain in that lobby. Current extensions check server support before creating a player; update/restart an older server before retrying. Reconnect is automatic; **Refresh Board** forces a fetch. A temporary failure preserves credentials and the last known board. **Forget Local Session** explicitly abandons credentials when a session is unavailable; it does not notify an unreachable server. Server preferences survive leaving/forgetting.
 
@@ -142,7 +225,7 @@ npm run test:package
 npm run test:endurance
 ```
 
-Each integration/browser run creates a random `wr_test_*` PostgreSQL schema, applies migrations, executes actual HTTP/WebSocket/browser work, and removes only that schema. Set `WIKIRACE_TEST_DATABASE_URL` to use an explicitly chosen test database; default is the dedicated local instance. A missing database fails the suite rather than skipping it.
+Each integration/browser run creates a random `wr_test_*` PostgreSQL schema, applies migrations, executes actual HTTP/WebSocket/browser work, and removes only that schema. Set `WIKIRACE_TEST_DATABASE_URL` to use an explicitly chosen test database; default is the dedicated local instance. A missing database fails the suite rather than skipping it. Files run sequentially so one server's expiry worker cannot act on another file's deadline fixtures; explicit multiplayer race tests still exercise concurrent requests.
 
 Chromium binaries live under ignored `.local/browsers`. The deterministic browser suite loads actual extension profiles and uses synthetic Wikipedia article DOM. It verifies two-player Normal isolation, Lockout teams/majority, saved-profile resume, API stop/restart, live spectators, safe name rendering and overlay transparency. It does not assert live Wikipedia availability by itself.
 

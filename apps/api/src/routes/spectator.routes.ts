@@ -16,6 +16,8 @@ export async function spectatorRoutes(app: FastifyInstance) {
   });
   app.get("/assets/invitation.js", async (_request, reply) => reply.type("text/javascript; charset=utf-8")
     .send(await readFile(new URL("../../../../packages/shared/dist/invitation.js", import.meta.url))));
+  for (const file of ["results.js", "navigation.js", "board-setup.js", "round-timer.js", "presence.js"]) app.get(`/assets/${file}`, async (_request, reply) => reply.type("text/javascript; charset=utf-8")
+    .send(await readFile(new URL(`../../../../packages/shared/dist/${file}`, import.meta.url))));
   for (const path of ["/", "/join/:gameId", "/spectate/:gameId", "/overlay/:gameId"]) app.get(path, async (_request, reply) => {
     return reply.header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'self'")
       .header("X-Content-Type-Options", "nosniff").type("text/html; charset=utf-8").send(await readFile(new URL("index.html", publicRoot)));
@@ -26,6 +28,13 @@ export async function spectatorRoutes(app: FastifyInstance) {
         .type("application/zip").send(await readFile(new URL("downloads/wikirace-extension.zip", publicRoot)));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new GameError(503, "The extension package is not built yet. The operator can run npm run build.");
+      throw error;
+    }
+  });
+  app.get("/downloads/checksums.json", async (_request, reply) => {
+    try { return reply.type("application/json; charset=utf-8").send(await readFile(new URL("downloads/checksums.json", publicRoot))); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new GameError(503, "The extension package is not built yet.");
       throw error;
     }
   });

@@ -27,13 +27,14 @@ test("an established stalled database connection fails readiness and mutation wi
     let available=false;for(let i=0;i<60;i++){try{if((await request("/ready",undefined,undefined,1000)).ok){available=true;break;}}catch{}await delay(100);}
     assert.ok(available,"Disposable API must become ready before fault injection");
     const created=await request("/games",{displayName:"Database fault host"});assert.equal(created.status,201);const host:any=await created.json();assert.ok(pairs.size>0);
+    assert.equal((await request(`/games/${host.gameId}/ready`,{playerId:host.playerId,isReady:true},host.playerToken)).status,200);
     hold(true);const started=Date.now();const stalled=request("/ready").then(async response=>({status:response.status,body:await response.json()})).catch(error=>({status:0,error:String(error)}));
     const live=await request("/health",undefined,undefined,1000);assert.equal(live.status,200);const outcome=await stalled;const elapsed=Date.now()-started;samples.push({case:"stalled readiness",elapsedMs:elapsed,outcome,livenessAvailable:true});
     assert.equal(outcome.status,503,"Readiness must answer unavailable within 8 seconds even when an established database connection stops responding");assert.ok(elapsed<8000);
     hold(false);await delay(250);assert.equal((await request("/ready")).status,200);
     hold(true);const mutationStarted=Date.now();const mutation=await request(`/games/${host.gameId}/start`,{playerId:host.playerId},host.playerToken,12000);samples.push({case:"stalled host mutation",status:mutation.status,elapsedMs:Date.now()-mutationStarted});assert.ok([500,503].includes(mutation.status));
-    hold(false);await delay(250);const stored=await prisma.game.findUniqueOrThrow({where:{id:host.gameId}});assert.equal(stored.status,"WAITING");assert.equal(stored.revision,0);
-    const retried=await request(`/games/${host.gameId}/start`,{playerId:host.playerId},host.playerToken);assert.equal(retried.status,200);const state:any=await retried.json();assert.equal(state.status,"ACTIVE");assert.equal(state.revision,1);assert.equal(state.playerId,host.playerId);
+    hold(false);await delay(250);const stored=await prisma.game.findUniqueOrThrow({where:{id:host.gameId}});assert.equal(stored.status,"WAITING");assert.equal(stored.revision,1);
+    const retried=await request(`/games/${host.gameId}/start`,{playerId:host.playerId},host.playerToken);assert.equal(retried.status,200);const state:any=await retried.json();assert.equal(state.status,"ACTIVE");assert.equal(state.revision,2);assert.equal(state.playerId,host.playerId);
     assert.equal((await request("/ready")).status,200);await writeFile(resolve(output,"result.json"),JSON.stringify({passed:true,profile:"actual PostgreSQL through isolated stalled loopback TCP proxy and separately spawned API process",samples,livenessAvailable:true,readinessBounded:true,failedMutationRolledBack:true,identityAndRetryPreserved:true},null,2));
   }catch(error){await writeFile(resolve(output,"failure.json"),JSON.stringify({passed:false,error:String(error),samples},null,2));throw error;}
   finally {

@@ -1,0 +1,65 @@
+{
+  "package": "WR-EWP-012 r1",
+  "at": "2026-10-22T16:40:16.507Z",
+  "engineeringStatus": "complete",
+  "productOwnerAcceptance": "pending",
+  "authorization": "User selected Host lobby controls: remove players and lock joining (recommended); identifier assigned afterward.",
+  "baselineHead": "15564871f2c5e0cf8276206b2bec5c8e2a39e911",
+  "sourceState": "uncommitted working tree including preserved WR-EWP-010 and WR-EWP-011 changes",
+  "sourceInventory": ".jes/local/ewp-012/source-inventory.json",
+  "sourceInventorySha256": "777ed6df689c184c414909f6b089763f9fd4eedcf3a0bb48de2851d3c2dd0a7f",
+  "sourceFileCount": 112,
+  "extensionVersion": "1.6.0",
+  "profile": "macOS / Node v24.15.0 / dedicated local PostgreSQL / real Chromium extension, spectator and invitation views",
+  "checks": {
+    "build": true,
+    "unit": 40,
+    "integration": 55,
+    "browser": 24,
+    "schemaValidation": true,
+    "migrationCases": 3,
+    "exactBackupRestore": true,
+    "reproduciblePackage": true,
+    "diffHygiene": true
+  },
+  "logs": {
+    "build": ".jes/local/ewp-012/build-final.log",
+    "unit": ".jes/local/ewp-012/unit-final.log",
+    "integration": ".jes/local/ewp-012/integration-01.log",
+    "browser": ".jes/local/ewp-012/browser-final.log",
+    "upgrade": ".jes/local/ewp-012/upgrade-01.log",
+    "backup": ".jes/local/ewp-012/backup-01.log",
+    "prisma": ".jes/local/ewp-012/prisma-validate.log",
+    "package": ".jes/local/ewp-012/package-final.log"
+  },
+  "rawResults": {
+    "browser": ".jes/local/ewp-012/browser/1792687155526",
+    "prototypeUpgrade": ".jes/local/ewp-005/upgrade/1792686932243/result.json",
+    "readyUpgrade": ".jes/local/ewp-011/upgrade/1792686932567/result.json",
+    "hostUpgrade": ".jes/local/ewp-012/upgrade/1792686932892/result.json",
+    "backup": ".jes/local/ewp-006/backup/1792686931632/result.json",
+    "package": ".jes/local/ewp-005/package/1792687156155/result.json",
+    "delivery": ".jes/local/ewp-012/delivery-verification.json"
+  },
+  "operator": {
+    "origin": "http://127.0.0.1:4000",
+    "ready": true,
+    "migrations": 12,
+    "preexistingGames": 0,
+    "originalColumnDigestsPreserved": true,
+    "backup": ".local/backups/2026-10-22T16-39-59.144Z-cbdaa78c/wikirace.dump",
+    "temporaryGamesSchemasAndRestoreDatabasesRemoved": true,
+    "installedUserExtensionReloadRequired": true
+  },
+  "zipSha256": "8912c336b0623bee45fc699dab629f866ed66ff9de6099116e8bf6e7a3f8a6d8",
+  "retainedAttempts": [
+    "browser-01.log: test captured the previous round before hidden new-lobby controls became visible; wait corrected",
+    "browser-02.log: all 24 passed before visual review prompted hiding stale controls on revoked sessions; browser-final.log verifies that final UI"
+  ],
+  "limits": [
+    "Removal revokes a membership and is not an account/IP ban; lock joining to prevent fresh entries",
+    "Removal is waiting-only; join lock may change while waiting or active",
+    "No new live-Wikipedia, public network, Windows, OBS, minimum-runtime or long-duration qualification",
+    "Owner playtest and product acceptance remain pending; no Core execution or human approval fabricated"
+  ]
+}

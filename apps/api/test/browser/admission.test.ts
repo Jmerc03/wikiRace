@@ -43,7 +43,7 @@ test("committed create and join responses can be recovered after browser restart
         await expect(page.locator("#start")).toBeDisabled();await expect(page.locator("#save-server")).toBeDisabled();
         await page.screenshot({path:resolve(output,`${operation}-pending.png`),fullPage:true});await context.close();context=null;dropPath="";
         page=await launch();await expect(page.locator("#retry-admission")).toBeVisible();
-        await page.locator("#retry-admission").click();await expect(page.locator("#status")).toContainText(operation==="create"?"Lobby ready":"Waiting for the host");
+        await page.locator("#retry-admission").click();await expect(page.locator("#status")).toContainText("Mark Ready");
         const recovered=await page.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}));assert.equal(recovered.gameId,original.gameId);assert.equal(recovered.playerId,original.playerId);assert.equal(recovered.pendingAdmission,undefined);
         assert.equal(await prisma.player.count({where:{gameId:original.gameId}}),countBefore);assert.equal((await prisma.game.findUniqueOrThrow({where:{id:original.gameId}})).revision,revisionBefore);
         await expect.poll(async()=>(await page.evaluate(()=>chrome.runtime.sendMessage({type:"GET_GAME_STATE"}))).connection).toBe("live");

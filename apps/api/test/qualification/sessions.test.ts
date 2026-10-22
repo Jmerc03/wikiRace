@@ -20,6 +20,7 @@ test("repeated multiplayer lifecycles release sockets and preserve mode-specific
       try{
         const squares=await prisma.boardSquare.findMany({where:{board:{gameId}}});for(const square of squares)await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",condition:{title:square.position===0?"Science":`Lifecycle control ${square.position}`}}});
         for(const player of players){const socket=new WebSocket(`${origin.replace("http:","ws:")}/ws/${gameId}`);sockets.push(socket);await once(socket,"open");}
+        for(const player of players)await post(`/games/${gameId}/ready`,{playerId:player.playerId,isReady:true},player);
         await post(`/games/${gameId}/start`,{playerId:host.playerId},host);
         for(const player of players.slice(0,2))await post(`/games/${gameId}/events/page-visit`,{playerId:player.playerId,title:"Science",url:"https://en.wikipedia.org/wiki/Science"},player);
         assert.equal(await prisma.squareCompletion.count({where:{gameId}}),mode==="NORMAL"?2:0);assert.equal(await prisma.squareClaim.count({where:{gameId}}),mode==="LOCKOUT"?1:0);

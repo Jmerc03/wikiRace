@@ -1,0 +1,154 @@
+{
+  "package": "WR-EWP-014 r1",
+  "at": "2026-10-22T17:30:10.866Z",
+  "engineeringStatus": "complete",
+  "productOwnerAcceptance": "pending",
+  "authorization": "User selected Optional timed rounds (recommended); identifier assigned afterward.",
+  "baselineHead": "15564871f2c5e0cf8276206b2bec5c8e2a39e911",
+  "sourceState": "uncommitted working tree preserving WR-EWP-010/011/012/013",
+  "sourceInventory": ".jes/local/ewp-014/source-inventory.json",
+  "sourceInventorySha256": "8df35c450c8655a7b137ec3befa53b656329e58501f5e247fd29a141e38535ec",
+  "sourceFileCount": 123,
+  "extensionVersion": "1.8.0",
+  "gameContract": "v1.7",
+  "profile": "macOS / Node v24.15.0 / dedicated PostgreSQL / actual Chromium extensions, spectator and overlay",
+  "checks": {
+    "build": true,
+    "prismaValidate": true,
+    "unit": 46,
+    "integration": 70,
+    "browser": 35,
+    "upgrades": 4,
+    "actualUnmodifiedMinute": true,
+    "clientClockSkewHours": 12,
+    "databaseSessionTimezones": [
+      "UTC",
+      "America/Chicago",
+      "Asia/Tokyo"
+    ],
+    "populatedTimedArchiveRestore": true,
+    "boundedDatabaseFailure": true,
+    "reproduciblePackage": true,
+    "diffHygiene": true
+  },
+  "logs": {
+    "build": ".jes/local/ewp-014/build-final.log",
+    "prisma": ".jes/local/ewp-014/prisma-validate.log",
+    "unit": ".jes/local/ewp-014/unit-final.log",
+    "integration": ".jes/local/ewp-014/integration-final.log",
+    "browser": ".jes/local/ewp-014/browser-final.log",
+    "upgrades": ".jes/local/ewp-014/upgrade-01.log",
+    "backup": ".jes/local/ewp-014/backup-01.log",
+    "databaseFault": ".jes/local/ewp-014/database-fault-01.log",
+    "package": ".jes/local/ewp-014/package-final.log",
+    "operatorMigration": ".jes/local/ewp-014/operator-migration.log",
+    "operatorFinalStatus": ".jes/local/ewp-014/operator-status-final.log"
+  },
+  "rawResults": {
+    "browser": ".jes/local/ewp-014/browser/1792690080499",
+    "timedUpgrade": ".jes/local/ewp-014/upgrade/1792689607841/result.json",
+    "archiveRestore": ".jes/local/ewp-006/backup/1792689607328/result.json",
+    "databaseFault": ".jes/local/ewp-009/database-fault/1792689659706/result.json",
+    "package": ".jes/local/ewp-005/package/1792689698431/result.json",
+    "delivery": ".jes/local/ewp-014/delivery-verification.json",
+    "operatorBefore": ".jes/local/ewp-014/operator-before.json",
+    "operatorAfter": ".jes/local/ewp-014/operator-after.json"
+  },
+  "retainedAttempts": [
+    {
+      "path": ".jes/local/ewp-014/integration-01.log",
+      "result": "62/69. UTC timestamp columns compared against bound timestamptz values inherited the America/Chicago database timezone. Fixed both expiry queries with explicit UTC conversion."
+    },
+    {
+      "path": ".jes/local/ewp-014/integration-02.log",
+      "result": "69/69 after UTC fix, before adding the explicit three-database-timezone case."
+    },
+    {
+      "path": ".jes/local/ewp-014/browser-01.log",
+      "result": "35/35. Suite began before the UTC fix; final stable-source suite was run separately."
+    },
+    {
+      "path": ".jes/local/ewp-014/browser-02.log",
+      "result": "34/35. An older Normal winner fixture navigated before the guest received ACTIVE. Added an explicit guest start-state wait; final suite 35/35."
+    }
+  ],
+  "runtime": {
+    "origin": "http://127.0.0.1:4000",
+    "ready": true,
+    "migrations": 13,
+    "originalProfilePreserved": true,
+    "operatorOriginalRowsUnchanged": true,
+    "operatorGameCountBefore": 0,
+    "populatedRetentionEvidence": "Separate five-game/nine-player archive fixture; the empty operator comparison is not population evidence.",
+    "runningTimedCreationIdleExpiryLateVisitAndRematchSmoke": true,
+    "acceleratedOwnedSmokeDeadline": true,
+    "ownedSmokeGamesRemoved": true,
+    "temporarySchemas": 0,
+    "temporaryRestoreDatabases": 0,
+    "preMigrationBackup": ".local/backups/2026-10-22T17-22-50.896Z-941310fd/wikirace.dump",
+    "preMigrationBackupSha256": "fe5749735a32226e59bdd8f4f3a1c7c5d56ee45e4e492f3a3fba62b80c357e8f"
+  },
+  "restoredFixture": {
+    "counts": {
+      "game": 5,
+      "player": 9,
+      "team": 2,
+      "board": 5,
+      "boardSquare": 125,
+      "pageVisitEvent": 16,
+      "squareCompletion": 3,
+      "squareClaim": 13
+    },
+    "authenticatedSessions": 8,
+    "originalAdmissionsRecovered": 6,
+    "recoveredRematchMemberships": 2,
+    "revokedMembershipsStillRejected": 1,
+    "waitingActiveAndExpiredTimersPreserved": true,
+    "archiveSha256": "a63d303e0945e0b2922b43638b783dd30af08dc72b10042ab7376be618d8b5c8",
+    "exactRowSha256": "08741ade6b4cc628fffcbedea5fa6a36d7649bffe1f6103a00f1d90860701d42"
+  },
+  "servedAssets": [
+    {
+      "url": "/assets/viewer.js",
+      "file": "apps/api/public/viewer.js",
+      "sha256": "a6f816dcbee93237b00122fd17e5217a84c817b3dfa4cdd0aec08e6cd0c807cf"
+    },
+    {
+      "url": "/assets/viewer.css",
+      "file": "apps/api/public/viewer.css",
+      "sha256": "0aedc45dfe19007a7bc01c0440473fcebe5990a2d97bccc693acf15828c0a83f"
+    },
+    {
+      "url": "/assets/round-timer.js",
+      "file": "packages/shared/dist/round-timer.js",
+      "sha256": "3c249a9459e140fe17f9748f85ca3b692a41eea80fd69b02c667218067fba102"
+    },
+    {
+      "url": "/assets/board-setup.js",
+      "file": "packages/shared/dist/board-setup.js",
+      "sha256": "b2494891058a9945e0616150ee3e3ea8e4c8fa944810bf4af395479916373e9e"
+    },
+    {
+      "url": "/assets/results.js",
+      "file": "packages/shared/dist/results.js",
+      "sha256": "f4e7ace7b9893e7668073ea1ad0d8e357292d618ca505415b4dd635f09601238"
+    },
+    {
+      "url": "/assets/navigation.js",
+      "file": "packages/shared/dist/navigation.js",
+      "sha256": "b37fad8e82b6f4cbbb89f32330b23ca13e58653d0cddd34acfa17b7899e831eb"
+    },
+    {
+      "url": "/downloads/wikirace-extension.zip",
+      "file": "apps/api/public/downloads/wikirace-extension.zip",
+      "sha256": "8984ecc584c616de050243699554ff5d30e144d5a5127cdbfc957e8389aa5bac"
+    }
+  ],
+  "limits": [
+    "No installed user browser profile was changed; reload extension 1.8.0.",
+    "One real-minute Normal browser case; Lockout, outage and operator-smoke deadlines are accelerated owned fixtures.",
+    "Read-only state requests can briefly report ACTIVE after deadline until the sweep confirms; scoring guards enforce expiry under the game lock.",
+    "No new live-Wikipedia, native Windows, public deployment, actual OBS, minimum-runtime or long-duration qualification was claimed.",
+    "Subjective owner acceptance and prior Core reporting remain pending."
+  ]
+}

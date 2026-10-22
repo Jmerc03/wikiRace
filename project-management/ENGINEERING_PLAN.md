@@ -82,3 +82,89 @@ The operator may opt into binding the API to `0.0.0.0` using `WIKIRACE_API_HOST`
 WR-EWP-009 checks the difference between a stopped database and an established connection that stops responding. Use a loopback TCP proxy to stall only a disposable API/database connection; keep the operator database running. Liveness must remain usable, readiness and player requests must fail in bounded time, and recovery must preserve durable identities/state. If the current defaults leave queries unbounded, apply supported Prisma v6 connection deadlines with documented operator overrides and regressions. No data-model or scoring-rule change is planned.
 
 Validate the declared minimum Node 22.12 runtime using a verified official binary isolated from the installed Node runtime. Do not replace global tools or mutate installed dependencies during a concurrent soak. Run a measured 60-minute local profile with four games, 64 players and 128 real HTTP/WebSocket clients, mode-specific isolation, one controlled API restart, and final cleanup. This is bounded software operation, not public-scale or second-machine qualification. Record raw durations, errors, connection counts and memory observations; retain failed attempts. Existing native Mac and unavailable Windows/Docker boundaries remain explicit. Final M6 product review follows all required results.
+
+## Feature continuation — 2026-10-22
+
+The user's explicit selection authorizes results, scored-article history and
+rematches before 15:00 America/Chicago. WR-EWP-010 r1 implements this bounded
+extension to PR-004/006. No new ownership or unrelated milestone is introduced.
+
+Use the existing stored winner/timestamps/completion-event references for
+results and per-square evidence. Share result ordering and formatting across
+Extension and spectator clients. Add nullable provenance and a unique successor
+link for rematches; never reset the source game. The host creates one next lobby,
+and original players explicitly opt in with preserved identity/team attributes.
+Source-then-destination row locks, per-round derived credentials and a persisted
+pending extension transition provide retry recovery without storing plaintext
+credentials server-side. GAME_CONTRACT.md v1.3 defines the interface.
+
+Required evidence: full build/unit/API/browser checks; actual migration of old
+records; archive/restore with both original admission and rematch recovery;
+visual review; original operator-row preservation; and packaged local startup.
+No new public/network, live Wikipedia, Windows, subjective play-quality or
+uninterrupted-duration qualification is implied. Owner acceptance of the new
+features follows the completed engineering evidence, separately from M6's
+historical acceptance.
+
+### Lobby ready checks — WR-EWP-011
+
+The user's subsequent explicit selection authorizes ready checks before the same
+cutoff. Extend Player with a default-false boolean and expose it in summaries.
+Serialize an authenticated desired-state setter, host start gate and team-reset
+with existing game mutations. Reuse revision/invalidation/reconnect handling.
+Gate all active members, including host; exclude departed members. New/rematch
+members start false, and existing readiness survives session recovery.
+
+Verify API authorization/idempotence, simultaneous start/unready/join, team and
+host changes, rematches, real browser restart/response loss, prior-schema upgrade
+and mixed-readiness archive/restore. Update the existing test fixtures to ready
+participants explicitly. No presence, force-start, kick, daily board or new
+scoring feature is included. Preserve WR-EWP-010 records and evidence.
+
+### Host lobby controls — WR-EWP-012
+
+The next user selection authorizes host removal and joining locks. Add default-
+false lock/removal booleans; retain leftAt as the membership boundary. Check locks
+after existing-identity recovery in normal/rematch admission, and serialize host
+set/remove with all other game mutations. Notify the previous round of lock
+changes. Close invalid-session sockets and reject late state application.
+
+Verify ownership/lifecycle/idempotence, revoked admission/rematch recovery,
+concurrent joins/locks and removals/start, actual browser confirmation/restart/
+lost responses/stale reads, previous-schema migrations and restored locks/removals.
+No ban system, active-play kick or presence authority is introduced. Package the
+verified local flow as 1.6.0, retaining earlier evidence and pending owner acceptance.
+
+## WR-EWP-013 continuation — 2026-10-22
+
+The user selected article/objective mix and topic variety in this chat. Execute
+the bounded scope in WR-EWP-013 r1: validated 25-square custom setup, shared
+configuration visibility and unchanged rematch settings. This selection does
+not approve broader product scope or establish owner acceptance.
+
+## Optional timed rounds — 2026-10-22
+
+The user selected optional timed rounds. WR-EWP-014 r1 implements a fixed optional
+duration, server-authoritative expiry, visible countdown and fresh rematch clocks.
+Existing win rules remain; time expiry records no winner. This instruction does
+not imply acceptance or additional product scope.
+
+## Player connection indicators — 2026-10-22
+
+The user's next selection authorizes WR-EWP-015 r1. Add an in-memory presence
+tracker per API instance, authenticate socket membership under the existing game
+lock, and publish separate presence snapshots to opted-in viewers. Revoke on
+committed leave/removal. Shared display helpers serve extension and spectator;
+lost observation clears certainty. Verify identity isolation and unchanged game
+state alongside reconnect, duplicate socket, restart and responsive UI behavior.
+
+## Ad-free beta preparation — 2026-10-22
+
+The user superseded the daily-challenge selection with launch preparation and
+selected Render. WR-EWP-016 r1 covers a one-instance API/private PostgreSQL
+blueprint, application/storage limits, minimal scored-article retention, public
+privacy contact, hosted-only extension packaging, store assets and release
+preflight. Existing local operation and all selected multiplayer features remain.
+Public support email: jaxmerc03@gmail.com; operator label: WikiRace. No paid
+resource or store publication is included in a local verification claim. The
+deployment, two-network/proxy and managed-recovery checks remain explicit gates.

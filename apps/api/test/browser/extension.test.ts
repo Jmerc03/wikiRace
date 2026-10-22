@@ -50,7 +50,7 @@ test("two real extension profiles play independent Normal progress, resume, and 
     await configure(host); await configure(guest);
     await host.popup.locator("#player-name").fill("Browser Host");
     await host.popup.locator("#start").click();
-    await expect(host.popup.locator("#status")).toContainText("Lobby ready");
+    await expect(host.popup.locator("#status")).toContainText("Mark Ready");
     const initial=await snapshot(host);
     assert.ok(initial.gameId); assert.ok(initial.playerId);
     assert.equal(initial.playerToken,undefined);
@@ -59,10 +59,10 @@ test("two real extension profiles play independent Normal progress, resume, and 
     await guest.popup.locator("#player-name").fill("Browser Guest");
     await guest.popup.locator("#join-game-id").fill(initial.gameId);
     await guest.popup.locator("#join-game-btn").click();
-    await expect(guest.popup.locator("#status")).toContainText("Waiting for the host");
+    await expect(guest.popup.locator("#status")).toContainText("Mark Ready");
     await expect.poll(async()=> (await snapshot(host!)).playerCount).toBe(2);
     await expect(guest.popup.locator("#start-match")).toBeHidden();
-    await host.popup.locator("#start-match").click();
+    await host.popup.locator("#set-ready").click(); await guest.popup.locator("#set-ready").click(); await host.popup.locator("#start-match").click();
     await expect(guest.popup.locator("#status")).toContainText("Match active");
     const article=await host.context.newPage();
     await article.goto("https://en.wikipedia.org/wiki/Fixture_0");
@@ -116,7 +116,7 @@ test("two extension profiles form a team and finish Lockout by majority", {timeo
     await host.popup.locator("#player-name").fill("Team Captain");
     await host.popup.locator("#game-mode").selectOption("LOCKOUT");
     await host.popup.locator("#start").click();
-    await expect(host.popup.locator("#status")).toContainText("Lobby ready");
+    await expect(host.popup.locator("#status")).toContainText("Mark Ready");
     const initial=await snapshot(host);
     const squares=await prisma.boardSquare.findMany({where:{board:{gameId:initial.gameId}}});
     for(const square of squares) await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",label:`Visit Fixture ${square.position}`,condition:{title:`Fixture ${square.position}`}}});
@@ -131,7 +131,7 @@ test("two extension profiles form a team and finish Lockout by majority", {timeo
     await expect(guest.popup.locator("#team-select")).toContainText("Explorers");
     await guest.popup.locator("#join-team-btn").click();
     await expect(host.popup.locator("#team-rosters")).toContainText("Teammate");
-    await host.popup.locator("#start-match").click();
+    await host.popup.locator("#set-ready").click(); await guest.popup.locator("#set-ready").click(); await host.popup.locator("#start-match").click();
     await expect(guest.popup.locator("#status")).toContainText("Match active");
     const pages=[await host.context.newPage(),await guest.context.newPage()];
     for(let i=0;i<13;i++) {
@@ -157,11 +157,15 @@ test("two extension profiles form a team and finish Lockout by majority", {timeo
 test("an exhausted three-player Lockout board shows the same draw in extension and spectator",{timeout:60000},async()=>{
   const profile=await mkdtemp(resolve(".local/wr-draw-"));let host:PlayerBrowser|undefined;
   try{
-    host=await launch(profile);await configure(host);await host.popup.locator("#game-mode").selectOption("LOCKOUT");await host.popup.locator("#start").click();await expect(host.popup.locator("#status")).toContainText("Lobby ready");
+    host=await launch(profile);await configure(host);await host.popup.locator("#game-mode").selectOption("LOCKOUT");await host.popup.locator("#start").click();await expect(host.popup.locator("#status")).toContainText("Mark Ready");
     const initial=await snapshot(host);const squares=await prisma.boardSquare.findMany({where:{board:{gameId:initial.gameId}}});
     for(const square of squares)await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",label:`Visit Fixture ${square.position}`,condition:{title:`Fixture ${square.position}`}}});
     const others=[];for(const displayName of ["Second owner","Third owner"]){const response=await app.inject({method:"POST",url:`/games/${initial.gameId}/players`,payload:{displayName}});assert.equal(response.statusCode,200);others.push(response.json());}
-    await host.popup.locator("#start-match").click();const article=await host.context.newPage();
+    for (const player of others) {
+      const ready = await app.inject({method:"POST",url:`/games/${initial.gameId}/ready`,headers:{authorization:`Bearer ${player.playerToken}`},payload:{playerId:player.playerId,isReady:true}});
+      assert.equal(ready.statusCode,200,ready.body);
+    }
+    await host.popup.locator("#set-ready").click(); await host.popup.locator("#start-match").click();const article=await host.context.newPage();
     for(let position=0;position<25;position++){
       if(position%3===0)await article.goto(`https://en.wikipedia.org/wiki/Fixture_${position}`);
       else{const player=others[position%3-1];const response=await app.inject({method:"POST",url:`/games/${initial.gameId}/events/page-visit`,headers:{authorization:`Bearer ${player.playerToken}`},payload:{playerId:player.playerId,title:`Fixture ${position}`,url:`https://en.wikipedia.org/wiki/Fixture_${position}`}});assert.equal(response.statusCode,200);}
@@ -178,10 +182,12 @@ test("a Normal winner is named for everyone while each extension keeps its own p
   const profiles=[await mkdtemp(resolve(".local/wr-normal-winner-")),await mkdtemp(resolve(".local/wr-normal-observer-"))];let host:PlayerBrowser|undefined;let guest:PlayerBrowser|undefined;
   try{
     host=await launch(profiles[0]);guest=await launch(profiles[1]);await configure(host);await configure(guest);
-    await host.popup.locator("#player-name").fill("Normal champion");await host.popup.locator("#start").click();await expect(host.popup.locator("#status")).toContainText("Lobby ready");const initial=await snapshot(host);
+    await host.popup.locator("#player-name").fill("Normal champion");await host.popup.locator("#start").click();await expect(host.popup.locator("#status")).toContainText("Mark Ready");const initial=await snapshot(host);
     const squares=await prisma.boardSquare.findMany({where:{board:{gameId:initial.gameId}}});for(const square of squares)await prisma.boardSquare.update({where:{id:square.id},data:{type:"VISIT_ARTICLE",label:`Visit Fixture ${square.position}`,condition:{title:`Fixture ${square.position}`}}});
-    await guest.popup.locator("#player-name").fill("Independent racer");await guest.popup.locator("#join-game-id").fill(initial.gameId);await guest.popup.locator("#join-game-btn").click();await expect(guest.popup.locator("#status")).toContainText("Waiting for the host");
-    await host.popup.locator("#start-match").click();const ownArticle=await guest.context.newPage();await ownArticle.goto("https://en.wikipedia.org/wiki/Fixture_10");await expect(guest.popup.locator("#progress")).toContainText("Your progress: 1/25");
+    await guest.popup.locator("#player-name").fill("Independent racer");await guest.popup.locator("#join-game-id").fill(initial.gameId);await guest.popup.locator("#join-game-btn").click();await expect(guest.popup.locator("#status")).toContainText("Mark Ready");
+    await host.popup.locator("#set-ready").click(); await guest.popup.locator("#set-ready").click(); await host.popup.locator("#start-match").click();
+    await expect(guest.popup.locator("#status")).toContainText("Match active");
+    const ownArticle=await guest.context.newPage();await ownArticle.goto("https://en.wikipedia.org/wiki/Fixture_10");await expect(guest.popup.locator("#progress")).toContainText("Your progress: 1/25");
     const article=await host.context.newPage();for(let i=0;i<5;i++){await article.goto(`https://en.wikipedia.org/wiki/Fixture_${i}`);await expect.poll(async()=>(await snapshot(host!)).completedSquareIds.length).toBe(i+1);}
     for(const player of [host,guest])await expect(player.popup.locator("#status")).toContainText("Normal champion won by bingo");
     await expect(host.popup.locator(".winning-square")).toHaveCount(5);await expect(guest.popup.locator(".winning-square")).toHaveCount(0);await expect(guest.popup.locator(".square.completed")).toHaveCount(1);

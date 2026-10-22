@@ -1,6 +1,6 @@
 # Technical debt and qualification limits
 
-Updated 2026-09-07. Normal bingo and Lockout 13-square majority remain separate rules.
+Updated 2026-10-22. Normal bingo and Lockout 13-square majority remain separate rules.
 
 ## Resolved in WR-EWP-002 through WR-EWP-004
 
@@ -23,6 +23,7 @@ Updated 2026-09-07. Normal bingo and Lockout 13-square majority remain separate 
 - **Platform-dependent browser capture:** transparent stream layout is exercised in Chromium. Actual OBS application capture is a separate profile.
 - **Host power transitions:** the current extension/spectator reconnected in 503 ms with consistent sampled state during a measured display sleep/wake transition. That supplemental run violates its strict continuous-connection criterion; the original failure remains retained. Temporal correlation is established, but the exact mechanism is not independently reproduced. A separate strict 30-minute diagnostic repeat passed with the exact temporary sleep-inhibition window recorded. WR-EWP-009 and the delivery review retain the failed attempt and the explicit local-use adjudication. No uninterrupted connection guarantee across host sleep/wake is made.
 - **Future infrastructure:** `infra/k8s` files remain placeholders, not deployable manifests.
-- **Operational scope:** no accounts, centralized session recovery, match retention policy, public abuse/rate-limiting infrastructure, scheduled backups or off-machine backup storage. Manual local archives and restore/rollback are qualified in WR-EWP-006. A lost extension profile loses its private session token; retained game history remains readable.
+- **Operational scope:** no accounts or centralized session recovery. WR-EWP-016 prepares application traffic/storage limits, 30-day finished-game retention and paid managed backup instructions for the separate hosted beta profile. These are not a provider spending cap, DDoS protection, completed deployment or verified cloud restore. Local history is unchanged. Manual local archives and restore/rollback are qualified in WR-EWP-006. A lost extension profile loses its private session token; retained game history remains readable.
+- **Hosted beta qualification:** the Render blueprint and hosted-only extension are locally verified. Actual Render edge-client attribution, two-network play, costs, managed recovery and Chrome review remain external launch gates. Deployment overlap can briefly run two API processes with separate realtime rooms; plan updates between play sessions.
 
 Live Wikipedia and longer realtime lifetimes are additional qualification profiles, separate from deterministic DOM fixture evidence. See current package records for results.
